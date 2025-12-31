@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class PlayerGridMover : MonoBehaviour
@@ -7,14 +7,11 @@ public class PlayerGridMover : MonoBehaviour
     public GridBoard grid;
     public FieldTimeManager fieldTime;
     public PlayerCrouch crouch;
+    public RestController rest;
 
     [Header("Move")]
     public float moveDuration = 0.12f;
-
-    [Tooltip("±âº» ÀÌµ¿ ½Ã°£ ºñ¿ë (ÀÏ¹İ »óÅÂ)")]
     public int baseMoveTimeCost = 1;
-
-    [Tooltip("¿õÅ©¸®±â »óÅÂ Ãß°¡ ºñ¿ë (¿õÅ©¸®¸é base + extra)")]
     public int crouchExtraTimeCost = 1;
 
     public Vector2Int CurrentCell { get; private set; }
@@ -26,6 +23,7 @@ public class PlayerGridMover : MonoBehaviour
         if (grid == null) grid = FindObjectOfType<GridBoard>();
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
+        if (rest == null) rest = FindObjectOfType<RestController>();
     }
 
     private void Start()
@@ -36,10 +34,14 @@ public class PlayerGridMover : MonoBehaviour
 
     private void Update()
     {
+        // âœ… íœ´ì‹ ì¤‘ì—ëŠ” ì´ë™ ì™„ì „ ì°¨ë‹¨
+        if (rest != null && rest.IsResting)
+            return;
+
         if (_isMoving) return;
         if (grid == null) return;
 
-        // (Å×½ºÆ®) Space: ½Ã°£ +1 º¸³»±â
+        // í…ŒìŠ¤íŠ¸ìš© Time ì¦ê°€
         if (Input.GetKeyDown(KeyCode.Space))
         {
             fieldTime?.Advance(1);
@@ -78,18 +80,11 @@ public class PlayerGridMover : MonoBehaviour
         Vector2Int target = CurrentCell + dir;
 
         if (!grid.InBounds(target))
-        {
-            Debug.Log("Blocked: Out of bounds");
             return;
-        }
 
         if (grid.IsMoveBlocked(target))
-        {
-            Debug.Log("Blocked: Wall");
             return;
-        }
 
-        // ÀÌµ¿ ¼º°ø ½Ã ½Ã°£ °æ°ú
         int cost = GetMoveTimeCost();
         fieldTime?.Advance(cost);
 

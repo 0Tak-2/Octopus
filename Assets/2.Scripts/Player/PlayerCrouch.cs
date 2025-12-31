@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerCrouch : MonoBehaviour
 {
@@ -9,12 +9,22 @@ public class PlayerCrouch : MonoBehaviour
 
     public event System.Action<bool> OnCrouchChanged;
 
+    private RestController rest;
+
+    private void Awake()
+    {
+        rest = FindObjectOfType<RestController>();
+    }
+
     private void Update()
     {
+        // ✅ 휴식 중에는 웅크리기 토글 불가
+        if (rest != null && rest.IsResting)
+            return;
+
         if (Input.GetKeyDown(toggleKey))
         {
             IsCrouching = !IsCrouching;
-            Debug.Log($"Crouch: {(IsCrouching ? "ON" : "OFF")}");
             OnCrouchChanged?.Invoke(IsCrouching);
         }
     }
