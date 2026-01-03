@@ -1,10 +1,16 @@
 ﻿using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class FocusedCombatManager : MonoBehaviour
 {
     public static FocusedCombatManager Instance { get; private set; }
+
+    [Header("HUD")]
+    public CombatHUDController hud;
+    public CombatUnitToken PlayerToken => _playerToken;
+    public CombatUnitToken EnemyToken => _enemyToken;
 
     [Header("Roots")]
     public GameObject fieldRoot;
@@ -20,7 +26,7 @@ public class FocusedCombatManager : MonoBehaviour
 
     [Header("Unit Token Prefabs (UI)")]
     public CombatUnitToken playerTokenPrefab;
-    public CombatUnitToken enemyTokenPrefab;
+    public CombatUnitToken enemyTokenPrefab; // fallback (definition 없을 때만)
 
     [Header("Player Hint (UI)")]
     public TMP_Text playerHintPrefab;
@@ -38,8 +44,6 @@ public class FocusedCombatManager : MonoBehaviour
     [Header("Generation")]
     public CombatSpawnPlanner spawnPlanner;
     public CombatTerrainGenerator terrainGenerator;
-
-    [Tooltip("생성 실패 시, 지형 없이 빈 맵으로 진행할지(안전장치).")]
     public bool fallbackToEmptyOnFail = true;
 
     public CombatGridData gridData { get; private set; }
@@ -52,74 +56,203 @@ public class FocusedCombatManager : MonoBehaviour
     public int maxAP = 5;
 
     [Header("Movement")]
-    [Tooltip("한 번의 이동 액션으로 도달 가능한 최대 거리(8방향 기준). 기본 2.")]
-    public int moveRange = 2;
-
-    [Tooltip("1칸 이동이 보이도록 하는 스텝 딜레이(초).")]
+    public int moveRange = 2;         // 플레이어 이동 범위(기존)
     public float stepDelay = 0.15f;
-
-    [Header("Grid Blocker (legacy)")]
-    [Tooltip("레거시: 막힌 칸을 알려주는 컴포넌트(선택). gridData가 있을 땐 gridData(Wall)가 우선.")]
-    public MonoBehaviour blockerBehaviour;
-    private ICombatGridBlocker _blocker;
 
     [Header("UI (Left Panel)")]
     public TMP_Text apText;
     public TMP_Text hpText;
 
+    [Header("Turn End UI")]
+    public Button endTurnButton;
+    public KeyCode endTurnKey = KeyCode.Space;
+    public bool autoEndTurnWhenAPZero = true;
+
+    [Header("Escape Tile")]
+    public bool enableEscapeTile = true;
+    public KeyCode escapeKey = KeyCode.Z;
+    [Min(0)] public int escapeApCost = 1;
+    [Range(0f, 1f)] public float escapeSuccessChance = 0.5f;
+    [Tooltip("도망 프롬프트 텍스트")]
+    public string escapePrompt = "도망치기";
+
     [Header("Action Controller")]
     public PlayerCombatActionController actionController;
 
-    [Header("HP (temp)")]
+    [Header("HP (fallback)")]
     public int playerMaxHP = 10;
-    public int enemyMaxHP = 10;
+    public int enemyFallbackMaxHP = 10;
 
-    public bool IsInFocusedCombat { get; private set; }
+    [Header("Enemy fallback combat (when definition missing)")]
+    [Min(1)] public int enemyFallbackMoveRange = 2;
+    [Min(1)] public int enemyFallbackAttackRange = 1;
+    [Min(0)] public int enemyFallbackAttackDamage = 1;
+    public bool enemyFallbackUseDashAttackMotion = true;
+    [Range(0f, 0.95f)] public float enemyFallbackBaseEvasion = 0f;
+
+    [Header("Controllers (auto find / add)")]
+    public CombatVfxController vfx;
+    public CombatTerrainEffectSystem terrainFx;
+    public EnemyAIController enemyAI;
+
+    [Header("Grid Blocker (legacy)")]
+    public MonoBehaviour blockerBehaviour;
+    private ICombatGridBlocker _blocker;
+
+    [Header("Field Sync")]
+    [Tooltip("집중전투에서 적이 죽으면 필드의 해당 적 오브젝트를 제거할지")]
+    public bool destroyFieldEnemyOnDefeat = true;
 
     // ===== Runtime =====
-    private Vector2Int _playerCell;
-    private Vector2Int _enemyCell;
+    private CombatUnitToken _playerToken;
+    private CombatUnitToken _enemyToken;
 
-    private CombatUnitToken _playerTokenInstance;
-    private CombatUnitToken _enemyTokenInstance;
+    // ✅ 필드에서 넘어온 적 정의서 (단일 소스)
+    private EnemyDefinition _pendingEnemyDef;
+    public EnemyDefinition CurrentEnemyDef => _pendingEnemyDef;
 
-    private bool _isPlayerTurn = false;
-    private bool _isMoving = false;
+    // ✅ 필드에서 넘어온 전투 컨텍스트(플레이어/적 상태 이관)
+    private EncounterContext _pendingContext;
 
-    private int _currentAP = 0;
-    private bool _freeMoveUsedThisTurn = false;
+    // ✅ HUD 표시용 플레이어 MaxHP (PlayerStats.maxHP를 반영)
+    private int _effectivePlayerMaxHP;
 
-    private int _playerHP;
-    private int _enemyHP;
+    public CombatState State { get; private set; } = new CombatState();
+    public CombatMovementService Movement { get; private set; }
 
-    // ===== Public read-only state =====
-    public Vector2Int PlayerCell => _playerCell;
-    public Vector2Int EnemyCell => _enemyCell;
+    public bool IsInFocusedCombat => State.isInCombat;
+    public bool IsBusyForInput => State.isBusy;
 
-    public bool IsBusyForInput => _isMoving;
+    // ✅ Escape tile runtime
+    private bool _hasEscapeTile = false;
+    private Vector2Int _escapeCell;
+
+    // 플레이어 사거리 보너스(언덕) 제공 (기존 유지)
+    public int PlayerRangeBonus
+    {
+        get
+        {
+            if (_playerToken == null) return 0;
+            CombatUnitStats s = _playerToken.GetComponent<CombatUnitStats>();
+            return (s != null) ? s.rangeBonus : 0;
+        }
+    }
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
 
-        if (combatUIRoot != null)
-            combatUIRoot.SetActive(false);
-
-        if (fader != null)
-            fader.ForceClear();
+        if (combatUIRoot != null) combatUIRoot.SetActive(false);
+        if (fader != null) fader.ForceClear();
 
         ResolveBlocker();
 
         if (actionController == null)
             actionController = GetComponent<PlayerCombatActionController>();
-
         if (actionController != null && actionController.combat == null)
             actionController.combat = this;
+
+        if (vfx == null) vfx = GetComponent<CombatVfxController>();
+        if (vfx == null) vfx = gameObject.AddComponent<CombatVfxController>();
+
+        if (terrainFx == null) terrainFx = GetComponent<CombatTerrainEffectSystem>();
+        if (terrainFx == null) terrainFx = gameObject.AddComponent<CombatTerrainEffectSystem>();
+
+        if (enemyAI == null) enemyAI = GetComponent<EnemyAIController>();
+        if (enemyAI == null) enemyAI = gameObject.AddComponent<EnemyAIController>();
+
+        enemyAI.Bind(this);
+
+        if (endTurnButton != null)
+        {
+            endTurnButton.onClick.RemoveListener(RequestEndTurn);
+            endTurnButton.onClick.AddListener(RequestEndTurn);
+        }
+
+        _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
+    }
+
+    private void Update()
+    {
+        if (!State.isInCombat) return;
+        if (!State.isPlayerTurn) return;
+        if (State.isBusy) return;
+
+        // 턴 넘기기
+        if (Input.GetKeyDown(endTurnKey))
+            RequestEndTurn();
+
+        // ✅ 도망 타일 처리
+        HandleEscapeInput();
+    }
+
+    private void HandleEscapeInput()
+    {
+        if (!enableEscapeTile) return;
+        if (!_hasEscapeTile) return;
+        if (State.isBusy) return;
+
+        // 액션 모드 중이면(공격 선택 중 등) 도망키로 꼬이는거 방지
+        if (actionController != null && actionController.IsInActionMode)
+            return;
+
+        if (State.playerCell != _escapeCell)
+            return;
+
+        // 프롬프트
+        if (State.currentAP >= escapeApCost)
+            ShowPlayerHint($"{escapePrompt}\n({escapeKey})");
+        else
+            ShowPlayerHint($"{escapePrompt}\n({escapeKey})\n(AP 부족)");
+
+        if (Input.GetKeyDown(escapeKey))
+        {
+            if (State.currentAP < escapeApCost) return;
+            StartCoroutine(EscapeAttemptRoutine());
+        }
+    }
+
+    private IEnumerator EscapeAttemptRoutine()
+    {
+        // ✅ 페이드/전투종료 들어가기 전에 UI 튀는거 방지
+        HidePlayerHint();
+        State.isBusy = true;
+
+        // AP 소모(즉시 UI 반영 원하면 hud.RefreshAll도 여기서)
+        if (escapeApCost > 0)
+        {
+            State.currentAP = Mathf.Max(0, State.currentAP - escapeApCost);
+            if (hud != null) hud.RefreshAll();
+            RefreshUI();
+        }
+
+        bool success = (Random.value < escapeSuccessChance);
+
+        // 팝업(머리 위)
+        if (vfx != null)
+        {
+            if (success) vfx.ShowPopup(_playerToken, "도망에 성공했다!");
+            else vfx.ShowPopup(_playerToken, "도망에 실패했다!");
+        }
+
+        // 문구 보이는 시간(취향)
+        yield return new WaitForSeconds(0.5f);
+
+        State.isBusy = false;
+
+        if (!State.isInCombat) yield break;
+
+        if (success)
+        {
+            // 즉시 필드로
+            ExitFocusedCombat();
+        }
+        else
+        {
+            // ✅ 즉시 적 턴 (플레이어 AP 남아 있어도 강제)
+            BeginEnemyTurn();
+        }
     }
 
     private void ResolveBlocker()
@@ -132,21 +265,44 @@ public class FocusedCombatManager : MonoBehaviour
             _blocker = blockerBehaviour.GetComponent<ICombatGridBlocker>();
     }
 
+    // ==========================
+    // Entry
+    // ==========================
     public void EnterFocusedCombat()
     {
-        if (IsInFocusedCombat) return;
+        if (State.isInCombat) return;
         StartCoroutine(EnterRoutine());
+    }
+
+    // ✅ 필드 상태(플레이어/적 HP)를 그대로 가져오는 진입
+    public void EnterFocusedCombat(EncounterContext ctx)
+    {
+        if (State.isInCombat) return;
+        if (ctx == null || ctx.enemy == null || ctx.enemy.definition == null) return;
+
+        _pendingContext = ctx;
+        _pendingEnemyDef = ctx.enemy.definition;
+
+        StartCoroutine(EnterRoutine());
+    }
+
+    // ✅ 구형/폴백: 정의만 들어오는 경우(HP 이관 없음)
+    public void EnterFocusedCombat(EnemyDefinition def)
+    {
+        _pendingContext = null;
+        _pendingEnemyDef = def;
+        EnterFocusedCombat();
     }
 
     public void ExitFocusedCombat()
     {
-        if (!IsInFocusedCombat) return;
+        if (!State.isInCombat) return;
         StartCoroutine(ExitRoutine());
     }
 
     private IEnumerator EnterRoutine()
     {
-        IsInFocusedCombat = true;
+        State.isInCombat = true;
 
         if (fader == null)
         {
@@ -177,77 +333,170 @@ public class FocusedCombatManager : MonoBehaviour
 
         ResolveBlocker();
 
-        // 맵 선택 + 생성
         Vector2Int size = mapSizes[Random.Range(0, mapSizes.Length)];
 
         if (boardUI != null)
         {
             boardUI.Build(size.x, size.y);
-
             boardUI.OnTileClicked -= HandleTileClicked;
             boardUI.OnTileClicked += HandleTileClicked;
         }
 
-        // ✅ 스폰 플래너 (맵 끝 + 최대한 반대 + 대칭)
         if (spawnPlanner != null)
-            spawnPlanner.PickEdgeSpawns(size.x, size.y, out _playerCell, out _enemyCell);
+            spawnPlanner.PickEdgeSpawns(size.x, size.y, out State.playerCell, out State.enemyCell);
         else
         {
-            // 플래너 없으면 안전 기본값(아래/위 중앙)
             int cx = (size.x - 1) / 2;
-            _playerCell = new Vector2Int(cx, 0);
-            _enemyCell = new Vector2Int(cx, size.y - 1);
+            State.playerCell = new Vector2Int(cx, 0);
+            State.enemyCell = new Vector2Int(cx, size.y - 1);
         }
 
-        // ✅ 지형 생성 (스폰은 항상 Empty, 스폰 주변 8방 1칸은 벽 금지)
         gridData = null;
         if (terrainGenerator != null)
         {
-            bool ok = terrainGenerator.Generate(size.x, size.y, _playerCell, _enemyCell, out CombatGridData gen);
+            bool ok = terrainGenerator.Generate(size.x, size.y, State.playerCell, State.enemyCell, out CombatGridData gen);
             if (ok) gridData = gen;
-            else
-            {
-                Debug.LogWarning("[FocusedCombatManager] Terrain generation failed.");
-                if (fallbackToEmptyOnFail)
-                    gridData = new CombatGridData(size.x, size.y);
-            }
+            else if (fallbackToEmptyOnFail) gridData = new CombatGridData(size.x, size.y);
         }
-        else
-        {
-            // 생성기 없으면 빈 맵
-            gridData = new CombatGridData(size.x, size.y);
-        }
+        else gridData = new CombatGridData(size.x, size.y);
 
-        // 지형 시각 적용
         if (boardUI != null && gridData != null)
             boardUI.ApplyTerrainVisual(gridData);
 
-        // 토큰 배치(스폰은 Empty 보장)
+        // ✅ 토큰 배치: Definition.tokenPrefab 우선
         if (boardUI != null)
         {
             if (playerTokenPrefab != null)
-                _playerTokenInstance = boardUI.PlaceToken(playerTokenPrefab, _playerCell.x, _playerCell.y);
+                _playerToken = boardUI.PlaceToken(playerTokenPrefab, State.playerCell.x, State.playerCell.y);
 
-            if (enemyTokenPrefab != null)
-                _enemyTokenInstance = boardUI.PlaceToken(enemyTokenPrefab, _enemyCell.x, _enemyCell.y);
+            CombatUnitToken enemyPrefabToUse = enemyTokenPrefab;
+            if (_pendingEnemyDef != null && _pendingEnemyDef.tokenPrefab != null)
+                enemyPrefabToUse = _pendingEnemyDef.tokenPrefab;
+
+            if (enemyPrefabToUse != null)
+                _enemyToken = boardUI.PlaceToken(enemyPrefabToUse, State.enemyCell.x, State.enemyCell.y);
         }
 
-        // HP/AP 초기화
-        _playerHP = playerMaxHP;
-        _enemyHP = enemyMaxHP;
+        vfx.Bind(boardUI);
 
-        _currentAP = Mathf.Clamp(startAP, 0, maxAP);
+        // ==========================
+        // ✅ HP 이관 (PlayerStats가 정본)
+        // ==========================
+        if (_pendingContext != null && _pendingContext.playerStats != null)
+        {
+            _effectivePlayerMaxHP = Mathf.Max(1, _pendingContext.playerStats.maxHP);
+            State.playerHP = Mathf.Clamp(_pendingContext.playerStats.hp, 0, _effectivePlayerMaxHP);
+        }
+        else
+        {
+            _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
+            State.playerHP = _effectivePlayerMaxHP;
+        }
+
+        // 적 HP: EnemyInstance가 있으면 그 currentHP 유지, 없으면 정의/폴백
+        if (_pendingContext != null && _pendingContext.enemy != null)
+        {
+            int maxEnemy = Mathf.Max(1, GetEnemyMaxHP());
+            int ehp = Mathf.Clamp(_pendingContext.enemy.currentHP, 0, maxEnemy);
+            if (ehp <= 0) ehp = maxEnemy;
+            State.enemyHP = ehp;
+        }
+        else
+        {
+            State.enemyHP = Mathf.Max(1, GetEnemyMaxHP());
+        }
+
+        // AP 초기화 (기존 유지)
+        State.startAP = startAP;
+        State.maxAP = maxAP;
+        State.currentAP = Mathf.Clamp(startAP, 0, maxAP);
+        State.freeMovesUsedThisTurn = 0;
+
+        Movement = new CombatMovementService(
+            moveRange: moveRange,
+            isBlocked: IsBlocked,
+            inBounds: (x, y) => boardUI != null && boardUI.InBounds(x, y)
+        );
+
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
+
+        // ✅ 도망 타일 생성 + 표시
+        BuildEscapeTile();
 
         BeginPlayerTurn(initialStart: true);
         HidePlayerHint();
+
+        if (hud != null)
+            hud.Bind(this);
+
+        RefreshUI();
+    }
+
+    private void BuildEscapeTile()
+    {
+        _hasEscapeTile = false;
+
+        if (!enableEscapeTile) return;
+        if (boardUI == null || gridData == null) return;
+
+        // 스페셜 표시 초기화
+        boardUI.ClearSpecials();
+
+        const int MAX_TRY = 500;
+        for (int i = 0; i < MAX_TRY; i++)
+        {
+            int x = Random.Range(0, gridData.width);
+            int y = Random.Range(0, gridData.height);
+
+            Vector2Int c = new Vector2Int(x, y);
+
+            // 플레이어/적 시작칸 제외
+            if (c == State.playerCell) continue;
+            if (c == State.enemyCell) continue;
+
+            // 벽/막힘 제외
+            if (IsBlocked(c)) continue;
+
+            _escapeCell = c;
+            _hasEscapeTile = true;
+
+            // 표시
+            boardUI.SetEscapeTile(_escapeCell.x, _escapeCell.y, true);
+            break;
+        }
     }
 
     private void DoExit()
     {
+        // ==========================
+        // ✅ 전투 결과를 필드 정본에 반영
+        // ==========================
+        if (_pendingContext != null)
+        {
+            if (_pendingContext.playerStats != null)
+            {
+                _pendingContext.playerStats.hp = Mathf.Clamp(State.playerHP, 0, _pendingContext.playerStats.maxHP);
+                _pendingContext.playerStats.ClampAll();
+            }
+
+            if (_pendingContext.enemy != null && _pendingContext.enemy.definition != null)
+            {
+                int maxEnemy = Mathf.Max(1, _pendingContext.enemy.definition.maxHP);
+                _pendingContext.enemy.currentHP = Mathf.Clamp(State.enemyHP, 0, maxEnemy);
+
+                if (destroyFieldEnemyOnDefeat && _pendingContext.enemy.currentHP <= 0)
+                {
+                    Destroy(_pendingContext.enemy.gameObject);
+                }
+            }
+        }
+
         if (boardUI != null)
         {
             boardUI.OnTileClicked -= HandleTileClicked;
             boardUI.ClearHighlights();
+            boardUI.ClearSpecials();
         }
 
         if (actionController != null)
@@ -258,31 +507,83 @@ public class FocusedCombatManager : MonoBehaviour
 
         SetDisableDuringCombat(false);
 
-        IsInFocusedCombat = false;
+        State.isInCombat = false;
+        State.isBusy = false;
 
         gridData = null;
+
+        // ✅ 도망 타일 상태 리셋
+        _hasEscapeTile = false;
+
+        // ✅ 다음 전투에 섞이지 않게
+        _pendingEnemyDef = null;
+        _pendingContext = null;
+
+        _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
 
         if (fader != null)
             fader.ForceClear();
     }
 
+    // ==========================
+    // Turn Rules
+    // ==========================
+    public void RequestEndTurn()
+    {
+        if (!State.isInCombat) return;
+        if (!State.isPlayerTurn) return;
+        if (State.isBusy) return;
+
+        if (actionController != null && actionController.IsInActionMode)
+            actionController.CancelAction();
+
+        BeginEnemyTurn();
+    }
+
     private void BeginPlayerTurn(bool initialStart)
     {
-        _isPlayerTurn = true;
-        _isMoving = false;
+        State.isPlayerTurn = true;
+        State.isBusy = false;
 
         if (!initialStart)
-            _currentAP = Mathf.Min(_currentAP + 1, maxAP);
+            State.currentAP = Mathf.Min(State.currentAP + 1, State.maxAP);
 
-        _freeMoveUsedThisTurn = false;
+        // ✅ AP+1 즉시 HUD
+        if (hud != null) hud.RefreshAll();
+
+        State.ResetTurn();
+
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
 
         RefreshUI();
         RefreshMoveHighlights();
     }
 
-    // ======================================================================
-    // Tile Click Routing (Attack Mode -> ActionController, else Move)
-    // ======================================================================
+    private void BeginEnemyTurn()
+    {
+        State.isPlayerTurn = false;
+        State.isBusy = false;
+
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
+
+        RefreshUI();
+        if (boardUI != null) boardUI.ClearHighlights();
+
+        StartCoroutine(EnemyTurnRoutine());
+    }
+
+    private IEnumerator EnemyTurnRoutine()
+    {
+        yield return StartCoroutine(enemyAI.TakeTurn());
+        if (!State.isInCombat) yield break;
+        BeginPlayerTurn(initialStart: false);
+    }
+
+    // ==========================
+    // Tile Click Routing
+    // ==========================
     private void HandleTileClicked(int x, int y)
     {
         if (actionController != null && actionController.IsInActionMode)
@@ -294,168 +595,351 @@ public class FocusedCombatManager : MonoBehaviour
         HandleMoveTileClicked(x, y);
     }
 
-    // ======================================================================
-    // Movement (max 2 tiles, step-by-step, blocks respected, cost after completion)
-    // ======================================================================
+    // ==========================
+    // Player Move (기존 유지)
+    // ==========================
     private void HandleMoveTileClicked(int x, int y)
     {
-        if (!IsInFocusedCombat) return;
-        if (!_isPlayerTurn) return;
-        if (_playerTokenInstance == null) return;
-        if (_isMoving) return;
+        if (!State.isInCombat) return;
+        if (!State.isPlayerTurn) return;
+        if (_playerToken == null) return;
+        if (State.isBusy) return;
 
         Vector2Int target = new Vector2Int(x, y);
+        if (target == State.playerCell) return;
+        if (target == State.enemyCell) return;
 
-        if (target == _playerCell) return;
-        if (target == _enemyCell) return;
+        CombatUnitStats ps = _playerToken.GetComponent<CombatUnitStats>();
+        int freeTotal = (ps != null) ? ps.FreeMovesPerTurn : 1;
 
-        // 이동 완료 후 1회 차감
-        int moveCost = (_freeMoveUsedThisTurn) ? 1 : 0;
-        if (moveCost > 0 && _currentAP < moveCost) return;
+        bool isFree = State.freeMovesUsedThisTurn < freeTotal;
+        int moveCost = isFree ? 0 : 1;
 
-        if (!TryBuildPath(_playerCell, target, out Vector2Int[] pathSteps))
+        if (moveCost > 0 && State.currentAP < moveCost) return;
+
+        if (!Movement.TryBuildPath(State.playerCell, target, State.enemyCell, out Vector2Int[] steps))
             return;
 
-        StartCoroutine(MoveRoutine(pathSteps, moveCost));
+        StartCoroutine(PlayerMoveRoutine(steps, moveCost));
     }
 
-    private IEnumerator MoveRoutine(Vector2Int[] steps, int moveCost)
+    private IEnumerator PlayerMoveRoutine(Vector2Int[] steps, int moveCost)
     {
-        _isMoving = true;
+        State.isBusy = true;
 
         if (boardUI != null) boardUI.ClearHighlights();
 
+        // ✅ 1) 이동 확정 순간에 비용 먼저 소비 + UI 즉시 갱신
+        bool spentAP = false;
+        bool spentFree = false;
+
+        if (moveCost > 0)
+        {
+            State.currentAP = Mathf.Max(0, State.currentAP - moveCost);
+            spentAP = true;
+        }
+        else
+        {
+            State.freeMovesUsedThisTurn++;
+            spentFree = true;
+        }
+
+        if (hud != null) hud.RefreshAll();
+        RefreshUI();
+
+        // ✅ 2) 실제 이동(1칸씩)
         for (int i = 0; i < steps.Length; i++)
         {
             Vector2Int step = steps[i];
 
-            if (IsBlocked(step) || step == _enemyCell)
+            if (IsBlocked(step) || step == State.enemyCell)
             {
-                _isMoving = false;
+                if (spentAP) State.currentAP = Mathf.Min(State.currentAP + moveCost, State.maxAP);
+                if (spentFree) State.freeMovesUsedThisTurn = Mathf.Max(0, State.freeMovesUsedThisTurn - 1);
+
+                State.isBusy = false;
+
+                if (hud != null) hud.RefreshAll();
                 RefreshUI();
                 RefreshMoveHighlights();
                 yield break;
             }
 
-            boardUI.MoveExistingToken(_playerTokenInstance, step.x, step.y);
-            _playerCell = step;
+            yield return StartCoroutine(vfx.StepMoveToCell(_playerToken, step));
+            boardUI.MoveExistingToken(_playerToken, step.x, step.y);
+            State.playerCell = step;
 
             if (stepDelay > 0f) yield return new WaitForSeconds(stepDelay);
             else yield return null;
         }
 
-        if (moveCost > 0) _currentAP -= moveCost;
-        if (!_freeMoveUsedThisTurn) _freeMoveUsedThisTurn = true;
+        // ✅ 3) 이동 종료 후 지형 효과
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
 
-        _isMoving = false;
+        // ✅ 4) Busy 해제 → 하이라이트 복구
+        State.isBusy = false;
 
+        if (hud != null) hud.RefreshAll();
         RefreshUI();
         RefreshMoveHighlights();
         HidePlayerHint();
+
+        TryAutoEndTurn();
     }
 
-    /// <summary>
-    /// from -> target 으로 갈 수 있는 "최대 moveRange 스텝" 경로.
-    /// (현재는 moveRange=2 전제의 기존 로직 유지)
-    /// 다음 단계에서 pathfinding(BFS)로 교체 예정.
-    /// </summary>
-    private bool TryBuildPath(Vector2Int from, Vector2Int target, out Vector2Int[] steps)
+    // ==========================
+    // Enemy Move / Attack (AI가 호출)
+    // ==========================
+    public IEnumerator EnemyMoveRoutine(Vector2Int[] steps)
     {
-        steps = null;
+        if (_enemyToken == null) yield break;
 
-        if (boardUI == null) return false;
-        if (!boardUI.InBounds(target.x, target.y)) return false;
+        State.isBusy = true;
 
-        int dxAbs = Mathf.Abs(target.x - from.x);
-        int dyAbs = Mathf.Abs(target.y - from.y);
-        int cheb = Mathf.Max(dxAbs, dyAbs);
-
-        if (cheb <= 0 || cheb > Mathf.Max(1, moveRange)) return false;
-
-        if (IsBlocked(target)) return false;
-
-        if (cheb == 1)
+        for (int i = 0; i < steps.Length; i++)
         {
-            if (!IsAdjacent8(from, target)) return false;
-            steps = new Vector2Int[] { target };
-            return true;
-        }
-
-        // moveRange=2 기준 2스텝
-        int sx = (target.x > from.x) ? 1 : (target.x < from.x ? -1 : 0);
-        int sy = (target.y > from.y) ? 1 : (target.y < from.y ? -1 : 0);
-
-        Vector2Int[] mids;
-
-        if (dxAbs == 2 && dyAbs == 0)
-            mids = new[] { new Vector2Int(from.x + sx, from.y) };
-        else if (dxAbs == 0 && dyAbs == 2)
-            mids = new[] { new Vector2Int(from.x, from.y + sy) };
-        else if (dxAbs == 2 && dyAbs == 2)
-            mids = new[] { new Vector2Int(from.x + sx, from.y + sy) };
-        else
-            mids = new[]
+            Vector2Int step = steps[i];
+            if (IsBlocked(step) || step == State.playerCell)
             {
-                new Vector2Int(from.x + sx, from.y),
-                new Vector2Int(from.x, from.y + sy),
-                new Vector2Int(from.x + sx, from.y + sy),
-            };
-
-        for (int i = 0; i < mids.Length; i++)
-        {
-            Vector2Int mid = mids[i];
-
-            if (!boardUI.InBounds(mid.x, mid.y)) continue;
-            if (IsBlocked(mid)) continue;
-            if (mid == _enemyCell) continue;
-
-            if (!IsAdjacent8(mid, target)) continue;
-
-            steps = new Vector2Int[] { mid, target };
-            return true;
-        }
-
-        // 보조 탐색
-        for (int mx = -1; mx <= 1; mx++)
-        {
-            for (int my = -1; my <= 1; my++)
-            {
-                if (mx == 0 && my == 0) continue;
-
-                Vector2Int mid = new Vector2Int(from.x + mx, from.y + my);
-
-                if (!boardUI.InBounds(mid.x, mid.y)) continue;
-                if (IsBlocked(mid)) continue;
-                if (mid == _enemyCell) continue;
-
-                if (!IsAdjacent8(mid, target)) continue;
-
-                steps = new Vector2Int[] { mid, target };
-                return true;
+                State.isBusy = false;
+                yield break;
             }
+
+            yield return StartCoroutine(vfx.StepMoveToCell(_enemyToken, step));
+            boardUI.MoveExistingToken(_enemyToken, step.x, step.y);
+            State.enemyCell = step;
+
+            if (stepDelay > 0f) yield return new WaitForSeconds(stepDelay);
+            else yield return null;
         }
 
-        return false;
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
+
+        State.isBusy = false;
     }
 
-    private bool IsAdjacent8(Vector2Int a, Vector2Int b)
+    public IEnumerator EnemyAttackRoutine()
     {
-        int dx = Mathf.Abs(a.x - b.x);
-        int dy = Mathf.Abs(a.y - b.y);
-        return (dx <= 1 && dy <= 1) && !(dx == 0 && dy == 0);
+        if (_enemyToken == null) yield break;
+
+        State.isBusy = true;
+
+        int dmg = Mathf.Max(0, GetEnemyAttackDamage());
+        bool dash = GetEnemyUseDash();
+
+        if (dash)
+        {
+            yield return StartCoroutine(vfx.EnemyDashHitReturn(
+                attacker: _enemyToken,
+                targetCell: State.playerCell,
+                onImpact: () => TryDamagePlayer(dmg)
+            ));
+        }
+        else
+        {
+            TryDamagePlayer(dmg);
+            if (_playerToken != null) yield return StartCoroutine(vfx.HitPulse(_playerToken));
+        }
+
+        if (boardUI != null)
+            boardUI.MoveExistingToken(_enemyToken, State.enemyCell.x, State.enemyCell.y);
+
+        State.isBusy = false;
     }
 
-    // ======================================================================
+    // 플레이어 돌진 타격 (기존 유지)
+    public IEnumerator Anim_PlayerDashHitReturn(Vector2Int targetCell, System.Action onImpact)
+    {
+        if (_playerToken == null) yield break;
+
+        State.isBusy = true;
+
+        yield return StartCoroutine(vfx.DashHitReturn(
+            attacker: _playerToken,
+            targetCell: targetCell,
+            onImpact: onImpact,
+            goTime: 0.06f,
+            pauseTime: 0.03f,
+            backTime: 0.07f
+        ));
+
+        if (boardUI != null)
+            boardUI.MoveExistingToken(_playerToken, State.playerCell.x, State.playerCell.y);
+
+        State.isBusy = false;
+    }
+
+    // ==========================
+    // Damage / Evade (기존 + 적 baseEvasion 반영)
+    // ==========================
+    public bool TryDamageEnemy(int dmg)
+    {
+        if (dmg <= 0) return false;
+        if (_enemyToken == null) return false;
+
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
+
+        float evasion = GetEnemyBaseEvasion();
+        CombatUnitStats cs = _enemyToken.GetComponent<CombatUnitStats>();
+        if (cs != null) evasion = Mathf.Clamp01(evasion + cs.Evasion);
+
+        if (evasion > 0f && Random.value < evasion)
+        {
+            if (vfx.popupPrefab == null && playerHintPrefab != null) vfx.popupPrefab = playerHintPrefab;
+            vfx.ShowPopup(_enemyToken, "회피!");
+            return false;
+        }
+
+        State.enemyHP = Mathf.Max(0, State.enemyHP - dmg);
+        StartCoroutine(vfx.HitPulse(_enemyToken));
+
+        RefreshUI();
+
+        if (State.enemyHP <= 0)
+            ExitFocusedCombat();
+
+        return true;
+    }
+
+    public bool TryDamagePlayer(int dmg)
+    {
+        if (dmg <= 0) return false;
+        if (_playerToken == null) return false;
+
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
+
+        CombatUnitStats s = _playerToken.GetComponent<CombatUnitStats>();
+        float evasion = (s != null) ? s.Evasion : 0f;
+
+        if (evasion > 0f && Random.value < evasion)
+        {
+            if (vfx.popupPrefab == null && playerHintPrefab != null) vfx.popupPrefab = playerHintPrefab;
+            vfx.ShowPopup(_playerToken, "회피!");
+            return false;
+        }
+
+        State.playerHP = Mathf.Max(0, State.playerHP - dmg);
+        StartCoroutine(vfx.HitPulse(_playerToken));
+
+        RefreshUI();
+        return true;
+    }
+
+    // ==========================
+    // Block / AP
+    // ==========================
+    public bool IsBlocked(Vector2Int cell)
+    {
+        if (gridData != null)
+        {
+            if (!gridData.InBounds(cell.x, cell.y)) return true;
+            if (gridData.Get(cell.x, cell.y).ToString() == "Wall") return true;
+        }
+
+        if (_blocker == null) return false;
+        return _blocker.IsBlocked(cell.x, cell.y);
+    }
+
+    public bool CanSpendAP(int amount) => amount <= State.currentAP;
+
+    public void SpendAP(int amount)
+    {
+        if (amount <= 0) return;
+
+        State.currentAP = Mathf.Max(0, State.currentAP - amount);
+
+        // ✅ 즉시 반영
+        if (hud != null) hud.RefreshAll();
+
+        RefreshUI();
+        TryAutoEndTurn();
+    }
+
+    private void TryAutoEndTurn()
+    {
+        if (!autoEndTurnWhenAPZero) return;
+        if (!State.isInCombat) return;
+        if (!State.isPlayerTurn) return;
+        if (State.isBusy) return;
+
+        if (State.currentAP <= 0)
+            RequestEndTurn();
+    }
+
+    // ==========================
+    // UI
+    // ==========================
+    public void RefreshUIExternal() => RefreshUI();
+    public void RefreshMoveHighlightsExternal() => RefreshMoveHighlights();
+
+    private void RefreshUI()
+    {
+        int freeTotal = 1;
+        if (_playerToken != null)
+        {
+            CombatUnitStats ps = _playerToken.GetComponent<CombatUnitStats>();
+            freeTotal = (ps != null) ? ps.FreeMovesPerTurn : 1;
+        }
+
+        if (apText != null)
+            apText.text = $"AP: {State.currentAP}/{State.maxAP}  | Free Move: {State.freeMovesUsedThisTurn}/{freeTotal}";
+
+        if (hpText != null)
+            hpText.text = $"HP: {State.playerHP}/{_effectivePlayerMaxHP}";
+
+        if (hud != null) hud.RefreshAll();
+    }
+
+    private void RefreshMoveHighlights()
+    {
+        if (boardUI == null) return;
+        if (actionController != null && actionController.IsInActionMode) return;
+
+        boardUI.ClearHighlights();
+
+        if (!State.isInCombat) return;
+        if (!State.isPlayerTurn) return;
+        if (_playerToken == null) return;
+        if (State.isBusy) return;
+
+        CombatUnitStats ps = _playerToken.GetComponent<CombatUnitStats>();
+        int freeTotal = (ps != null) ? ps.FreeMovesPerTurn : 1;
+
+        bool isFree = State.freeMovesUsedThisTurn < freeTotal;
+        int moveCost = isFree ? 0 : 1;
+        if (moveCost > 0 && State.currentAP < moveCost) return;
+
+        int r = Mathf.Max(1, moveRange);
+
+        for (int x = State.playerCell.x - r; x <= State.playerCell.x + r; x++)
+            for (int y = State.playerCell.y - r; y <= State.playerCell.y + r; y++)
+            {
+                if (!boardUI.InBounds(x, y)) continue;
+
+                Vector2Int target = new Vector2Int(x, y);
+                if (target == State.playerCell) continue;
+                if (target == State.enemyCell) continue;
+
+                int dx = Mathf.Abs(x - State.playerCell.x);
+                int dy = Mathf.Abs(y - State.playerCell.y);
+                if (Mathf.Max(dx, dy) > r) continue;
+
+                if (Movement.TryBuildPath(State.playerCell, target, State.enemyCell, out _))
+                    boardUI.SetHighlight(x, y, true);
+            }
+    }
+
+    // ==========================
     // Hint
-    // ======================================================================
+    // ==========================
     public void ShowPlayerHint(string text)
     {
-        if (_playerTokenInstance == null) return;
+        if (_playerToken == null) return;
         if (playerHintPrefab == null) return;
 
         if (_playerHintInstance == null)
         {
-            _playerHintInstance = Instantiate(playerHintPrefab, _playerTokenInstance.transform);
+            _playerHintInstance = Instantiate(playerHintPrefab, _playerToken.transform);
             _playerHintInstance.name = "PlayerHintTMP";
 
             var rt = _playerHintInstance.rectTransform;
@@ -476,188 +960,33 @@ public class FocusedCombatManager : MonoBehaviour
             _playerHintInstance.gameObject.SetActive(false);
     }
 
-    // ======================================================================
-    // Highlighting
-    // ======================================================================
-    private void RefreshMoveHighlights()
-    {
-        if (boardUI == null) return;
+    // ==========================
+    // Enemy Stat Access (단일 소스)
+    // ==========================
+    public int GetEnemyMaxHP()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.maxHP : enemyFallbackMaxHP;
 
-        if (actionController != null && actionController.IsInActionMode)
-            return;
+    public int GetEnemyMoveRange()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.moveRange : enemyFallbackMoveRange;
 
-        boardUI.ClearHighlights();
+    public int GetEnemyAttackRange()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.attackRange : enemyFallbackAttackRange;
 
-        if (!IsInFocusedCombat) return;
-        if (!_isPlayerTurn) return;
-        if (_playerTokenInstance == null) return;
-        if (_isMoving) return;
+    public int GetEnemyAttackDamage()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.attackDamage : enemyFallbackAttackDamage;
 
-        int moveCost = (_freeMoveUsedThisTurn) ? 1 : 0;
-        if (moveCost > 0 && _currentAP < moveCost) return;
+    public bool GetEnemyUseDash()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.useDashAttackMotion : enemyFallbackUseDashAttackMotion;
 
-        int r = Mathf.Max(1, moveRange);
+    public float GetEnemyBaseEvasion()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.baseEvasion : enemyFallbackBaseEvasion;
 
-        for (int x = _playerCell.x - r; x <= _playerCell.x + r; x++)
-        {
-            for (int y = _playerCell.y - r; y <= _playerCell.y + r; y++)
-            {
-                if (!boardUI.InBounds(x, y)) continue;
+    public EnemyAIType GetEnemyAIType()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.aiType : EnemyAIType.AI1_MeleeChase;
 
-                Vector2Int target = new Vector2Int(x, y);
-                if (target == _playerCell) continue;
-                if (target == _enemyCell) continue;
-
-                int dx = Mathf.Abs(x - _playerCell.x);
-                int dy = Mathf.Abs(y - _playerCell.y);
-                if (Mathf.Max(dx, dy) > r) continue;
-
-                if (TryBuildPath(_playerCell, target, out _))
-                    boardUI.SetHighlight(x, y, true);
-            }
-        }
-    }
-
-    // ======================================================================
-    // Public API for Action System
-    // ======================================================================
-    public bool IsBlocked(Vector2Int cell)
-    {
-        // ✅ 최신: gridData(Wall)가 우선
-        if (gridData != null)
-        {
-            if (!gridData.InBounds(cell.x, cell.y)) return true;
-            if (gridData.Get(cell.x, cell.y) == CombatTileType.Wall) return true;
-        }
-
-        // 레거시 blocker(선택)
-        if (_blocker == null) return false;
-        return _blocker.IsBlocked(cell.x, cell.y);
-    }
-
-    public bool CanSpendAP(int amount) => amount <= _currentAP;
-
-    public void SpendAP(int amount)
-    {
-        if (amount <= 0) return;
-        _currentAP = Mathf.Max(0, _currentAP - amount);
-        RefreshUI();
-    }
-
-    public void DamageEnemy(int dmg)
-    {
-        if (dmg <= 0) return;
-
-        _enemyHP = Mathf.Max(0, _enemyHP - dmg);
-
-        if (_enemyTokenInstance != null)
-            StartCoroutine(Anim_HitPulse(_enemyTokenInstance.GetComponent<RectTransform>()));
-
-        RefreshUI();
-
-        if (_enemyHP <= 0)
-        {
-            ExitFocusedCombat();
-        }
-    }
-
-    public void RefreshUIExternal() => RefreshUI();
-    public void RefreshMoveHighlightsExternal() => RefreshMoveHighlights();
-
-    // ======================================================================
-    // UI
-    // ======================================================================
-    private void RefreshUI()
-    {
-        if (apText != null)
-        {
-            string free = _freeMoveUsedThisTurn ? "Used" : "Ready";
-            apText.text = $"AP: {_currentAP}/{maxAP}  | Free Move: {free}";
-        }
-
-        if (hpText != null)
-        {
-            hpText.text = $"HP: {_playerHP}/{playerMaxHP}";
-        }
-    }
-
-    // ======================================================================
-    // Animation: Player dash-hit-return (for requireEnemyOnTarget)
-    // ======================================================================
-    public IEnumerator Anim_PlayerDashHitReturn(Vector2Int targetCell, System.Action onImpact)
-    {
-        if (boardUI == null) yield break;
-        if (_playerTokenInstance == null) yield break;
-
-        _isMoving = true;
-
-        RectTransform tokenRT = _playerTokenInstance.GetComponent<RectTransform>();
-        Transform originalParent = tokenRT.parent;
-
-        Vector3 start = tokenRT.position;
-        Vector3 end = boardUI.GetTileWorldCenter(targetCell.x, targetCell.y);
-
-        if (boardUI.boardRoot != null)
-            tokenRT.SetParent(boardUI.boardRoot, worldPositionStays: true);
-
-        float goTime = 0.06f;
-        float pauseTime = 0.03f;
-        float backTime = 0.07f;
-
-        yield return LerpWorldPos(tokenRT, start, end, goTime);
-
-        onImpact?.Invoke();
-        yield return new WaitForSeconds(pauseTime);
-
-        yield return LerpWorldPos(tokenRT, end, start, backTime);
-
-        tokenRT.SetParent(originalParent, worldPositionStays: false);
-        tokenRT.anchorMin = Vector2.zero;
-        tokenRT.anchorMax = Vector2.one;
-        tokenRT.offsetMin = Vector2.zero;
-        tokenRT.offsetMax = Vector2.zero;
-        tokenRT.localScale = Vector3.one;
-
-        _isMoving = false;
-
-        RefreshUI();
-        RefreshMoveHighlights();
-    }
-
-    private IEnumerator LerpWorldPos(RectTransform rt, Vector3 a, Vector3 b, float dur)
-    {
-        if (rt == null) yield break;
-
-        if (dur <= 0f)
-        {
-            rt.position = b;
-            yield break;
-        }
-
-        float t = 0f;
-        while (t < dur)
-        {
-            t += Time.deltaTime;
-            float u = Mathf.Clamp01(t / dur);
-            rt.position = Vector3.LerpUnclamped(a, b, u);
-            yield return null;
-        }
-        rt.position = b;
-    }
-
-    private IEnumerator Anim_HitPulse(RectTransform rt)
-    {
-        if (rt == null) yield break;
-
-        Vector3 baseScale = rt.localScale;
-        rt.localScale = baseScale * 1.15f;
-        yield return new WaitForSeconds(0.06f);
-        rt.localScale = baseScale;
-    }
-
-    // ======================================================================
-    // Input Lock Targets
-    // ======================================================================
+    // ==========================
+    // Input Lock
+    // ==========================
     private void SetDisableDuringCombat(bool disable)
     {
         if (disableDuringCombat == null) return;
@@ -668,4 +997,34 @@ public class FocusedCombatManager : MonoBehaviour
             disableDuringCombat[i].enabled = !disable;
         }
     }
+    public IEnumerator EnemyAttackRoutineOverride(int damageOverride, bool forceDash)
+    {
+        if (EnemyToken == null) yield break;
+
+        State.isBusy = true;
+
+        int dmg = Mathf.Max(0, damageOverride);
+        bool dash = forceDash;
+
+        if (dash)
+        {
+            yield return StartCoroutine(vfx.EnemyDashHitReturn(
+                attacker: EnemyToken,
+                targetCell: State.playerCell,
+                onImpact: () => TryDamagePlayer(dmg)
+            ));
+        }
+        else
+        {
+            TryDamagePlayer(dmg);
+            if (PlayerToken != null) yield return StartCoroutine(vfx.HitPulse(PlayerToken));
+        }
+
+        if (boardUI != null)
+            boardUI.MoveExistingToken(EnemyToken, State.enemyCell.x, State.enemyCell.y);
+
+        State.isBusy = false;
+    }
+
 }
+

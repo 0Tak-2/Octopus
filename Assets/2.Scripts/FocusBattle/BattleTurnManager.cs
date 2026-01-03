@@ -46,6 +46,8 @@ public class BattleTurnManager : MonoBehaviour
         return true;
     }
 
+
+
     public void EndPlayerTurn()
     {
         Debug.Log($"[Battle Turn {CurrentTurn}] Player Turn End");

@@ -15,6 +15,6 @@ MonoBehaviour:
   displayName: Throw
   apCost: 1
   damage: 1
-  range: 3
+  range: 2
   pattern: 0
   requireEnemyOnTarget: 1

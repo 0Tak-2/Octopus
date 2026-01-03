@@ -15,6 +15,10 @@ public class CombatBoardUI : MonoBehaviour
     [Header("Tile Prefab")]
     public Image tilePrefab;
 
+    [Header("Overlay Sprite (Full Rect)")]
+    [Tooltip("하이라이트/스페셜 오버레이는 타일 모양과 상관없이 '전체 덮기'용 사각 스프라이트를 사용합니다. (권장: Unity 기본 UISprite/White square)")]
+    public Sprite overlayFillSprite;
+
     [Header("Runtime")]
     public int width;
     public int height;
@@ -26,12 +30,18 @@ public class CombatBoardUI : MonoBehaviour
     private RectTransform[,] _tiles;
     private Image[,] _tileImages;      // 바닥(지형색)
     private Color[,] _baseColors;      // 바닥 기본색
-    private Image[,] _overlayImages;   // ✅ 하이라이트 전용
+
+    // ✅ 지속 표식(도망타일 등) + 하이라이트(이동/프리뷰)
+    private Image[,] _specialImages;
+    private Image[,] _highlightImages;
 
     [Header("Highlight Colors (Overlay)")]
     public Color targetGreen = new Color(0f, 1f, 0f, 0.35f);
     public Color targetRed = new Color(1f, 0f, 0f, 0.35f);
     public Color previewGreen = new Color(0f, 1f, 0f, 0.55f);
+
+    [Header("Special Colors")]
+    public Color escapeTileColor = new Color(1f, 0.80f, 0.15f, 0.55f);
 
     private static readonly Color ClearColor = new Color(0, 0, 0, 0);
 
@@ -40,11 +50,15 @@ public class CombatBoardUI : MonoBehaviour
         if (boardRoot == null) boardRoot = GetComponentInChildren<RectTransform>(true);
         if (grid == null) grid = GetComponentInChildren<GridLayoutGroup>(true);
     }
-
+    public int Width { get; private set; }
+    public int Height { get; private set; }
     public void Build(int w, int h)
     {
         width = w;
         height = h;
+
+        Width = width;
+        Height = height;
 
         if (boardRoot == null) boardRoot = GetComponentInChildren<RectTransform>(true);
         if (grid == null) grid = GetComponentInChildren<GridLayoutGroup>(true);
@@ -64,7 +78,9 @@ public class CombatBoardUI : MonoBehaviour
         _tiles = new RectTransform[width, height];
         _tileImages = new Image[width, height];
         _baseColors = new Color[width, height];
-        _overlayImages = new Image[width, height];
+
+        _specialImages = new Image[width, height];
+        _highlightImages = new Image[width, height];
 
         for (int genY = 0; genY < height; genY++)
         {
@@ -82,8 +98,8 @@ public class CombatBoardUI : MonoBehaviour
                 _tileImages[x, y] = tile;
                 _baseColors[x, y] = tile.color;
 
-                // ✅ Overlay 생성(흰 판 방지: tile sprite 공유)
-                _overlayImages[x, y] = CreateOverlay(tile);
+                // ✅ 2중 오버레이 생성: Special(지속) + Highlight(하이라이트)
+                CreateOverlays(tile, out _specialImages[x, y], out _highlightImages[x, y]);
 
                 // 클릭
                 var btn = tile.GetComponent<Button>();
@@ -108,14 +124,28 @@ public class CombatBoardUI : MonoBehaviour
         LayoutRebuilder.ForceRebuildLayoutImmediate(grid.GetComponent<RectTransform>());
     }
 
-    private Image CreateOverlay(Image tile)
+    private void CreateOverlays(Image tile, out Image special, out Image highlight)
     {
-        var go = new GameObject("HighlightOverlay", typeof(RectTransform), typeof(Image));
+        special = CreateOverlayImage(tile, "SpecialOverlay");
+        highlight = CreateOverlayImage(tile, "HighlightOverlay");
+
+        // ✅ 순서 고정: Special(가장 아래) -> Highlight -> Token(맨 위)
+        special.color = ClearColor;
+        highlight.color = ClearColor;
+
+        special.transform.SetAsFirstSibling();     // index 0
+        highlight.transform.SetSiblingIndex(1);    // index 1
+    }
+
+    private Image CreateOverlayImage(Image tile, string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
         go.transform.SetParent(tile.transform, worldPositionStays: false);
 
         var rt = (RectTransform)go.transform;
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
+        rt.pivot = new Vector2(0.5f, 0.5f);
         rt.offsetMin = Vector2.zero;
         rt.offsetMax = Vector2.zero;
         rt.localScale = Vector3.one;
@@ -123,16 +153,11 @@ public class CombatBoardUI : MonoBehaviour
         var img = go.GetComponent<Image>();
         img.raycastTarget = false;
 
-        // ✅ 중요: 흰색 판 방지(타일과 같은 sprite 사용)
-        img.sprite = tile.sprite;
+        // ✅ 전체 덮기 스프라이트 사용(없으면 tile.sprite fallback)
+        img.sprite = (overlayFillSprite != null) ? overlayFillSprite : tile.sprite;
         img.type = Image.Type.Simple;
         img.preserveAspect = false;
-
-        // 투명 시작
         img.color = ClearColor;
-
-        // ✅ 항상 최상단(토큰보다 위)
-        
 
         return img;
     }
@@ -144,7 +169,6 @@ public class CombatBoardUI : MonoBehaviour
         var rt = token.GetComponent<RectTransform>();
         if (rt == null) return;
 
-        // ✅ 타일을 꽉 채우되, 패딩만큼 안쪽으로 줄이기 (가장 안정적)
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
         rt.pivot = new Vector2(0.5f, 0.5f);
@@ -155,8 +179,6 @@ public class CombatBoardUI : MonoBehaviour
         rt.localScale = Vector3.one;
         rt.anchoredPosition = Vector2.zero;
     }
-
-    // ✅ 지형 시각 적용 + baseColor 갱신
 
     public void ApplyTerrainVisual(CombatGridData data)
     {
@@ -185,10 +207,29 @@ public class CombatBoardUI : MonoBehaviour
                 img.color = c;
                 _baseColors[x, y] = c;
 
-                // 오버레이는 항상 투명으로 초기화
-                if (_overlayImages != null && _overlayImages[x, y] != null)
-                    _overlayImages[x, y].color = ClearColor;
+                // ✅ 오버레이 초기화 + 순서 고정
+                if (_highlightImages != null && _highlightImages[x, y] != null)
+                    _highlightImages[x, y].color = ClearColor;
+
+                if (_specialImages != null && _specialImages[x, y] != null)
+                    _specialImages[x, y].color = ClearColor;
+
+                EnforceChildOrder(x, y);
             }
+    }
+
+    private void EnforceChildOrder(int x, int y)
+    {
+        if (!InBounds(x, y)) return;
+        var tile = GetTile(x, y);
+        if (tile == null) return;
+
+        var sp = (_specialImages != null) ? _specialImages[x, y] : null;
+        var hi = (_highlightImages != null) ? _highlightImages[x, y] : null;
+
+        if (sp != null) sp.transform.SetAsFirstSibling();
+        if (hi != null) hi.transform.SetSiblingIndex(1);
+        // token은 Place/Move에서 last로 올림
     }
 
     private void AutoSizeAndCenterBoard()
@@ -229,7 +270,8 @@ public class CombatBoardUI : MonoBehaviour
         _tiles = null;
         _tileImages = null;
         _baseColors = null;
-        _overlayImages = null;
+        _specialImages = null;
+        _highlightImages = null;
     }
 
     public bool InBounds(int x, int y) => x >= 0 && x < width && y >= 0 && y < height;
@@ -255,33 +297,56 @@ public class CombatBoardUI : MonoBehaviour
     // ===== Highlight =====
     public void ClearHighlights()
     {
-        if (_overlayImages == null) return;
+        if (_highlightImages == null) return;
 
         for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
             {
-                var ov = _overlayImages[x, y];
+                var ov = _highlightImages[x, y];
                 if (ov == null) continue;
                 ov.color = ClearColor;
             }
     }
 
-    private void SetOverlay(int x, int y, bool on, Color c)
+    private void SetHighlightOverlay(int x, int y, bool on, Color c)
     {
         if (!InBounds(x, y)) return;
-        if (_overlayImages == null) return;
+        if (_highlightImages == null) return;
 
-        var ov = _overlayImages[x, y];
+        var ov = _highlightImages[x, y];
         if (ov == null) return;
 
         ov.color = on ? c : ClearColor;
-        // ✅ 토큰 위로 항상 올리기
-        ov.transform.SetAsLastSibling();
     }
 
-    public void SetHighlight(int x, int y, bool on) => SetOverlay(x, y, on, targetGreen);
-    public void SetPreviewHighlight(int x, int y, bool on) => SetOverlay(x, y, on, previewGreen);
-    public void SetInvalidTarget(int x, int y) => SetOverlay(x, y, true, targetRed);
+    public void SetHighlight(int x, int y, bool on) => SetHighlightOverlay(x, y, on, targetGreen);
+    public void SetPreviewHighlight(int x, int y, bool on) => SetHighlightOverlay(x, y, on, previewGreen);
+    public void SetInvalidTarget(int x, int y) => SetHighlightOverlay(x, y, true, targetRed);
+
+    // ===== Special (Persistent) =====
+    public void ClearSpecials()
+    {
+        if (_specialImages == null) return;
+
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                var sp = _specialImages[x, y];
+                if (sp == null) continue;
+                sp.color = ClearColor;
+            }
+    }
+
+    public void SetEscapeTile(int x, int y, bool on)
+    {
+        if (!InBounds(x, y)) return;
+        if (_specialImages == null) return;
+
+        var sp = _specialImages[x, y];
+        if (sp == null) return;
+
+        sp.color = on ? escapeTileColor : ClearColor;
+    }
 
     // ===== Token API =====
     public CombatUnitToken PlaceToken(CombatUnitToken tokenPrefab, int x, int y)
@@ -294,10 +359,13 @@ public class CombatBoardUI : MonoBehaviour
         var token = Instantiate(tokenPrefab, tile);
         token.name = $"{tokenPrefab.unitType}_Token_{x}_{y}";
 
-        var rt = token.GetComponent<RectTransform>();
         FitTokenToTile(token);
-        // ✅ 오버레이는 토큰 위로
-        BringOverlayToFront(x, y);
+
+        // ✅ 토큰은 항상 맨 위
+        token.transform.SetAsLastSibling();
+
+        // ✅ 오버레이 순서 고정
+        EnforceChildOrder(x, y);
 
         return token;
     }
@@ -309,13 +377,13 @@ public class CombatBoardUI : MonoBehaviour
 
         for (int i = tile.childCount - 1; i >= 0; i--)
         {
-            // ✅ Overlay는 지우면 안 됨
-            if (tile.GetChild(i).name == "HighlightOverlay") continue;
+            string n = tile.GetChild(i).name;
+            if (n == "SpecialOverlay") continue;
+            if (n == "HighlightOverlay") continue;
             Destroy(tile.GetChild(i).gameObject);
         }
 
-        // 오버레이가 남아있다면 최상단 유지
-        BringOverlayToFront(x, y);
+        EnforceChildOrder(x, y);
     }
 
     public void MoveExistingToken(CombatUnitToken tokenInstance, int toX, int toY)
@@ -326,25 +394,13 @@ public class CombatBoardUI : MonoBehaviour
         if (targetTile == null) return;
 
         tokenInstance.transform.SetParent(targetTile, worldPositionStays: false);
-
-        var rt = tokenInstance.GetComponent<RectTransform>();
         FitTokenToTile(tokenInstance);
-
 
         tokenInstance.name = $"{tokenInstance.unitType}_Token_{toX}_{toY}";
 
-        // ✅ 오버레이는 토큰 위로
-        BringOverlayToFront(toX, toY);
-    }
+        // ✅ 토큰은 항상 맨 위
+        tokenInstance.transform.SetAsLastSibling();
 
-    private void BringOverlayToFront(int x, int y)
-    {
-        if (!InBounds(x, y)) return;
-        if (_overlayImages == null) return;
-
-        var ov = _overlayImages[x, y];
-        if (ov == null) return;
-
-        ov.transform.SetAsLastSibling();
+        EnforceChildOrder(toX, toY);
     }
 }

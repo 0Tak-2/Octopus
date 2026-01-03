@@ -1,27 +1,45 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using TMPro;
 
 public class EnemyFocusedCombatInteract : MonoBehaviour
 {
     [Header("Refs")]
-    public Transform player;
     public PlayerGridMover playerMover;
     public GridBoard grid;
 
+    [Header("Enemy Definition")]
+    public EnemyDefinition definition;
+
+    [Header("Runtime Instance")]
+    public EnemyInstance enemyInstance;
+
+    [Header("Player Stats")]
+    public PlayerStats playerStats;
+
     [Header("Prompt (world text)")]
-    public TextMeshProUGUI promptText;   // «√∑π¿ÃæÓ ∏”∏Æ ¿ßø° ∂ÁøÔ TMP
-    [TextArea] public string promptMessage = "¡˝¡ﬂ«ÿº≠ ΩŒøÓ¥Ÿ\n(E)";
+    public TextMeshProUGUI promptText;
+    [TextArea] public string promptMessage = "ÏßëÏ§ëÌï¥ÏÑú Ïã∏Ïö¥Îã§\n(E)";
     public KeyCode interactKey = KeyCode.E;
 
     [Header("Enemy Cell (optional)")]
     public bool useTransformToCell = true;
-    public Vector2Int enemyCellOverride; // « ø‰«œ∏È ∞≠¡¶∑Œ ¡ˆ¡§(≈◊Ω∫∆Æ)
+    public Vector2Int enemyCellOverride;
 
     private void Awake()
     {
         if (grid == null) grid = FindObjectOfType<GridBoard>();
         if (playerMover == null) playerMover = FindObjectOfType<PlayerGridMover>();
-        if (player == null && playerMover != null) player = playerMover.transform;
+
+        if (enemyInstance == null) enemyInstance = GetComponent<EnemyInstance>();
+        if (playerStats == null) playerStats = FindObjectOfType<PlayerStats>();
+
+        // EnemyInstanceÍ∞Ä ÏóÜÏúºÎ©¥ ÏûêÎèôÏúºÎ°ú Î∂ôÏó¨ÏÑú "HP Ïú†ÏßÄ" Î≥¥Ïû•
+        if (enemyInstance == null)
+            enemyInstance = gameObject.AddComponent<EnemyInstance>();
+
+        // definition Ïó∞Í≤∞ Î≥¥Ï†ï
+        if (enemyInstance.definition == null)
+            enemyInstance.definition = definition;
 
         HidePrompt();
     }
@@ -31,7 +49,6 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
         var mgr = FocusedCombatManager.Instance;
         if (mgr == null) return;
 
-        // ¿ÃπÃ ¡˝¡ﬂ¿¸≈ı∏È æ∆π´∞Õµµ æ» «‘
         if (mgr.IsInFocusedCombat)
         {
             HidePrompt();
@@ -48,20 +65,31 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
         Vector2Int e = GetEnemyCell();
 
         bool adjacent = (Mathf.Abs(p.x - e.x) + Mathf.Abs(p.y - e.y)) == 1;
-
-        if (adjacent)
-        {
-            ShowPrompt();
-
-            if (Input.GetKeyDown(interactKey))
-            {
-                HidePrompt();
-                mgr.EnterFocusedCombat();
-            }
-        }
-        else
+        if (!adjacent)
         {
             HidePrompt();
+            return;
+        }
+
+        ShowPrompt();
+
+        if (Input.GetKeyDown(interactKey))
+        {
+            HidePrompt();
+
+            // ‚úÖ Ïª®ÌÖçÏä§Ìä∏ Í∏∞Î∞ò ÏßÑÏûÖ (HP Ïù¥Ïñ¥Ïßê)
+            if (playerStats != null && enemyInstance != null && enemyInstance.definition != null)
+            {
+                var ctx = new EncounterContext(playerStats, enemyInstance, p, e);
+
+                Debug.Log($"[FocusedCombatInteract] Enter with ctx. PlayerHP={playerStats.hp}/{playerStats.maxHP}, EnemyHP={enemyInstance.currentHP}/{enemyInstance.definition.maxHP}");
+                mgr.EnterFocusedCombat(ctx);
+            }
+            else
+            {
+                Debug.LogWarning("[FocusedCombatInteract] Missing ctx refs. Fallback to definition only (HP may reset).");
+                mgr.EnterFocusedCombat(definition);
+            }
         }
     }
 
@@ -76,18 +104,13 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
     private void ShowPrompt()
     {
         if (promptText == null) return;
-
-        if (!promptText.gameObject.activeSelf)
-            promptText.gameObject.SetActive(true);
-
-        if (promptText.text != promptMessage)
-            promptText.text = promptMessage;
+        if (!promptText.gameObject.activeSelf) promptText.gameObject.SetActive(true);
+        if (promptText.text != promptMessage) promptText.text = promptMessage;
     }
 
     private void HidePrompt()
     {
         if (promptText == null) return;
-        if (promptText.gameObject.activeSelf)
-            promptText.gameObject.SetActive(false);
+        if (promptText.gameObject.activeSelf) promptText.gameObject.SetActive(false);
     }
 }
