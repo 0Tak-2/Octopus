@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8a020d914c04e841ad37e57f03d57a3, type: 3}
-  m_Name: AI3_Skill3_Range2
+  m_Name: AI4_Skill1
   m_EditorClassIdentifier: 
-  displayName: "\uC6D0\uAC70\uB9AC\uACF5\uACA9"
-  description: "\uC6D0\uAC70\uB9AC\uACF5\uACA9"
+  displayName: "\uD3C9\uD0C0"
+  description: "\uC124\uBA85"
   icon: {fileID: 0}
   kind: 0
   apCost: 1
-  damage: 4
-  range: 2
+  damage: 10
+  range: 1
   pattern: 0
-  requireEnemyOnTarget: 0
+  requireEnemyOnTarget: 1
   buffTurns: 6
   damageMultiplier: 2
   buffStatusIcon: {fileID: 0}

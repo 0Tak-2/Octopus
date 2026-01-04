@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8a020d914c04e841ad37e57f03d57a3, type: 3}
   m_Name: AI3_Skill4_AttackBuff
   m_EditorClassIdentifier: 
-  displayName: Attack
-  description: "\uC124\uBA85"
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  displayName: "\uACF5\uACA9\uB825\uBC84\uD504"
+  description: "\uBC84\uD504"
+  icon: {fileID: 0}
   kind: 1
   apCost: 2
   damage: 0
