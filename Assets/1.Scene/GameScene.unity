@@ -513,10 +513,11 @@ MonoBehaviour:
   caster: {fileID: 931578464}
   showOnlyWhenSkillReady: 1
   requireLoS: 1
-  hideWhenNoSkillSelected: 1
-  highlightSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  hideWhenNoSkillSelected: 0
+  showOnlyWhenArmed: 1
+  highlightSprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
   zOffset: -0.1
-  scaleMultiplier: {x: 1, y: 1}
+  scaleMultiplier: {x: 5.5, y: 5.5}
   initialPoolSize: 128
   refreshInterval: 0.08
 --- !u!1 &63697465
@@ -1044,7 +1045,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 614, y: -173.3}
+  m_AnchoredPosition: {x: -594, y: -227}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &195384070
@@ -4262,7 +4263,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.117688, y: 3.747562, z: -10}
+  m_LocalPosition: {x: 24.077686, y: 4.0575624, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4858,7 +4859,8 @@ GameObject:
   - component: {fileID: 577187975}
   - component: {fileID: 577187977}
   - component: {fileID: 577187978}
-  m_Layer: 0
+  - component: {fileID: 577187979}
+  m_Layer: 6
   m_Name: Enemy3
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -5003,6 +5005,40 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &577187979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 577187973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0247103945ac4447aabcf3d074dbef4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1198750089}
+  timeManager: {fileID: 1768082966}
+  aggroRange: 6
+  requireLoS: 1
+  enableWander: 1
+  wanderRadius: 2
+  wanderRetargetEveryTicks: 2
+  allowDiagonal: 1
+  stepMoveDuration: 0.3
+  pauseWhenAnyCombatActive: 1
+  avoidOccupiedCell: 1
+  occupiedCheckRadius: 0.18
+  backoffWhenBlocked: 1
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  startCombatWhenAdjacent: 1
+  combatStartRange: 1
+  fieldCombat: {fileID: 0}
+  enemyTurnFirst: 1
+  state: 0
 --- !u!1 &596959678
 GameObject:
   m_ObjectHideFlags: 0
@@ -5155,7 +5191,8 @@ GameObject:
   - component: {fileID: 608908251}
   - component: {fileID: 608908253}
   - component: {fileID: 608908254}
-  m_Layer: 0
+  - component: {fileID: 608908255}
+  m_Layer: 6
   m_Name: Enemy2
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -5300,6 +5337,99 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &608908255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 608908249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0247103945ac4447aabcf3d074dbef4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1198750089}
+  timeManager: {fileID: 1768082966}
+  aggroRange: 6
+  requireLoS: 1
+  enableWander: 1
+  wanderRadius: 2
+  wanderRetargetEveryTicks: 2
+  allowDiagonal: 1
+  stepMoveDuration: 0.3
+  pauseWhenAnyCombatActive: 1
+  avoidOccupiedCell: 1
+  occupiedCheckRadius: 0.18
+  backoffWhenBlocked: 1
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  startCombatWhenAdjacent: 1
+  combatStartRange: 1
+  fieldCombat: {fileID: 0}
+  enemyTurnFirst: 1
+  state: 0
+--- !u!1 &621184133
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 621184134}
+  - component: {fileID: 621184135}
+  m_Layer: 0
+  m_Name: SkillTargetPreview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &621184134
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621184133}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 931578457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &621184135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621184133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 577388b5b970c6948a47e95ff79b293e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1198750089}
+  caster: {fileID: 931578464}
+  requireLoS: 1
+  hideIfOutOfRange: 1
+  hideIfSkillOnCooldown: 1
+  showOnlyWhenArmed: 1
+  highlightSprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  zOffset: -0.11
+  sortingOrder: 1000
+  scaleMultiplier: {x: 6, y: 6}
+  centerColor: {r: 0, g: 1, b: 0.93225074, a: 0.75}
+  areaColor: {r: 0, g: 0.9489832, b: 1, a: 0.35}
+  buffColor: {r: 0.066278934, g: 1, b: 0, a: 0.5}
+  refreshInterval: 0.03
 --- !u!1 &629437780
 GameObject:
   m_ObjectHideFlags: 0
@@ -8465,11 +8595,12 @@ Transform:
   m_GameObject: {fileID: 931578455}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 20.21, y: 10.19, z: 0.2613564}
+  m_LocalPosition: {x: 32.17, y: 10.5, z: 0.2613564}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 894568111}
+  - {fileID: 621184134}
   m_Father: {fileID: 870297389}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &931578458
@@ -8587,15 +8718,17 @@ MonoBehaviour:
   fieldTimeManager: {fileID: 1768082966}
   loadout: {fileID: 931578463}
   worldCamera: {fileID: 519420031}
-  enemyClickLayerMask:
+  enemyQueryLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   requireLoS: 1
-  autoCooldownFromAPCost: 1
+  autoCooldownFromApCost: 1
   defaultCooldownTurnsIfNoCost: 1
+  cellOverlapRadius: 0.18
   castDashDuration: 0.06
   castReturnDuration: 0.05
   castDashFraction: 0.55
+  autoDisarmAfterCast: 1
   log: 1
 --- !u!1 &947183512
 GameObject:
@@ -16801,7 +16934,8 @@ GameObject:
   - component: {fileID: 1843907662}
   - component: {fileID: 1843907661}
   - component: {fileID: 1843907664}
-  m_Layer: 0
+  - component: {fileID: 1843907665}
+  m_Layer: 6
   m_Name: Enemy4
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -16946,6 +17080,40 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &1843907665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843907659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0247103945ac4447aabcf3d074dbef4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1198750089}
+  timeManager: {fileID: 1768082966}
+  aggroRange: 6
+  requireLoS: 1
+  enableWander: 1
+  wanderRadius: 2
+  wanderRetargetEveryTicks: 2
+  allowDiagonal: 1
+  stepMoveDuration: 0.3
+  pauseWhenAnyCombatActive: 1
+  avoidOccupiedCell: 1
+  occupiedCheckRadius: 0.18
+  backoffWhenBlocked: 1
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  startCombatWhenAdjacent: 1
+  combatStartRange: 1
+  fieldCombat: {fileID: 0}
+  enemyTurnFirst: 1
+  state: 0
 --- !u!1 &1864150768
 GameObject:
   m_ObjectHideFlags: 0
@@ -18001,7 +18169,8 @@ GameObject:
   - component: {fileID: 1966310116}
   - component: {fileID: 1966310117}
   - component: {fileID: 1966310118}
-  m_Layer: 0
+  - component: {fileID: 1966310119}
+  m_Layer: 6
   m_Name: Enemy1
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -18146,6 +18315,40 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &1966310119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966310113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0247103945ac4447aabcf3d074dbef4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1198750089}
+  timeManager: {fileID: 1768082966}
+  aggroRange: 6
+  requireLoS: 1
+  enableWander: 1
+  wanderRadius: 2
+  wanderRetargetEveryTicks: 2
+  allowDiagonal: 1
+  stepMoveDuration: 0.3
+  pauseWhenAnyCombatActive: 1
+  avoidOccupiedCell: 1
+  occupiedCheckRadius: 0.18
+  backoffWhenBlocked: 1
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  startCombatWhenAdjacent: 1
+  combatStartRange: 1
+  fieldCombat: {fileID: 0}
+  enemyTurnFirst: 1
+  state: 0
 --- !u!1 &1967667040
 GameObject:
   m_ObjectHideFlags: 0

@@ -36,6 +36,7 @@ public class FieldCombatController : MonoBehaviour
     public KeyCode waitTurnKey = KeyCode.Space;
     public KeyCode enterFocusedCombatKey = KeyCode.E;
 
+
     public int playerAttackRange = 1;
     public int playerAttackDamage = 1;
     public bool requireLoSForPlayerAttack = true;
@@ -87,6 +88,10 @@ public class FieldCombatController : MonoBehaviour
             gridBoard = FindObjectOfType<GridBoard>();
     }
 
+    public void StartCombatPublic(Transform enemy, bool enemyTurnFirst = true)
+    {
+        StartCombat(enemy, enemyTurnFirst);
+    }
     private void OnEnable()
     {
         if (fieldTimeManager == null)

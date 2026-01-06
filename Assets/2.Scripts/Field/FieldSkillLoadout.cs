@@ -3,12 +3,12 @@ using UnityEngine;
 public class FieldSkillLoadout : MonoBehaviour
 {
     [Header("Slots (1~4)")]
-    public ScriptableObject slot1; // CombatAttackDefinition
-    public ScriptableObject slot2;
-    public ScriptableObject slot3;
-    public ScriptableObject slot4;
+    public CombatAttackDefinition slot1;
+    public CombatAttackDefinition slot2;
+    public CombatAttackDefinition slot3;
+    public CombatAttackDefinition slot4;
 
-    public ScriptableObject GetSlot(int index1Based)
+    public CombatAttackDefinition GetSlot(int index1Based)
     {
         switch (index1Based)
         {

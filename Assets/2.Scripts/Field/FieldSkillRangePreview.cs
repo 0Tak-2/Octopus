@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using System.Reflection;
 
 public class FieldSkillRangePreview : MonoBehaviour
 {
@@ -13,9 +12,9 @@ public class FieldSkillRangePreview : MonoBehaviour
     public bool showOnlyWhenSkillReady = true;
     public bool requireLoS = true;
     public bool hideWhenNoSkillSelected = true;
+    public bool showOnlyWhenArmed = true;
 
     [Header("Visual")]
-    [Tooltip("타일 하이라이트용 스프라이트(흰 사각형 같은 것)")]
     public Sprite highlightSprite;
     public float zOffset = -0.1f;
     public Vector2 scaleMultiplier = Vector2.one;
@@ -24,7 +23,7 @@ public class FieldSkillRangePreview : MonoBehaviour
     public int initialPoolSize = 128;
 
     [Header("Refresh")]
-    public float refreshInterval = 0.08f; // 너무 자주 그리지 않기
+    public float refreshInterval = 0.08f;
     private float _nextRefreshTime = 0f;
 
     private readonly List<GameObject> _pool = new();
@@ -33,7 +32,8 @@ public class FieldSkillRangePreview : MonoBehaviour
     private Vector2Int _lastPlayerCell;
     private int _lastSlot = -1;
     private int _lastCooldown = -999;
-    private ScriptableObject _lastDef;
+    private CombatAttackDefinition _lastDef;
+    private bool _lastArmed;
 
     private void Awake()
     {
@@ -50,6 +50,7 @@ public class FieldSkillRangePreview : MonoBehaviour
         {
             caster.OnSelectedSlotChanged += _ => ForceRefresh();
             caster.OnCooldownChanged += () => ForceRefresh();
+            caster.OnArmedChanged += _ => ForceRefresh();
         }
         ForceRefresh();
     }
@@ -60,6 +61,7 @@ public class FieldSkillRangePreview : MonoBehaviour
         {
             caster.OnSelectedSlotChanged -= _ => ForceRefresh();
             caster.OnCooldownChanged -= () => ForceRefresh();
+            caster.OnArmedChanged -= _ => ForceRefresh();
         }
         ClearActive();
     }
@@ -77,12 +79,14 @@ public class FieldSkillRangePreview : MonoBehaviour
         int slot = caster.SelectedSlot;
         int cd = caster.GetCooldownRemaining(slot);
         var def = caster.GetDefinition(slot);
+        bool armed = caster.IsArmed;
 
         bool changed =
             pCell != _lastPlayerCell ||
             slot != _lastSlot ||
             cd != _lastCooldown ||
-            def != _lastDef;
+            def != _lastDef ||
+            armed != _lastArmed;
 
         if (!changed) return;
 
@@ -90,6 +94,7 @@ public class FieldSkillRangePreview : MonoBehaviour
         _lastSlot = slot;
         _lastCooldown = cd;
         _lastDef = def;
+        _lastArmed = armed;
 
         Redraw();
     }
@@ -99,6 +104,7 @@ public class FieldSkillRangePreview : MonoBehaviour
         _lastSlot = -999;
         _lastCooldown = -999;
         _lastDef = null;
+        _lastArmed = !caster ? false : caster.IsArmed;
         _nextRefreshTime = 0f;
     }
 
@@ -106,8 +112,13 @@ public class FieldSkillRangePreview : MonoBehaviour
     {
         ClearActive();
 
+        if (caster == null || player == null || gridBoard == null) return;
+
+        if (showOnlyWhenArmed && !caster.IsArmed)
+            return;
+
         int slot = caster.SelectedSlot;
-        ScriptableObject def = caster.GetDefinition(slot);
+        CombatAttackDefinition def = caster.GetDefinition(slot);
 
         if (def == null && hideWhenNoSkillSelected)
             return;
@@ -120,10 +131,8 @@ public class FieldSkillRangePreview : MonoBehaviour
             return;
 
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
-        int range = ReadInt(def, new[] { "range", "castRange", "attackRange" }, 1);
+        int range = Mathf.Max(0, def.range);
 
-        // Chebyshev square range
-        // (r=2 -> x±2, y±2)
         for (int dx = -range; dx <= range; dx++)
         {
             for (int dy = -range; dy <= range; dy++)
@@ -133,7 +142,6 @@ public class FieldSkillRangePreview : MonoBehaviour
 
                 if (!IsInBoundsIfPossible(c)) continue;
 
-                // LOS 옵션: 플레이어->셀
                 if (requireLoS && !FieldCombatUtils.HasLineOfSight(gridBoard, pCell, c))
                     continue;
 
@@ -158,7 +166,6 @@ public class FieldSkillRangePreview : MonoBehaviour
                 return _pool[i];
         }
 
-        // 부족하면 추가 생성
         var extra = CreateHighlightObject();
         _pool.Add(extra);
         return extra;
@@ -181,15 +188,17 @@ public class FieldSkillRangePreview : MonoBehaviour
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = highlightSprite;
-
-        // 기본 흰색이면 “투명도”만 조절해서 하이라이트 느낌
         sr.color = new Color(1f, 1f, 1f, 0.25f);
-        sr.sortingOrder = 999; // 필드 위에 보이게(필요하면 조절)
+        sr.sortingOrder = 999;
 
-        // 셀 크기에 맞춰 자동 스케일
-        // (스프라이트 기본이 1유닛=1일 때 기준)
         float cellSize = TryReadCellSize(gridBoard, fallback: 1f);
         go.transform.localScale = new Vector3(cellSize * scaleMultiplier.x, cellSize * scaleMultiplier.y, 1f);
+
+        // 안전장치: 콜라이더 절대 금지
+        var col2D = go.GetComponent<Collider2D>();
+        if (col2D != null) Destroy(col2D);
+        var col3D = go.GetComponent<Collider>();
+        if (col3D != null) Destroy(col3D);
 
         return go;
     }
@@ -201,44 +210,17 @@ public class FieldSkillRangePreview : MonoBehaviour
         _active.Clear();
     }
 
-    // ----- Reflection helpers (Definition / GridBoard) -----
-    private static int ReadInt(ScriptableObject def, string[] names, int fallback)
-    {
-        if (def == null) return fallback;
-        var t = def.GetType();
-
-        foreach (var n in names)
-        {
-            var f = t.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (f != null && (f.FieldType == typeof(int) || f.FieldType == typeof(float)))
-            {
-                object v = f.GetValue(def);
-                if (v is int i) return i;
-                if (v is float fl) return Mathf.RoundToInt(fl);
-            }
-
-            var p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (p != null && (p.PropertyType == typeof(int) || p.PropertyType == typeof(float)))
-            {
-                object v = p.GetValue(def);
-                if (v is int i2) return i2;
-                if (v is float fl2) return Mathf.RoundToInt(fl2);
-            }
-        }
-
-        return fallback;
-    }
-
     private bool IsInBoundsIfPossible(Vector2Int cell)
     {
-        // GridBoard에 IsInBounds(Vector2Int) 같은 게 있으면 사용
-        var m = gridBoard.GetType().GetMethod("IsInBounds", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var m = gridBoard.GetType().GetMethod("IsInBounds",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
         if (m != null)
         {
             var r = m.Invoke(gridBoard, new object[] { cell });
             if (r is bool b) return b;
         }
-        return true; // bounds 정보 없으면 그냥 보여줌
+        return true;
     }
 
     private static float TryReadCellSize(GridBoard board, float fallback)
@@ -246,11 +228,11 @@ public class FieldSkillRangePreview : MonoBehaviour
         if (board == null) return fallback;
 
         var t = board.GetType();
-        var f = t.GetField("cellSize", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var f = t.GetField("cellSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
         if (f != null && f.FieldType == typeof(float))
             return (float)f.GetValue(board);
 
-        var p = t.GetProperty("cellSize", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var p = t.GetProperty("cellSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
         if (p != null && p.PropertyType == typeof(float))
             return (float)p.GetValue(board);
 

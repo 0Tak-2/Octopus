@@ -13,8 +13,23 @@ MonoBehaviour:
   m_Name: X-Cross
   m_EditorClassIdentifier: 
   displayName: X-Cross
+  description: "\uC124\uBA85"
+  icon: {fileID: 0}
+  kind: 0
   apCost: 2
   damage: 1
   range: 2
   pattern: 2
   requireEnemyOnTarget: 0
+  buffTurns: 6
+  damageMultiplier: 2
+  buffStatusIcon: {fileID: 0}
+  enableFieldTrigger: 0
+  fieldTrigger:
+    triggerType: 0
+    chance: 0
+    cooldownTurns: 0
+    param: 0
+  fieldResolutionType: 0
+  fieldDamageOverride: 0
+  fieldStatusTag: 

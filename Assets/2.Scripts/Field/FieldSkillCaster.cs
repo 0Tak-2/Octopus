@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 public class FieldSkillCaster : MonoBehaviour
@@ -13,53 +12,54 @@ public class FieldSkillCaster : MonoBehaviour
 
     [Header("Targeting")]
     public Camera worldCamera;
-    public LayerMask enemyClickLayerMask = ~0;
+    [Tooltip("적 판정에 사용할 레이어(Enemy 권장)")]
+    public LayerMask enemyQueryLayerMask = ~0;
+
+    [Header("Rules")]
     public bool requireLoS = true;
 
-    [Header("Cooldown (Turn-based via Time)")]
-    [Tooltip("AP 2 => 1턴 쿨, AP 3 => 2턴 쿨 같은 식으로 자동 계산. (Definition에서 AP cost를 찾으면 사용)")]
-    public bool autoCooldownFromAPCost = true;
+    [Header("Cooldown (Turn-based)")]
+    public bool autoCooldownFromApCost = true;
     public int defaultCooldownTurnsIfNoCost = 1;
 
-    [Header("Cast Visual (optional)")]
+    [Header("AOE Query")]
+    [Tooltip("셀 중심에서 적을 찾는 반경(셀 크기/콜라이더에 맞춰 조절)")]
+    public float cellOverlapRadius = 0.18f;
+
+    [Header("Cast Visual")]
     public float castDashDuration = 0.06f;
     public float castReturnDuration = 0.05f;
     public float castDashFraction = 0.55f;
 
+    [Header("Behavior")]
+    [Tooltip("시전 성공 시 자동으로 스킬 들기 상태를 해제")]
+    public bool autoDisarmAfterCast = true;
+
     [Header("Debug")]
     public bool log = true;
 
+    // ===== State =====
     private int _selectedSlot = 1;
+    private bool _armed = false;
 
-    // slotIndex(1~4) => remaining turns
-    private readonly Dictionary<int, int> _cooldownRemaining = new Dictionary<int, int>();
+    // slot => cooldown remaining (turns)
+    private readonly Dictionary<int, int> _cooldownRemaining = new();
+    // slot => skip next time tick once (prevents cd immediately dropping to 0)
+    private readonly Dictionary<int, int> _cooldownSkipNextTick = new();
 
-    // ✅ 핵심: "쿨다운을 막 설정했을 때" 바로 들어오는 TimeAdvanced 1회를 스킵하기 위한 카운터
-    // (slotIndex => skip ticks)
-    private readonly Dictionary<int, int> _cooldownSkipNextTick = new Dictionary<int, int>();
-
-    private int _lastSeenTime = -1;
-
-    // === UI/외부 접근용 ===
+    // ===== UI API =====
     public int SelectedSlot => _selectedSlot;
+    public bool IsArmed => _armed;
 
-    public int GetCooldownRemaining(int slotIndex1Based)
-    {
-        if (!_cooldownRemaining.TryGetValue(slotIndex1Based, out int v)) return 0;
-        return Mathf.Max(0, v);
-    }
+    public event Action<int> OnSelectedSlotChanged;
+    public event Action OnCooldownChanged;
+    public event Action<bool> OnArmedChanged;
 
-    public ScriptableObject GetDefinition(int slotIndex1Based)
-    {
-        if (loadout == null) return null;
-        return loadout.GetSlot(slotIndex1Based);
-    }
+    public int GetCooldownRemaining(int slot)
+        => _cooldownRemaining.TryGetValue(slot, out var v) ? Mathf.Max(0, v) : 0;
 
-    public event System.Action<int> OnSelectedSlotChanged;
-    public event System.Action OnCooldownChanged;
-
-    private void NotifySelectedChanged() => OnSelectedSlotChanged?.Invoke(_selectedSlot);
-    private void NotifyCooldownChanged() => OnCooldownChanged?.Invoke();
+    public CombatAttackDefinition GetDefinition(int slot)
+        => loadout != null ? loadout.GetSlot(slot) : null;
 
     private void Awake()
     {
@@ -81,10 +81,7 @@ public class FieldSkillCaster : MonoBehaviour
             fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
 
         if (fieldTimeManager != null)
-        {
-            _lastSeenTime = fieldTimeManager.time;
             fieldTimeManager.OnTimeAdvanced += HandleTimeAdvanced;
-        }
     }
 
     private void OnDisable()
@@ -95,116 +92,133 @@ public class FieldSkillCaster : MonoBehaviour
 
     private void HandleTimeAdvanced(int delta, int newTotalTime)
     {
-        if (_lastSeenTime < 0) _lastSeenTime = newTotalTime - delta;
-
-        int steps = Mathf.Max(0, newTotalTime - _lastSeenTime);
-        _lastSeenTime = newTotalTime;
-
-        if (steps <= 0) return;
-
         bool changed = false;
 
-        // ✅ 각 슬롯별로: "스킵해야 하는 tick"을 먼저 소비한 뒤, 남은 steps만큼 쿨다운 감소
         for (int s = 1; s <= 4; s++)
         {
             if (_cooldownRemaining[s] <= 0) continue;
 
-            int skip = _cooldownSkipNextTick.TryGetValue(s, out int v) ? v : 0;
-
-            // delta가 1일 거라 보통 1번만 스킵하면 되지만,
-            // 혹시 steps가 2 이상일 때도 안전하게 처리
-            int consumeSkip = Mathf.Min(skip, steps);
-            if (consumeSkip > 0)
+            if (_cooldownSkipNextTick[s] > 0)
             {
-                skip -= consumeSkip;
-                steps -= consumeSkip; // ✅ 그만큼은 쿨다운 감소에 사용하지 않음
-                _cooldownSkipNextTick[s] = skip;
+                _cooldownSkipNextTick[s]--;
+                continue;
             }
 
-            if (steps <= 0) continue;
-
             int before = _cooldownRemaining[s];
-            _cooldownRemaining[s] = Mathf.Max(0, _cooldownRemaining[s] - steps);
-            if (_cooldownRemaining[s] != before) changed = true;
+            _cooldownRemaining[s] = Mathf.Max(0, _cooldownRemaining[s] - Mathf.Max(1, delta));
+            if (before != _cooldownRemaining[s]) changed = true;
         }
 
-        if (changed) NotifyCooldownChanged();
+        if (changed) OnCooldownChanged?.Invoke();
     }
 
     private void Update()
     {
-        if (loadout == null || gridBoard == null || fieldTimeManager == null) return;
+        if (gridBoard == null || fieldTimeManager == null || loadout == null) return;
 
-        // 1~4로 선택
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SelectSlot(1);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SelectSlot(2);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) SelectSlot(3);
-        if (Input.GetKeyDown(KeyCode.Alpha4)) SelectSlot(4);
+        // 1~4 = 슬롯 선택 + 무장
+        if (Input.GetKeyDown(KeyCode.Alpha1)) SelectAndArm(1);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) SelectAndArm(2);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) SelectAndArm(3);
+        if (Input.GetKeyDown(KeyCode.Alpha4)) SelectAndArm(4);
 
-        // 클릭 시전
+        // 우클릭 = 무장 해제(스킬 취소)
+        if (Input.GetMouseButtonDown(1))
+        {
+            Disarm();
+            return;
+        }
+
+        // 좌클릭 = 무장 상태에서만 시전 시도
         if (Input.GetMouseButtonDown(0))
         {
-            var def = loadout.GetSlot(_selectedSlot);
-            if (def == null) return;
+            if (!_armed) return;
 
-            if (_cooldownRemaining[_selectedSlot] > 0)
+            CombatAttackDefinition def = loadout.GetSlot(_selectedSlot);
+            if (def == null)
             {
-                if (log) Debug.Log($"[FieldSkill] Slot{_selectedSlot} on cooldown: {_cooldownRemaining[_selectedSlot]} turn(s) left");
+                Disarm();
                 return;
             }
 
-            if (!TryGetClickedEnemy(out Transform enemyTf))
+            int cd = GetCooldownRemaining(_selectedSlot);
+            if (cd > 0)
+            {
+                if (log) Debug.Log($"[FieldSkill] Slot{_selectedSlot} cooldown: {cd}");
+                return; // 무장은 유지(다음에 다른 스킬 들거나 취소 가능)
+            }
+
+            if (!TryGetMouseCell(out Vector2Int cell))
                 return;
 
-            TryCast(def, enemyTf);
+            // ✅ 타겟팅 스킬은 "셀에 적이 없으면 아무 일도 안 함(취소)"
+            if (def.requireEnemyOnTarget)
+            {
+                if (!TryGetEnemyOnCell(cell, out _))
+                {
+                    // 아무 일도 안 함: Time 소비 X / 쿨 X / 무장 유지
+                    return;
+                }
+            }
+
+            // 사거리 / LOS 체크 후 시전
+            TryCastAtCell(def, cell);
         }
     }
 
-    // ✅ UI 클릭에서도 쓰게 public으로 열어둠(원치 않으면 다시 private로)
-    public void SelectSlot(int slot)
+    // ===== Arm/Disarm =====
+    public void SelectAndArm(int slot)
     {
         _selectedSlot = Mathf.Clamp(slot, 1, 4);
-        if (log) Debug.Log($"[FieldSkill] Selected slot {_selectedSlot}");
-        NotifySelectedChanged();
+        OnSelectedSlotChanged?.Invoke(_selectedSlot);
+
+        // 슬롯에 스킬이 없으면 무장하지 않음
+        CombatAttackDefinition def = loadout != null ? loadout.GetSlot(_selectedSlot) : null;
+        if (def == null)
+        {
+            SetArmed(false);
+            if (log) Debug.Log("[FieldSkill] No skill in slot. Disarmed.");
+            return;
+        }
+
+        SetArmed(true);
+        if (log) Debug.Log($"[FieldSkill] Selected slot {_selectedSlot} (ARMED)");
     }
 
-    private bool TryCast(ScriptableObject def, Transform enemyTf)
+    public void Disarm()
     {
-        int range = DefReadInt(def, new[] { "range", "castRange", "attackRange" }, fallback: 1);
-        int damage = DefReadInt(def, new[] { "damage", "baseDamage", "power" }, fallback: 1);
-        string skillName = DefReadString(def, new[] { "displayName", "skillName", "name" }, fallback: def.name);
+        if (!_armed) return;
+        SetArmed(false);
+        if (log) Debug.Log("[FieldSkill] Disarmed (cancel).");
+    }
 
+    private void SetArmed(bool armed)
+    {
+        if (_armed == armed) return;
+        _armed = armed;
+        OnArmedChanged?.Invoke(_armed);
+    }
+
+    // ===== Cast =====
+    private void TryCastAtCell(CombatAttackDefinition def, Vector2Int targetCell)
+    {
         Vector2Int pCell = gridBoard.WorldToCell(transform.position);
-        Vector2Int eCell = gridBoard.WorldToCell(enemyTf.position);
 
-        int dist = FieldCombatUtils.Chebyshev(pCell, eCell);
-        if (dist > range)
-        {
-            if (log) Debug.Log($"[FieldSkill] '{skillName}' out of range. dist={dist}, range={range}");
-            return false;
-        }
+        int dist = FieldCombatUtils.Chebyshev(pCell, targetCell);
+        if (dist > def.range)
+            return;
 
-        if (requireLoS && !FieldCombatUtils.HasLineOfSight(gridBoard, pCell, eCell))
-        {
-            if (log) Debug.Log($"[FieldSkill] '{skillName}' blocked by LOS.");
-            return false;
-        }
+        if (requireLoS && !FieldCombatUtils.HasLineOfSight(gridBoard, pCell, targetCell))
+            return;
 
-        var enemyInst = enemyTf.GetComponent<EnemyInstance>();
-        if (enemyInst == null)
-        {
-            if (log) Debug.LogWarning("[FieldSkill] EnemyInstance not found on clicked enemy.");
-            return false;
-        }
-
-        StartCoroutine(CastRoutine(skillName, enemyTf, enemyInst, damage, def));
-        return true;
+        StartCoroutine(CastRoutine(def, targetCell));
     }
 
-    private IEnumerator CastRoutine(string skillName, Transform enemyTf, EnemyInstance enemyInst, int damage, ScriptableObject def)
+    private IEnumerator CastRoutine(CombatAttackDefinition def, Vector2Int targetCell)
     {
+        // 대시 연출(선택)
         Vector3 start = transform.position;
-        Vector3 target = enemyTf.position;
+        Vector3 target = gridBoard.CellToWorld(targetCell);
         Vector3 dir = target - start;
 
         if (dir.sqrMagnitude > 0.0001f)
@@ -214,74 +228,143 @@ public class FieldSkillCaster : MonoBehaviour
             yield return SmoothMove(transform, dashPos, start, castReturnDuration);
         }
 
-        // 데미지 적용
-        enemyInst.currentHP -= Mathf.Max(0, damage);
-        enemyInst.Clamp();
+        // Field 전용 override 처리
+        int damage = def.fieldDamageOverride > 0 ? def.fieldDamageOverride : def.damage;
+        damage = Mathf.Max(0, damage);
 
-        if (log) Debug.Log($"[FieldSkill] Cast '{skillName}' => damage {damage} (enemyHP={enemyInst.currentHP})");
+        // 패턴 셀 계산
+        List<Vector2Int> cells = GetAffectedCells(def.pattern, targetCell);
 
-        // ✅ 쿨다운 설정 + "다음 TimeAdvanced 1회는 감소 스킵" 예약
+        int hit = ApplyDamageToEnemiesInCells(cells, damage);
+
+        if (log) Debug.Log($"[FieldSkill] Cast '{def.displayName}' pattern={def.pattern} hit={hit}");
+
+        // 쿨다운 설정
         int cd = ResolveCooldownTurns(def);
         _cooldownRemaining[_selectedSlot] = Mathf.Max(0, cd);
+        if (cd > 0) _cooldownSkipNextTick[_selectedSlot] = 1;
+        OnCooldownChanged?.Invoke();
 
-        if (cd > 0)
-        {
-            _cooldownSkipNextTick[_selectedSlot] = 1; // ✅ 바로 들어오는 +1(time)에서 깎이지 않게
-        }
-
-        NotifyCooldownChanged();
-
-        // 턴(Time) 1 소비
+        // Time 1 소비
         fieldTimeManager.Advance(1);
 
-        // 사망 처리(간단 버전)
-        if (enemyInst.currentHP <= 0)
-            enemyTf.gameObject.SetActive(false);
+        // 시전 성공 후 자동 무장 해제(추천 UX)
+        if (autoDisarmAfterCast)
+            Disarm();
     }
 
-    private int ResolveCooldownTurns(ScriptableObject def)
+    private int ResolveCooldownTurns(CombatAttackDefinition def)
     {
-        if (!autoCooldownFromAPCost)
-            return defaultCooldownTurnsIfNoCost;
+        if (!autoCooldownFromApCost) return defaultCooldownTurnsIfNoCost;
 
-        int apCost = DefReadInt(def, new[] { "apCost", "costAP", "cost", "ap" }, fallback: -1);
-        if (apCost <= 0) return defaultCooldownTurnsIfNoCost;
-
-        // 네 규칙대로:
-        // 2AP => 다음 내 턴 1번 동안 사용 불가 => cd=1
-        // 3AP => 내 턴 2번 지나야 => cd=2
-        if (apCost >= 3) return 2;
-        if (apCost == 2) return 1;
+        if (def.apCost >= 3) return 2;
+        if (def.apCost == 2) return 1;
         return 0;
     }
 
-    private bool TryGetClickedEnemy(out Transform hitTransform)
+    private List<Vector2Int> GetAffectedCells(AttackPattern pattern, Vector2Int center)
     {
-        hitTransform = null;
-        if (worldCamera == null) return false;
-
-        Vector3 mouse = Input.mousePosition;
-
-        // 2D
-        Vector3 world = worldCamera.ScreenToWorldPoint(mouse);
-        Vector2 world2 = new Vector2(world.x, world.y);
-        RaycastHit2D hit2D = Physics2D.Raycast(world2, Vector2.zero, 0f, enemyClickLayerMask);
-        if (hit2D.collider != null)
+        switch (pattern)
         {
-            hitTransform = hit2D.collider.transform;
-            return true;
+            case AttackPattern.CrossPlus:
+                return new List<Vector2Int>
+                {
+                    center,
+                    center + Vector2Int.up,
+                    center + Vector2Int.down,
+                    center + Vector2Int.left,
+                    center + Vector2Int.right
+                };
+
+            case AttackPattern.CrossX:
+                return new List<Vector2Int>
+                {
+                    center,
+                    center + new Vector2Int(1,1),
+                    center + new Vector2Int(1,-1),
+                    center + new Vector2Int(-1,1),
+                    center + new Vector2Int(-1,-1)
+                };
+
+            default:
+                return new List<Vector2Int> { center };
+        }
+    }
+
+    private int ApplyDamageToEnemiesInCells(List<Vector2Int> cells, int damage)
+    {
+        if (cells == null || cells.Count == 0) return 0;
+
+        int hitEnemies = 0;
+
+        // 단일기인데 셀에 적이 여러 명이면? -> 현재는 셀 기반이라 여러 콜라이더가 있으면 여러 명 맞음
+        // 원하면 "단일기는 1명만"으로 바꿀 수도 있음.
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            Vector3 w = gridBoard.CellToWorld(cells[i]);
+            Vector2 wp = new Vector2(w.x, w.y);
+
+            Collider2D[] hits2D = Physics2D.OverlapCircleAll(wp, cellOverlapRadius, enemyQueryLayerMask);
+            if (hits2D == null) continue;
+
+            for (int h = 0; h < hits2D.Length; h++)
+            {
+                var inst = hits2D[h].GetComponentInParent<EnemyInstance>();
+                if (inst == null || inst.currentHP <= 0) continue;
+
+                inst.currentHP -= damage;
+                inst.Clamp();
+
+                if (inst.currentHP <= 0)
+                    inst.gameObject.SetActive(false);
+
+                hitEnemies++;
+            }
         }
 
-        // 3D fallback
-        Ray ray = worldCamera.ScreenPointToRay(mouse);
-        if (Physics.Raycast(ray, out RaycastHit hit3D, 500f, enemyClickLayerMask))
+        return hitEnemies;
+    }
+
+    // ===== Mouse helpers =====
+    private bool TryGetMouseCell(out Vector2Int cell)
+    {
+        cell = default;
+        if (worldCamera == null || gridBoard == null) return false;
+
+        Vector3 w = worldCamera.ScreenToWorldPoint(Input.mousePosition);
+        w.z = 0f;
+        cell = gridBoard.WorldToCell(w);
+        return true;
+    }
+
+    private bool TryGetEnemyOnCell(Vector2Int cell, out EnemyInstance enemy)
+    {
+        enemy = null;
+        Vector3 w = gridBoard.CellToWorld(cell);
+        Vector2 wp = new Vector2(w.x, w.y);
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(wp, cellOverlapRadius, enemyQueryLayerMask);
+        if (hits == null || hits.Length == 0) return false;
+
+        for (int i = 0; i < hits.Length; i++)
         {
-            hitTransform = hit3D.collider.transform;
+            var inst = hits[i].GetComponentInParent<EnemyInstance>();
+            if (inst == null || inst.currentHP <= 0) continue;
+
+            enemy = inst;
             return true;
         }
-
         return false;
     }
+    /// <summary>
+    /// 기존 UI 호환 + 현재 UX: 슬롯 선택하면 바로 무장(스킬 들기)
+    /// </summary>
+    public void SelectSlot(int slot)
+    {
+        SelectAndArm(slot);
+    }
+
 
     private static IEnumerator SmoothMove(Transform tf, Vector3 from, Vector3 to, float duration)
     {
@@ -296,60 +379,5 @@ public class FieldSkillCaster : MonoBehaviour
             yield return null;
         }
         tf.position = to;
-    }
-
-    // ---------------------------
-    // Definition reflection helpers
-    // ---------------------------
-    private static int DefReadInt(ScriptableObject def, string[] fieldOrPropNames, int fallback)
-    {
-        if (def == null) return fallback;
-        Type t = def.GetType();
-
-        foreach (var n in fieldOrPropNames)
-        {
-            FieldInfo f = t.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (f != null && (f.FieldType == typeof(int) || f.FieldType == typeof(float)))
-            {
-                object v = f.GetValue(def);
-                if (v is int i) return i;
-                if (v is float fl) return Mathf.RoundToInt(fl);
-            }
-
-            PropertyInfo p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (p != null && (p.PropertyType == typeof(int) || p.PropertyType == typeof(float)))
-            {
-                object v = p.GetValue(def);
-                if (v is int i2) return i2;
-                if (v is float fl2) return Mathf.RoundToInt(fl2);
-            }
-        }
-
-        return fallback;
-    }
-
-    private static string DefReadString(ScriptableObject def, string[] fieldOrPropNames, string fallback)
-    {
-        if (def == null) return fallback;
-        Type t = def.GetType();
-
-        foreach (var n in fieldOrPropNames)
-        {
-            FieldInfo f = t.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (f != null && f.FieldType == typeof(string))
-            {
-                var v = f.GetValue(def) as string;
-                if (!string.IsNullOrEmpty(v)) return v;
-            }
-
-            PropertyInfo p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (p != null && p.PropertyType == typeof(string))
-            {
-                var v = p.GetValue(def) as string;
-                if (!string.IsNullOrEmpty(v)) return v;
-            }
-        }
-
-        return fallback;
     }
 }
