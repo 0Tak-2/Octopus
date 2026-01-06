@@ -10,6 +10,9 @@ public class EnemyEliteHUDPanel : MonoBehaviour
     [Header("Visibility")]
     public bool showOnlyWhenElite = true;
 
+    [Tooltip("표시/숨김을 여기로만 제어 (자기 gameObject는 끄지 말 것!)")]
+    public GameObject panelRoot;
+
     [Header("Enemy HP")]
     public TMP_Text enemyHpText;
 
@@ -25,7 +28,7 @@ public class EnemyEliteHUDPanel : MonoBehaviour
     public SkillIconSlot slot4;
 
     [Header("Skill Icon Slot (5) - Boss Only (Optional)")]
-    public SkillIconSlot slot5; // AI4용(없으면 null OK)
+    public SkillIconSlot slot5; // 없으면 null OK
 
     [Header("Buff UI")]
     public GameObject buffRoot;
@@ -42,13 +45,14 @@ public class EnemyEliteHUDPanel : MonoBehaviour
     private void Awake()
     {
         if (combat == null) combat = FocusedCombatManager.Instance;
+        if (panelRoot == null) panelRoot = gameObject; // 혹시 비워두면 자기 자신 대신 쓰게(권장X)
+
         TryHookHover();
     }
 
     private void OnEnable()
     {
         _cachedDef = null;
-        TryHookHover(); // ✅ enable 타이밍에도 재연결
         Refresh();
     }
 
@@ -74,29 +78,36 @@ public class EnemyEliteHUDPanel : MonoBehaviour
 
     private void HandleHoverEnter(CombatAttackDefinition skill, SkillIconSlot slot)
     {
-        if (skill == null) return;
-        CombatTooltipUI.Show(skill, slot != null ? slot.transform as RectTransform : null);
+        // 필요한 경우 툴팁 연결 (이미 SkillIconSlot에서 Show/Hide 하고 있음)
     }
 
     private void HandleHoverExit(CombatAttackDefinition skill, SkillIconSlot slot)
     {
-        CombatTooltipUI.Hide();
     }
 
     private void Update()
     {
         if (combat == null) combat = FocusedCombatManager.Instance;
         if (combat == null) return;
-        if (!combat.IsInFocusedCombat) return;
 
-        bool isSpecial = IsEliteOrBoss(combat.GetEnemyAIType());
-        if (showOnlyWhenElite && !isSpecial) return;
+        // 전투 아닐 때는 숨김
+        if (!combat.IsInFocusedCombat)
+        {
+            SetVisible(false);
+            return;
+        }
 
         Refresh();
     }
 
-    private bool IsEliteOrBoss(EnemyAIType t) =>
-        (t == EnemyAIType.AI3_Elite) || (t == EnemyAIType.AI4_Boss);
+    private bool IsEliteOrBoss(EnemyAIType t)
+        => (t == EnemyAIType.AI3_Elite) || (t == EnemyAIType.AI4_Boss);
+
+    private void SetVisible(bool on)
+    {
+        if (panelRoot != null && panelRoot.activeSelf != on)
+            panelRoot.SetActive(on);
+    }
 
     public void Refresh()
     {
@@ -107,10 +118,15 @@ public class EnemyEliteHUDPanel : MonoBehaviour
 
         if (showOnlyWhenElite)
         {
-            gameObject.SetActive(isSpecial);
+            SetVisible(isSpecial);
             if (!isSpecial) return;
         }
+        else
+        {
+            SetVisible(true);
+        }
 
+        // Def 바뀌면 슬롯 재바인딩
         var def = combat.CurrentEnemyDef;
         if (def != _cachedDef)
         {
@@ -118,6 +134,7 @@ public class EnemyEliteHUDPanel : MonoBehaviour
             RebindSkillSlots(def, type);
         }
 
+        // HP
         if (enemyHpText != null)
         {
             int hp = combat.State.enemyHP;
@@ -125,12 +142,13 @@ public class EnemyEliteHUDPanel : MonoBehaviour
             enemyHpText.text = $"HP: {hp}/{max}";
         }
 
+        // AP source
         int ap = 0;
         int apMax = 5;
 
         if (type == EnemyAIType.AI3_Elite)
         {
-            EnemyAIController enemyAI = combat.enemyAI;
+            var enemyAI = combat.enemyAI;
             if (enemyAI != null)
             {
                 ap = Mathf.Clamp(enemyAI.EliteAP, 0, 5);
@@ -149,9 +167,8 @@ public class EnemyEliteHUDPanel : MonoBehaviour
         }
         else if (type == EnemyAIType.AI4_Boss)
         {
-            BossAIController bossAI = combat.bossAI;
-            BossState bs = (bossAI != null) ? bossAI.GetState() : null;
-
+            var bossAI = combat.bossAI;
+            var bs = (bossAI != null) ? bossAI.GetState() : null;
             if (bs != null)
             {
                 ap = Mathf.Clamp(bs.AP, 0, 5);
@@ -170,6 +187,7 @@ public class EnemyEliteHUDPanel : MonoBehaviour
         }
         else
         {
+            // showOnlyWhenElite=false 인 경우만 도달
             ApplyDots(0, 5);
             RefreshStatusText_Clear();
             if (buffRoot != null) buffRoot.SetActive(false);
@@ -194,6 +212,7 @@ public class EnemyEliteHUDPanel : MonoBehaviour
 
             if (def != null)
             {
+                // EnemyDefinition에 아래 필드가 있어야 함 (없으면 주석 처리)
                 s1 = def.bossSkill1_Basic;
                 s2 = def.bossSkill2_Stun;
                 s3 = def.bossSkill3_Charge;
@@ -224,9 +243,13 @@ public class EnemyEliteHUDPanel : MonoBehaviour
         slot.SetUsable(canUse);
     }
 
+    // =========================
+    // Buff UI: AI3
+    // =========================
     private void RefreshBuffUI_AI3(EnemyDefinition def, EnemyAIController enemyAI)
     {
         if (buffRoot == null) return;
+
         bool active = (enemyAI != null && enemyAI.EliteBuffTurnsLeft > 0);
         buffRoot.SetActive(active);
         if (!active) return;
@@ -251,9 +274,13 @@ public class EnemyEliteHUDPanel : MonoBehaviour
         statusText.text = "";
     }
 
+    // =========================
+    // Buff UI: AI4
+    // =========================
     private void RefreshBuffUI_AI4(EnemyDefinition def, BossState bs)
     {
         if (buffRoot == null) return;
+
         bool meditation = (bs != null && bs.MeditationActive);
         buffRoot.SetActive(meditation);
         if (!meditation) return;
@@ -298,12 +325,10 @@ public class EnemyEliteHUDPanel : MonoBehaviour
         for (int i = 0; i < apDots.Length; i++)
         {
             if (apDots[i] == null) continue;
-
             bool enabledByMax = i < apMax;
             bool on = enabledByMax && i < ap;
 
             apDots[i].gameObject.SetActive(true);
-
             var c = apDots[i].color;
             c.a = on ? apDotOnAlpha : apDotOffAlpha;
             apDots[i].color = c;
