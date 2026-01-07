@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Reflection;
 using UnityEngine;
 
@@ -11,10 +11,10 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public Transform player;
     public GridBoard gridBoard;
     public FieldTimeManager timeManager;
+    public GridOccupancyRegistry occupancy;
 
     [Header("Detect")]
-    [Tooltip("ÇÃ·¹ÀÌ¾î °¨Áö °Å¸®(Ã¼ºñ¼ÎÇÁ).")]
-    public int aggroRange = 6;
+    public int aggroRange = 6;              // Chebyshev
     public bool requireLoS = false;
 
     [Header("Wander")]
@@ -23,39 +23,16 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public int wanderRetargetEveryTicks = 4;
 
     [Header("Move")]
-    [Tooltip("8¹æ ÀÌµ¿(Ã¼ºñ¼ÎÇÁ °Å¸®¿Í ÀÚ¿¬½º·´°Ô ¸ÂÀ½)")]
     public bool allowDiagonal = true;
-    [Tooltip("ÇÑ Ä­ '½»½»' ÀÌµ¿ ¿¬Ãâ ½Ã°£")]
     public float stepMoveDuration = 0.08f;
 
-    [Tooltip("ÀüÅõ(ÇÊµåÀüÅõ/ÁıÁßÀüÅõ µî) ÁøÇà ÁßÀÌ¸é Àû ¹èÈ¸/Ãß°İÀ» ¸ØÃã")]
+    [Tooltip("ì „íˆ¬ ì§„í–‰ ì¤‘ì´ë©´ ì  ë°°íšŒ/ì¶”ê²©ì„ ë©ˆì¶¤")]
     public bool pauseWhenAnyCombatActive = true;
 
-    [Header("Avoid Overlap")]
-    [Tooltip("´Ù¸¥ ÀûÀÌ Á¡À¯ ÁßÀÎ ¼¿·Î ÀÌµ¿ÇÏÁö ¾Êµµ·Ï ÇÔ")]
-    public bool avoidOccupiedCell = true;
-
-    [Tooltip("¼¿ Á¡À¯ ÆÇÁ¤ ¹İ°æ(¼¿ Å©±â/Äİ¶óÀÌ´õ Å©±â¿¡ ¸ÂÃç Á¶Àı)")]
-    public float occupiedCheckRadius = 0.18f;
-
-    [Tooltip("Á¡À¯ ¼¿ ¶§¹®¿¡ ±æÀÌ ¸·È÷¸é, ¸ñÇ¥¿Í ¸Ö¾îÁö´Â ¹æÇâÀ¸·Î ÇÑ Ä­ ¹°·¯³ª±â")]
-    public bool backoffWhenBlocked = true;
-
-    [Header("Enemy Query")]
-    [Tooltip("Àû ·¹ÀÌ¾î(Enemy ±ÇÀå). Á¡À¯ Ã¼Å©/±ÙÁ¢ ÀüÅõ ½ÃÀÛ ÆÇ´Ü¿¡ »ç¿ë")]
-    public LayerMask enemyLayerMask = ~0;
-
     [Header("Combat Link (optional)")]
-    [Tooltip("ÇÃ·¹ÀÌ¾î¿Í ÀÎÁ¢(¶Ç´Â ¼³Á¤ °Å¸®)ÇÏ¸é FieldCombatController·Î ÀüÅõ ½ÃÀÛ ¿äÃ»")]
     public bool startCombatWhenAdjacent = true;
-
-    [Tooltip("ÀüÅõ ½ÃÀÛ °Å¸®(Ã¼ºñ¼ÎÇÁ). 1ÀÌ¸é ÀÎÁ¢ Æ÷ÇÔ.")]
     public int combatStartRange = 1;
-
-    [Tooltip("¾ÀÀÇ FieldCombatController(ÀÖÀ¸¸é ÀÚµ¿ Ã£À½)")]
     public FieldCombatController fieldCombat;
-
-    [Tooltip("ÀüÅõ ½ÃÀÛ ½Ã Àû ¼±°ø ¿©ºÎ(ÀÓ½Ã).")]
     public bool enemyTurnFirst = true;
 
     [Header("Debug")]
@@ -77,10 +54,15 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
         if (timeManager == null) timeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (fieldCombat == null) fieldCombat = FindObjectOfType<FieldCombatController>();
+        if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
 
-        // Enemy ·¹ÀÌ¾î¸¸ ¾²´Â °Ô Á¦ÀÏ ¾ÈÀüÇÏ±ä ÇÔ (ÀÎ½ºÆåÅÍ¿¡¼­ Enemy¸¸ Âï¾îÁà)
-        // ºñ¿öµÎ¸é ±×³É ~0(ÀüºÎ)¶ó¼­ Á¡À¯ Ã¼Å©°¡ °úÇÒ ¼ö ÀÖÀ½.
-        // enemyLayerMask´Â ²À Enemy¸¸ Æ÷ÇÔ ±ÇÀå.
+        // âœ… ì‹œì‘ ìœ„ì¹˜ ì ìœ  ë“±ë¡
+        if (occupancy != null && gridBoard != null)
+        {
+            Vector2Int myCell = gridBoard.WorldToCell(transform.position);
+            occupancy.TryOccupy(transform, myCell);
+        }
+
         PickNewWanderTarget();
     }
 
@@ -93,11 +75,13 @@ public class FieldEnemyWanderChase : MonoBehaviour
     private void OnDisable()
     {
         if (timeManager != null) timeManager.OnTimeAdvanced -= OnTimeAdvanced;
+
+        // âœ… ë¹„í™œì„±/íŒŒê´´ ì‹œ ì ìœ  í•´ì œ
+        if (occupancy != null) occupancy.Release(transform);
     }
 
     private void OnTimeAdvanced(int delta, int newTotalTime)
     {
-        // delta¸¸Å­ Æ½ Ã³¸® (ÇÑ¹ø¿¡ timeÀÌ ¿©·¯Ä­ Áõ°¡ÇØµµ ¾ÈÁ¤)
         int ticks = Mathf.Max(1, delta);
         for (int i = 0; i < ticks; i++)
             TickOnce();
@@ -115,7 +99,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
                 return;
         }
 
-        Vector2Int myCell = gridBoard.WorldToCell(transform.position);
+        Vector2Int myCell = GetMyCell();
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
         int distToPlayer = FieldCombatUtils.Chebyshev(myCell, pCell);
 
@@ -131,20 +115,16 @@ public class FieldEnemyWanderChase : MonoBehaviour
 
         if (state == State.Chase)
         {
-            // ÀÎÁ¢ÇÏ¸é ÀüÅõ ½ÃÀÛ(¿É¼Ç)
             if (startCombatWhenAdjacent && fieldCombat != null && distToPlayer <= combatStartRange)
             {
                 if (!GetCombatActiveBestEffort(fieldCombat))
-                {
                     TryStartCombat(fieldCombat, transform, enemyTurnFirst);
-                }
                 return;
             }
 
-            Vector2Int next = ChooseNextStep(myCell, pCell, preferCloser: true);
+            Vector2Int next = ChooseNextStep(myCell, pCell);
             if (next != myCell)
-                StartCoroutine(StepMove(myCell, next));
-
+                TryStartStepMove(myCell, next);
             return;
         }
 
@@ -157,110 +137,38 @@ public class FieldEnemyWanderChase : MonoBehaviour
             PickNewWanderTarget();
         }
 
-        Vector2Int wanderNext = ChooseNextStep(myCell, _wanderTargetCell, preferCloser: true);
-        if (wanderNext != myCell)
-            StartCoroutine(StepMove(myCell, wanderNext));
+        Vector2Int wNext = ChooseNextStep(myCell, _wanderTargetCell);
+        if (wNext != myCell)
+            TryStartStepMove(myCell, wNext);
+    }
+
+    private Vector2Int GetMyCell()
+    {
+        // ì ìœ  ë ˆì§€ìŠ¤íŠ¸ë¦¬ì— ë“±ë¡ëœ ì…€ì´ ìˆìœ¼ë©´ ê·¸ê±¸ ìš°ì„ 
+        if (occupancy != null && occupancy.TryGetCurrentCell(transform, out var c))
+            return c;
+
+        return gridBoard.WorldToCell(transform.position);
     }
 
     // =========================================================
-    // Step Choice (ÇÙ½É: Á¡À¯ ¼¿ È¸ÇÇ + ¸·È÷¸é ¹é¿ÀÇÁ)
+    // ì´ë™ ì‹œì‘(ì˜ˆì•½ ë¨¼ì €!)
     // =========================================================
-    private Vector2Int ChooseNextStep(Vector2Int from, Vector2Int goal, bool preferCloser)
+    private void TryStartStepMove(Vector2Int fromCell, Vector2Int toCell)
     {
-        // ÈÄº¸ 8¹æ/4¹æ Áß:
-        // 1) ¸ñÇ¥¿ÍÀÇ °Å¸® °¨¼ÒÇÏ´Â ¼¿ Áß, ¿öÄ¿ºí + (¿É¼Ç)ºñÁ¡À¯ ¿ì¼±
-        // 2) °Å¸® µ¿ÀÏÇÑ ¼¿ Áß, ¿öÄ¿ºí + ºñÁ¡À¯
-        // 3) (¿É¼Ç) ¸·È÷¸é ¸ñÇ¥¿¡¼­ ¸Ö¾îÁö´Â ¼¿(¹é¿ÀÇÁ)
-        Vector2Int best = from;
-        int curDist = FieldCombatUtils.Chebyshev(from, goal);
-
-        // 1) reduce
-        if (preferCloser)
+        // âœ… ë¨¼ì € ì ìœ  "ì˜ˆì•½"(ì‚¬ì‹¤ìƒ ëª©ì ì§€ ì ìœ )
+        if (occupancy != null)
         {
-            if (TryPickCandidate(from, goal, wantRelation: -1, out best))
-                return best;
-        }
-
-        // 2) equal
-        if (TryPickCandidate(from, goal, wantRelation: 0, out best))
-            return best;
-
-        // 3) backoff
-        if (backoffWhenBlocked)
-        {
-            if (TryPickCandidate(from, goal, wantRelation: +1, out best))
-                return best;
-        }
-
-        return from;
-    }
-
-    /// <summary>
-    /// wantRelation:
-    /// -1 : goal °Å¸® °¨¼ÒÇÏ´Â ÈÄº¸
-    ///  0 : µ¿ÀÏÇÑ ÈÄº¸
-    /// +1 : goal °Å¸® Áõ°¡ÇÏ´Â ÈÄº¸(¹é¿ÀÇÁ)
-    /// </summary>
-    private bool TryPickCandidate(Vector2Int from, Vector2Int goal, int wantRelation, out Vector2Int picked)
-    {
-        picked = from;
-        int curDist = FieldCombatUtils.Chebyshev(from, goal);
-
-        // ¹æÇâ ¿ì¼±¼øÀ§¸¦ ¾à°£ ·£´ıÈ­ÇØ¼­ ¼­·Î ¹Ğ¾î³»±â(°íÁ¤ ÆĞÅÏ ¹æÁö)
-        // °£´ÜÈ÷ dx/dy loop¸¦ ·£´ı ¼ø¼­·Î ¼¯Áö´Â ¾Ê°í, ÈÄº¸¸¦ ´Ù º¸¸ç Ã¹ ÀûÇÕÀ» °í¸§.
-        // ÇÊ¿äÇÏ¸é ¿©±â¿¡¼­ ÈÄº¸ ¹è¿­À» ¸¸µé¾î ShuffleÇØµµ µÊ.
-
-        for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
+            if (!occupancy.TryMoveReserve(transform, toCell))
             {
-                if (dx == 0 && dy == 0) continue;
-                if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
-
-                Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
-                if (!IsWalkable(n)) continue;
-
-                if (avoidOccupiedCell && IsEnemyOccupied(n)) continue;
-
-                int nd = FieldCombatUtils.Chebyshev(n, goal);
-                int rel = nd.CompareTo(curDist); // -1 °¨¼Ò, 0 µ¿ÀÏ, +1 Áõ°¡
-
-                if (rel == wantRelation)
-                {
-                    picked = n;
-                    return true;
-                }
+                // ëª©ì ì§€ê°€ ì´ë¯¸ ì ìœ ë¨ -> ì´ë²ˆ í‹±ì€ ì´ë™ í¬ê¸°
+                return;
             }
-
-        return false;
-    }
-
-    // =========================================================
-    // Wander
-    // =========================================================
-    private void PickNewWanderTarget()
-    {
-        if (gridBoard == null) return;
-        Vector2Int myCell = gridBoard.WorldToCell(transform.position);
-
-        for (int t = 0; t < 16; t++)
-        {
-            int dx = Random.Range(-wanderRadius, wanderRadius + 1);
-            int dy = Random.Range(-wanderRadius, wanderRadius + 1);
-            Vector2Int c = new Vector2Int(myCell.x + dx, myCell.y + dy);
-
-            if (!IsWalkable(c)) continue;
-            if (avoidOccupiedCell && IsEnemyOccupied(c)) continue;
-
-            _wanderTargetCell = c;
-            return;
         }
 
-        _wanderTargetCell = myCell;
+        StartCoroutine(StepMove(fromCell, toCell));
     }
 
-    // =========================================================
-    // Movement
-    // =========================================================
     private IEnumerator StepMove(Vector2Int fromCell, Vector2Int toCell)
     {
         _moving = true;
@@ -283,33 +191,46 @@ public class FieldEnemyWanderChase : MonoBehaviour
     }
 
     // =========================================================
-    // Occupied / Walkable
+    // ë‹¤ìŒ ìŠ¤í… ì„ íƒ (ì›Œí¬/ì ìœ  ì²´í¬ í¬í•¨)
     // =========================================================
-    private bool IsEnemyOccupied(Vector2Int cell)
+    private Vector2Int ChooseNextStep(Vector2Int from, Vector2Int goal)
     {
-        if (gridBoard == null) return false;
+        Vector2Int best = from;
+        int bestDist = FieldCombatUtils.Chebyshev(from, goal);
 
-        Vector3 w = gridBoard.CellToWorld(cell);
-        Vector2 wp = new Vector2(w.x, w.y);
+        // í›„ë³´ ì¤‘ ê±°ë¦¬ ì¤„ì–´ë“œëŠ” ê²ƒ ìš°ì„ 
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
 
-        Collider2D[] cols = Physics2D.OverlapCircleAll(wp, Mathf.Max(0.01f, occupiedCheckRadius), enemyLayerMask);
-        if (cols == null || cols.Length == 0) return false;
+                Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
 
-        for (int i = 0; i < cols.Length; i++)
-        {
-            var inst = cols[i].GetComponentInParent<EnemyInstance>();
-            if (inst == null) continue;
-            if (inst.transform == transform) continue;
-            if (inst.currentHP <= 0) continue;
-            return true;
-        }
+                if (!IsWalkable(n)) continue;
+                if (IsOccupiedByOther(n)) continue; // âœ… ì ìœ  ì²´í¬
 
-        return false;
+                int d = FieldCombatUtils.Chebyshev(n, goal);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = n;
+                }
+            }
+
+        // ì¤„ì–´ë“œëŠ” ê²Œ ì—†ìœ¼ë©´(ë§‰í˜) ê·¸ëƒ¥ ì œìë¦¬
+        return best;
+    }
+
+    private bool IsOccupiedByOther(Vector2Int cell)
+    {
+        if (occupancy == null) return false;
+        var occ = occupancy.GetOccupant(cell);
+        return occ != null && occ != transform;
     }
 
     private bool IsWalkable(Vector2Int cell)
     {
-        // GridBoard¿¡ ÀÌµ¿ ¸·Èû Ã¼Å© ÇÔ¼ö°¡ ÀÖÀ¸¸é »ç¿ë. ¾øÀ¸¸é true.
         var t = gridBoard.GetType();
 
         foreach (var name in new[] { "IsCellBlocked", "IsMoveBlocked", "IsBlocked", "IsWalkBlocked" })
@@ -321,12 +242,36 @@ public class FieldEnemyWanderChase : MonoBehaviour
                 if (r is bool b) return !b;
             }
         }
-
         return true;
     }
 
     // =========================================================
-    // Combat Active / Start Combat (º¸È£¼öÁØ È¸ÇÇ)
+    // Wander target
+    // =========================================================
+    private void PickNewWanderTarget()
+    {
+        if (gridBoard == null) return;
+
+        Vector2Int myCell = GetMyCell();
+
+        for (int t = 0; t < 16; t++)
+        {
+            int dx = Random.Range(-wanderRadius, wanderRadius + 1);
+            int dy = Random.Range(-wanderRadius, wanderRadius + 1);
+            Vector2Int c = new Vector2Int(myCell.x + dx, myCell.y + dy);
+
+            if (!IsWalkable(c)) continue;
+            if (IsOccupiedByOther(c)) continue;
+
+            _wanderTargetCell = c;
+            return;
+        }
+
+        _wanderTargetCell = myCell;
+    }
+
+    // =========================================================
+    // Combat helpers (reflection-safe)
     // =========================================================
     private bool GetCombatActiveBestEffort(FieldCombatController fc)
     {
@@ -353,11 +298,6 @@ public class FieldEnemyWanderChase : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// FieldCombatController.StartCombat(...)°¡ private/protected¿©µµ È£Ãâ °¡´ÉÇÑ public ¿£Æ®¸®¸¦ ¿ì¼± ½Ãµµ.
-    /// - ¿ì¼±¼øÀ§: StartCombatPublic / StartCombatRequest / RequestStartCombat / BeginCombatFromFieldAI / EnterFromFieldAI
-    /// - ¾øÀ¸¸é ¾Æ¹« °Íµµ ¾È ÇÔ(·Î±× ¾øÀÌ Á¶¿ëÈ÷ ½ÇÆĞ)
-    /// </summary>
     private void TryStartCombat(FieldCombatController fc, Transform enemy, bool enemyFirst)
     {
         if (fc == null || enemy == null) return;
@@ -372,24 +312,15 @@ public class FieldEnemyWanderChase : MonoBehaviour
             "EnterFromFieldAI"
         };
 
-        // (Transform, bool) ¶Ç´Â (Transform) ÇüÅÂ ¸ğµÎ ½Ãµµ
         foreach (var name in candidates)
         {
             var m2 = t.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
                 new[] { typeof(Transform), typeof(bool) }, null);
-            if (m2 != null)
-            {
-                m2.Invoke(fc, new object[] { enemy, enemyFirst });
-                return;
-            }
+            if (m2 != null) { m2.Invoke(fc, new object[] { enemy, enemyFirst }); return; }
 
             var m1 = t.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
                 new[] { typeof(Transform) }, null);
-            if (m1 != null)
-            {
-                m1.Invoke(fc, new object[] { enemy });
-                return;
-            }
+            if (m1 != null) { m1.Invoke(fc, new object[] { enemy }); return; }
         }
     }
 }

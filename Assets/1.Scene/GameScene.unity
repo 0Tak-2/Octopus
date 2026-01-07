@@ -5020,6 +5020,7 @@ MonoBehaviour:
   player: {fileID: 931578457}
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
+  occupancy: {fileID: 0}
   aggroRange: 6
   requireLoS: 1
   enableWander: 1
@@ -5028,12 +5029,6 @@ MonoBehaviour:
   allowDiagonal: 1
   stepMoveDuration: 0.3
   pauseWhenAnyCombatActive: 1
-  avoidOccupiedCell: 1
-  occupiedCheckRadius: 0.18
-  backoffWhenBlocked: 1
-  enemyLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   startCombatWhenAdjacent: 1
   combatStartRange: 1
   fieldCombat: {fileID: 0}
@@ -5352,6 +5347,7 @@ MonoBehaviour:
   player: {fileID: 931578457}
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
+  occupancy: {fileID: 0}
   aggroRange: 6
   requireLoS: 1
   enableWander: 1
@@ -5360,12 +5356,6 @@ MonoBehaviour:
   allowDiagonal: 1
   stepMoveDuration: 0.3
   pauseWhenAnyCombatActive: 1
-  avoidOccupiedCell: 1
-  occupiedCheckRadius: 0.18
-  backoffWhenBlocked: 1
-  enemyLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   startCombatWhenAdjacent: 1
   combatStartRange: 1
   fieldCombat: {fileID: 0}
@@ -6048,6 +6038,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1216953313}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &710611692
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 710611693}
+  - component: {fileID: 710611694}
+  m_Layer: 0
+  m_Name: GridOccupancyRegistry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &710611693
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710611692}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 870297389}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &710611694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710611692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3289d51b96f2e248b91ab52ab7e609c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &719859830
 GameObject:
   m_ObjectHideFlags: 0
@@ -8009,6 +8043,7 @@ Transform:
   - {fileID: 608908250}
   - {fileID: 577187974}
   - {fileID: 1843907660}
+  - {fileID: 710611693}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &889902336
@@ -8619,9 +8654,11 @@ MonoBehaviour:
   fieldTime: {fileID: 1768082966}
   crouch: {fileID: 931578459}
   rest: {fileID: 931578461}
+  occupancy: {fileID: 0}
   moveDuration: 0.3
   baseMoveTimeCost: 1
   crouchExtraTimeCost: 1
+  blockMoveIntoOccupiedCell: 1
 --- !u!114 &931578459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11831,10 +11868,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fieldTime: {fileID: 1768082966}
   player: {fileID: 931578458}
-  crouch: {fileID: 0}
-  vision: {fileID: 0}
-  stats: {fileID: 0}
-  rest: {fileID: 0}
+  crouch: {fileID: 931578459}
+  vision: {fileID: 1240661179}
+  stats: {fileID: 931578460}
+  rest: {fileID: 931578461}
   text: {fileID: 1943187830}
 --- !u!1 &1223746323
 GameObject:
@@ -17095,6 +17132,7 @@ MonoBehaviour:
   player: {fileID: 931578457}
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
+  occupancy: {fileID: 0}
   aggroRange: 6
   requireLoS: 1
   enableWander: 1
@@ -17103,12 +17141,6 @@ MonoBehaviour:
   allowDiagonal: 1
   stepMoveDuration: 0.3
   pauseWhenAnyCombatActive: 1
-  avoidOccupiedCell: 1
-  occupiedCheckRadius: 0.18
-  backoffWhenBlocked: 1
-  enemyLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   startCombatWhenAdjacent: 1
   combatStartRange: 1
   fieldCombat: {fileID: 0}
@@ -18330,6 +18362,7 @@ MonoBehaviour:
   player: {fileID: 931578457}
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
+  occupancy: {fileID: 0}
   aggroRange: 6
   requireLoS: 1
   enableWander: 1
@@ -18338,12 +18371,6 @@ MonoBehaviour:
   allowDiagonal: 1
   stepMoveDuration: 0.3
   pauseWhenAnyCombatActive: 1
-  avoidOccupiedCell: 1
-  occupiedCheckRadius: 0.18
-  backoffWhenBlocked: 1
-  enemyLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   startCombatWhenAdjacent: 1
   combatStartRange: 1
   fieldCombat: {fileID: 0}
@@ -18556,7 +18583,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

@@ -8,11 +8,16 @@ public class PlayerGridMover : MonoBehaviour
     public FieldTimeManager fieldTime;
     public PlayerCrouch crouch;
     public RestController rest;
+    public GridOccupancyRegistry occupancy;   // ✅ 추가
 
     [Header("Move")]
     public float moveDuration = 0.12f;
     public int baseMoveTimeCost = 1;
     public int crouchExtraTimeCost = 1;
+
+    [Header("Occupancy")]
+    [Tooltip("점유 시스템이 있을 때, 점유된 셀로 이동을 막습니다.")]
+    public bool blockMoveIntoOccupiedCell = true;
 
     public Vector2Int CurrentCell { get; private set; }
 
@@ -24,12 +29,26 @@ public class PlayerGridMover : MonoBehaviour
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
         if (rest == null) rest = FindObjectOfType<RestController>();
+        if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>(); // ✅ 추가
     }
 
     private void Start()
     {
         CurrentCell = grid.WorldToCell(transform.position);
         transform.position = grid.CellToWorld(CurrentCell);
+
+        // ✅ 시작 위치 점유 등록
+        if (occupancy != null)
+        {
+            occupancy.TryOccupy(transform, CurrentCell);
+        }
+    }
+
+    private void OnDisable()
+    {
+        // ✅ 비활성화/파괴 시 점유 해제
+        if (occupancy != null)
+            occupancy.Release(transform);
     }
 
     private void Update()
@@ -85,6 +104,27 @@ public class PlayerGridMover : MonoBehaviour
         if (grid.IsMoveBlocked(target))
             return;
 
+        // ✅ 점유 체크(플레이어가 적 칸으로 들어가 겹치는 것 방지)
+        if (blockMoveIntoOccupiedCell && occupancy != null)
+        {
+            Transform occ = occupancy.GetOccupant(target);
+            if (occ != null && occ != transform)
+            {
+                // 점유된 칸이면 이동 금지 + Time 소비도 하지 않음
+                return;
+            }
+        }
+
+        // ✅ 가장 중요: "예약" 성공해야 실제 이동/Time소비
+        if (occupancy != null)
+        {
+            // 목적지 셀이 이미 누가 예약/점유 중이면 실패
+            if (!occupancy.TryMoveReserve(transform, target))
+            {
+                return;
+            }
+        }
+
         int cost = GetMoveTimeCost();
         fieldTime?.Advance(cost);
 
@@ -99,10 +139,12 @@ public class PlayerGridMover : MonoBehaviour
         Vector3 end = grid.CellToWorld(targetCell);
 
         float t = 0f;
+        float invDur = 1f / Mathf.Max(0.0001f, moveDuration);
+
         while (t < 1f)
         {
-            t += Time.deltaTime / Mathf.Max(0.0001f, moveDuration);
-            transform.position = Vector3.Lerp(start, end, t);
+            t += Time.deltaTime * invDur;
+            transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(t));
             yield return null;
         }
 
