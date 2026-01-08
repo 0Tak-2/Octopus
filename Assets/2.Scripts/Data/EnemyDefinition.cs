@@ -27,6 +27,12 @@ public class EnemyDefinition : ScriptableObject
     public EnemyAIType aiType = EnemyAIType.AI1_MeleeChase;
     public bool useDashAttackMotion = true;
 
+    [Header("Field Detection")]
+    [Tooltip("필드에서 플레이어를 감지하는 거리 (Chebyshev)")]
+    [Min(1)] public int fieldDetectionRange = 6;
+    [Tooltip("필드 탐지 시 시야(LoS) 필요 여부")]
+    public bool fieldRequireLoS = true;
+
     [Header("Evasion (optional)")]
     [Range(0f, 0.95f)] public float baseEvasion = 0f;
 

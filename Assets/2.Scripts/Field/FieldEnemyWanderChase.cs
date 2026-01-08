@@ -14,8 +14,12 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public GridOccupancyRegistry occupancy;
 
     [Header("Detect")]
+    [Tooltip("(Deprecated) Definition에서 자동으로 읽어옴. 오버라이드하려면 useCustomDetection=true")]
     public int aggroRange = 6;              // Chebyshev
+    [Tooltip("(Deprecated) Definition에서 자동으로 읽어옴")]
     public bool requireLoS = false;
+    [Tooltip("Definition 대신 위 값을 사용")]
+    public bool useCustomDetection = false;
 
     [Header("Wander")]
     public bool enableWander = true;
@@ -55,6 +59,13 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (timeManager == null) timeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (fieldCombat == null) fieldCombat = FindObjectOfType<FieldCombatController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+
+        // ✅ EnemyDefinition에서 시야 읽어오기
+        if (!useCustomDetection && _enemy != null && _enemy.definition != null)
+        {
+            aggroRange = Mathf.Max(1, _enemy.definition.fieldDetectionRange);
+            requireLoS = _enemy.definition.fieldRequireLoS;
+        }
 
         // ✅ 시작 위치 점유 등록
         if (occupancy != null && gridBoard != null)

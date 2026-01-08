@@ -5021,8 +5021,9 @@ MonoBehaviour:
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
-  aggroRange: 6
+  aggroRange: 2
   requireLoS: 1
+  useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
   wanderRetargetEveryTicks: 2
@@ -5348,8 +5349,9 @@ MonoBehaviour:
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
-  aggroRange: 6
+  aggroRange: 2
   requireLoS: 1
+  useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
   wanderRetargetEveryTicks: 2
@@ -11122,31 +11124,13 @@ MonoBehaviour:
   playerStats: {fileID: 931578460}
   enemy: {fileID: 1966310115}
   enemyTag: Enemy
-  detectionRangeChebyshev: 6
-  returnEnemyToHomeOnEnd: 1
   disableEnemyOnDeath: 1
   destroyEnemyOnDeath: 0
   enemyStartsFirstOnDetect: 1
   enemyTurnStartDelaySeconds: 0.3
-  preventOverlapDelay: 1
-  waitTurnKey: 32
-  enterFocusedCombatKey: 101
-  playerAttackRange: 1
-  playerAttackDamage: 1
-  requireLoSForPlayerAttack: 1
-  enemyChasesWhenOutOfRange: 1
-  enemyAttackRange: 1
-  enemyDamage: 1
-  enemyRequiresLoSToAttack: 1
   stepMoveDuration: 0.12
   dashDuration: 0.08
   dashReturnDuration: 0.06
-  ignoreMoveBlockedForDebug: 1
-  logChaseDebug: 1
-  worldCamera: {fileID: 519420031}
-  enemyClickLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   logTransitions: 1
 --- !u!4 &1177859470
 Transform:
@@ -11397,7 +11381,11 @@ MonoBehaviour:
   bossAI: {fileID: 0}
   blockerBehaviour: {fileID: 0}
   destroyFieldEnemyOnDefeat: 1
+  consumeTimePerTurn: 1
+  timePerPlayerTurn: 1
+  timePerEnemyTurn: 1
   stunSkipDelay: 0.35
+  fieldTimeManager: {fileID: 0}
 --- !u!4 &1202764715
 Transform:
   m_ObjectHideFlags: 0
@@ -17133,8 +17121,9 @@ MonoBehaviour:
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
-  aggroRange: 6
+  aggroRange: 2
   requireLoS: 1
+  useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
   wanderRetargetEveryTicks: 2
@@ -18363,8 +18352,9 @@ MonoBehaviour:
   gridBoard: {fileID: 1198750089}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
-  aggroRange: 6
+  aggroRange: 2
   requireLoS: 1
+  useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
   wanderRetargetEveryTicks: 2

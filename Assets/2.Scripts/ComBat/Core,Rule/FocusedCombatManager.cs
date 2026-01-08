@@ -106,6 +106,14 @@ public class FocusedCombatManager : MonoBehaviour
     [Tooltip("집중전투에서 적이 죽으면 필드의 해당 적 오브젝트를 제거할지")]
     public bool destroyFieldEnemyOnDefeat = true;
 
+    [Header("Time System (Field Integration)")]
+    [Tooltip("집중전투에서 턴마다 Time을 소비할지")]
+    public bool consumeTimePerTurn = true;
+    [Tooltip("플레이어 턴 종료 시 Time 소비량")]
+    [Min(0)] public int timePerPlayerTurn = 1;
+    [Tooltip("적 턴 종료 시 Time 소비량")]
+    [Min(0)] public int timePerEnemyTurn = 1;
+
     // ===== Runtime =====
     private CombatUnitToken _playerToken;
     private CombatUnitToken _enemyToken;
@@ -132,6 +140,10 @@ public class FocusedCombatManager : MonoBehaviour
     // ✅ stun skip pacing
     [Header("Stun Skip UX")]
     public float stunSkipDelay = 0.35f;
+
+    [Header("Field Time Manager")]
+    [Tooltip("집중전투에서 Time 소비를 위한 참조")]
+    public FieldTimeManager fieldTimeManager;
 
     // ✅ Transition guard (fade / enter / exit)
     private bool _isTransitioning = false;
@@ -180,6 +192,10 @@ public class FocusedCombatManager : MonoBehaviour
             endTurnButton.onClick.RemoveListener(RequestEndTurn);
             endTurnButton.onClick.AddListener(RequestEndTurn);
         }
+
+        // ✅ FieldTimeManager 찾기
+        if (fieldTimeManager == null)
+            fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
 
         _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
     }
@@ -527,6 +543,9 @@ public class FocusedCombatManager : MonoBehaviour
         if (actionController != null && actionController.IsInActionMode)
             actionController.CancelAction();
 
+        // ✅ 플레이어 턴 종료 시 Time 소비
+        ConsumeTimeForPlayerTurn();
+
         BeginEnemyTurn();
     }
 
@@ -620,6 +639,9 @@ public class FocusedCombatManager : MonoBehaviour
             if (enemyAI != null)
                 yield return StartCoroutine(enemyAI.TakeTurn());
         }
+
+        // ✅ 적 턴 종료 시 Time 소비
+        ConsumeTimeForEnemyTurn();
 
         if (!State.isInCombat) yield break;
         BeginPlayerTurn(initialStart: false);
@@ -1092,5 +1114,26 @@ public class FocusedCombatManager : MonoBehaviour
             boardUI.MoveExistingToken(EnemyToken, State.enemyCell.x, State.enemyCell.y);
 
         State.isBusy = false;
+    }
+
+    // ==========================
+    // Time System (Field Integration)
+    // ==========================
+    private void ConsumeTimeForPlayerTurn()
+    {
+        if (!consumeTimePerTurn) return;
+        if (timePerPlayerTurn <= 0) return;
+        if (fieldTimeManager == null) return;
+
+        fieldTimeManager.Advance(timePerPlayerTurn);
+    }
+
+    private void ConsumeTimeForEnemyTurn()
+    {
+        if (!consumeTimePerTurn) return;
+        if (timePerEnemyTurn <= 0) return;
+        if (fieldTimeManager == null) return;
+
+        fieldTimeManager.Advance(timePerEnemyTurn);
     }
 }

@@ -14,10 +14,6 @@ public class FieldCombatController : MonoBehaviour
     public string enemyTag = "Enemy";
     private EnemyInstance enemyInstanceCache;
 
-    [Header("Detection / End")]
-    public int detectionRangeChebyshev = 6;
-    public bool returnEnemyToHomeOnEnd = true;
-
     [Header("Death Handling")]
     public bool disableEnemyOnDeath = true;
     public bool destroyEnemyOnDeath = false;
@@ -29,36 +25,10 @@ public class FieldCombatController : MonoBehaviour
     [Tooltip("플레이어가 Time을 쓴 뒤, 적 턴이 시작되기까지의 실제 시간 딜레이(겹침 방지).")]
     public float enemyTurnStartDelaySeconds = 0.18f;
 
-    [Tooltip("적 턴 시작 딜레이 코루틴을 중복 실행하지 않도록 방지.")]
-    public bool preventOverlapDelay = true;
-
-    [Header("Player Turn")]
-    public KeyCode waitTurnKey = KeyCode.Space;
-    public KeyCode enterFocusedCombatKey = KeyCode.E;
-
-
-    public int playerAttackRange = 1;
-    public int playerAttackDamage = 1;
-    public bool requireLoSForPlayerAttack = true;
-
-    [Header("Enemy Turn")]
-    public bool enemyChasesWhenOutOfRange = true;
-    public int enemyAttackRange = 1;
-    public int enemyDamage = 1;
-    public bool enemyRequiresLoSToAttack = true;
-
-    [Header("Smooth Move / Dash Visuals")]
+    [Header("Visual")]
     public float stepMoveDuration = 0.12f;
     public float dashDuration = 0.08f;
     public float dashReturnDuration = 0.06f;
-
-    [Header("Move Block Debug")]
-    public bool ignoreMoveBlockedForDebug = false;
-    public bool logChaseDebug = false;
-
-    [Header("Click Raycast")]
-    public Camera worldCamera;
-    public LayerMask enemyClickLayerMask = ~0;
 
     [Header("Debug")]
     public bool logTransitions = true;
@@ -74,10 +44,14 @@ public class FieldCombatController : MonoBehaviour
     // 적 턴 시작 딜레이 코루틴 핸들
     private Coroutine _enemyTurnDelayCoroutine;
 
+    // ✅ EnemyDefinition에서 읽어올 스탯 캐시
+    private int _cachedPlayerAttackRange = 1;
+    private int _cachedPlayerAttackDamage = 1;
+    private int _cachedEnemyAttackRange = 1;
+    private int _cachedEnemyDamage = 1;
+
     private void Awake()
     {
-        if (worldCamera == null) worldCamera = Camera.main;
-
         if (fieldTimeManager == null)
             fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
 
@@ -128,7 +102,7 @@ public class FieldCombatController : MonoBehaviour
     private void ScheduleEnemyTurnAfterDelay()
     {
         // 중복 방지: 이미 딜레이 코루틴이 돌고 있으면 다시 시작하지 않음
-        if (preventOverlapDelay && _enemyTurnDelayCoroutine != null)
+        if (_enemyTurnDelayCoroutine != null)
             return;
 
         _enemyTurnDelayCoroutine = StartCoroutine(EnemyTurnDelayRoutine());
@@ -169,10 +143,9 @@ public class FieldCombatController : MonoBehaviour
     {
         if (player == null || gridBoard == null) return;
 
-        // Not in combat: auto-detect start
+        // Not in combat: 대기 (FieldEnemyWanderChase가 전투 시작을 담당)
         if (State.phase == FieldCombatState.Phase.None || State.phase == FieldCombatState.Phase.Ended)
         {
-            TryAutoStartCombat();
             return;
         }
 
@@ -192,7 +165,7 @@ public class FieldCombatController : MonoBehaviour
             return;
         }
 
-        // Escape end
+        // Escape end (FieldEnemyWanderChase의 aggroRange보다 멀어지면 자동 종료)
         if (!IsEnemyStillDetectingPlayer())
         {
             EndCombat(escaped: true);
@@ -215,31 +188,8 @@ public class FieldCombatController : MonoBehaviour
     }
 
     // =========================================================
-    // Start / End
+    // Start / End (외부에서 호출)
     // =========================================================
-    private void TryAutoStartCombat()
-    {
-        Transform target = enemy;
-
-        if (target == null)
-        {
-            var go = GameObject.FindGameObjectWithTag(enemyTag);
-            if (go != null) target = go.transform;
-        }
-        if (target == null) return;
-        if (!target.gameObject.activeInHierarchy) return;
-
-        var inst = target.GetComponent<EnemyInstance>();
-        if (inst != null && inst.currentHP <= 0) return;
-
-        var pCell = gridBoard.WorldToCell(player.position);
-        var eCell = gridBoard.WorldToCell(target.position);
-
-        if (FieldCombatUtils.Chebyshev(pCell, eCell) > detectionRangeChebyshev) return;
-        if (!FieldCombatUtils.HasLineOfSight(gridBoard, eCell, pCell)) return;
-
-        StartCombat(target, enemyFirst: enemyStartsFirstOnDetect);
-    }
 
     private void StartCombat(Transform targetEnemy, bool enemyFirst)
     {
@@ -247,8 +197,11 @@ public class FieldCombatController : MonoBehaviour
         enemyInstanceCache = enemy != null ? enemy.GetComponent<EnemyInstance>() : null;
         if (enemyInstanceCache != null && enemyInstanceCache.currentHP <= 0) return;
 
+        // ✅ EnemyDefinition에서 필드 전투 스탯 로드
+        LoadEnemyStatsFromDefinition();
+
         var enemyHome = gridBoard.WorldToCell(enemy.position);
-        State.ResetForNewCombat(player, enemy, enemyHome, detectionRangeChebyshev, returnEnemyToHomeOnEnd);
+        State.ResetForNewCombat(player, enemy, enemyHome, _cachedEnemyAttackRange, true);
 
         playerCellCached = gridBoard.WorldToCell(player.position);
         enemyCellCached = gridBoard.WorldToCell(enemy.position);
@@ -328,32 +281,26 @@ public class FieldCombatController : MonoBehaviour
         int dist = FieldCombatUtils.Chebyshev(enemyCellCached, playerCellCached);
         bool los = FieldCombatUtils.HasLineOfSight(gridBoard, enemyCellCached, playerCellCached);
 
-        bool canAttack = dist <= enemyAttackRange && (!enemyRequiresLoSToAttack || los);
+        bool canAttack = dist <= _cachedEnemyAttackRange && los;
 
         if (canAttack)
         {
             yield return DashHitAndReturn(enemy, gridBoard.CellToWorld(enemyCellCached), gridBoard.CellToWorld(playerCellCached));
-            DealDamageToPlayer(enemyDamage);
-            if (logTransitions) Debug.Log($"[FieldCombat] Enemy attacks for {enemyDamage}");
+            DealDamageToPlayer(_cachedEnemyDamage);
+            if (logTransitions) Debug.Log($"[FieldCombat] Enemy attacks for {_cachedEnemyDamage}");
         }
         else
         {
-            if (enemyChasesWhenOutOfRange)
+            // 사거리 밖이면 추격 (1칸만)
+            if (TryGetChaseStep(enemyCellCached, playerCellCached, out Vector2Int next))
             {
-                if (TryGetChaseStep(enemyCellCached, playerCellCached, out Vector2Int next))
-                {
-                    Vector3 from = enemy.position;
-                    Vector3 to = gridBoard.CellToWorld(next);
+                Vector3 from = enemy.position;
+                Vector3 to = gridBoard.CellToWorld(next);
 
-                    enemyCellCached = next;
-                    yield return SmoothMove(enemy, from, to, stepMoveDuration);
+                enemyCellCached = next;
+                yield return SmoothMove(enemy, from, to, stepMoveDuration);
 
-                    if (logTransitions) Debug.Log($"[FieldCombat] Enemy moves to {next}");
-                }
-                else
-                {
-                    if (logChaseDebug) Debug.LogWarning($"[FieldCombat] Chase failed: e={enemyCellCached} p={playerCellCached}");
-                }
+                if (logTransitions) Debug.Log($"[FieldCombat] Enemy moves to {next}");
             }
         }
 
@@ -367,22 +314,19 @@ public class FieldCombatController : MonoBehaviour
     // =========================================================
     // Player Turn
     // =========================================================
+    // Player Turn (입력은 외부 스크립트에서 처리 권장)
+    // =========================================================
     private void HandlePlayerTurn()
     {
         // 플레이어 턴이면 항상 대기 플래그 ON
         if (!_waitingForPlayerTimeSpend)
             _waitingForPlayerTimeSpend = true;
 
-        // (0) Wait -> Time +1 (이벤트로 적 턴 예약)
-        if (Input.GetKeyDown(waitTurnKey))
-        {
-            if (logTransitions) Debug.Log("[FieldCombat] Player waits.");
-            AdvanceTimeBy1();
-            return;
-        }
+        // ✅ TODO: 플레이어 입력은 PlayerFieldCombat.cs 같은 별도 스크립트로 분리 권장
+        // 현재는 최소 기능만 유지
 
-        // (1) Focused combat
-        if (Input.GetKeyDown(enterFocusedCombatKey))
+        // (1) Focused combat (E키 - 임시)
+        if (Input.GetKeyDown(KeyCode.E))
         {
             if (enemyInstanceCache != null && enemyInstanceCache.currentHP <= 0) return;
             TryEnterFocusedCombat();
@@ -412,9 +356,9 @@ public class FieldCombatController : MonoBehaviour
         enemyCellCached = gridBoard.WorldToCell(enemy.position);
 
         int dist = FieldCombatUtils.Chebyshev(playerCellCached, enemyCellCached);
-        if (dist > playerAttackRange) yield break;
+        if (dist > _cachedPlayerAttackRange) yield break;
 
-        if (requireLoSForPlayerAttack && !FieldCombatUtils.HasLineOfSight(gridBoard, playerCellCached, enemyCellCached))
+        if (!FieldCombatUtils.HasLineOfSight(gridBoard, playerCellCached, enemyCellCached))
             yield break;
 
         State.busy = true;
@@ -423,10 +367,10 @@ public class FieldCombatController : MonoBehaviour
         Vector3 target = gridBoard.CellToWorld(enemyCellCached);
         yield return DashHitAndReturn(player, start, target);
 
-        DealDamageToEnemy(playerAttackDamage);
+        DealDamageToEnemy(_cachedPlayerAttackDamage);
 
         if (logTransitions)
-            Debug.Log($"[FieldCombat] Player attacks for {playerAttackDamage}");
+            Debug.Log($"[FieldCombat] Player attacks for {_cachedPlayerAttackDamage}");
 
         State.busy = false;
 
@@ -434,17 +378,36 @@ public class FieldCombatController : MonoBehaviour
     }
 
     // =========================================================
-    // Detection
+    // Detection (적의 시야에서 벗어나면 전투 종료)
     // =========================================================
     private bool IsEnemyStillDetectingPlayer()
     {
         if (enemy == null || !enemy.gameObject.activeInHierarchy) return false;
         if (enemyInstanceCache != null && enemyInstanceCache.currentHP <= 0) return false;
 
+        // ✅ EnemyDefinition의 fieldDetectionRange 사용
+        if (enemyInstanceCache != null && enemyInstanceCache.definition != null)
+        {
+            int detectionRange = Mathf.Max(1, enemyInstanceCache.definition.fieldDetectionRange);
+            bool requireLoS = enemyInstanceCache.definition.fieldRequireLoS;
+
+            playerCellCached = gridBoard.WorldToCell(player.position);
+            enemyCellCached = gridBoard.WorldToCell(enemy.position);
+
+            if (FieldCombatUtils.Chebyshev(enemyCellCached, playerCellCached) > detectionRange)
+                return false;
+
+            if (requireLoS)
+                return FieldCombatUtils.HasLineOfSight(gridBoard, enemyCellCached, playerCellCached);
+
+            return true;
+        }
+
+        // Fallback: 기본값 6
         playerCellCached = gridBoard.WorldToCell(player.position);
         enemyCellCached = gridBoard.WorldToCell(enemy.position);
 
-        if (FieldCombatUtils.Chebyshev(enemyCellCached, playerCellCached) > detectionRangeChebyshev)
+        if (FieldCombatUtils.Chebyshev(enemyCellCached, playerCellCached) > 6)
             return false;
 
         return FieldCombatUtils.HasLineOfSight(gridBoard, enemyCellCached, playerCellCached);
@@ -503,8 +466,9 @@ public class FieldCombatController : MonoBehaviour
 
     private bool CanMoveTo(Vector2Int cell)
     {
-        if (ignoreMoveBlockedForDebug) return true;
-
+        if (gridBoard == null) return false;
+        
+        // GridBoard가 IsMoveBlocked 메서드를 가지고 있는지 확인
         var m = gridBoard.GetType().GetMethod("IsMoveBlocked");
         if (m != null)
         {
@@ -514,6 +478,31 @@ public class FieldCombatController : MonoBehaviour
         }
 
         return true;
+    }
+
+    // =========================================================
+    // Stats Loading (EnemyDefinition에서 읽어오기)
+    // =========================================================
+    private void LoadEnemyStatsFromDefinition()
+    {
+        // 기본값
+        _cachedPlayerAttackRange = 1;
+        _cachedPlayerAttackDamage = 1;
+        _cachedEnemyAttackRange = 1;
+        _cachedEnemyDamage = 1;
+
+        if (enemyInstanceCache == null || enemyInstanceCache.definition == null)
+            return;
+
+        var def = enemyInstanceCache.definition;
+
+        // 적 스탯은 EnemyDefinition에서
+        _cachedEnemyAttackRange = Mathf.Max(1, def.attackRange);
+        _cachedEnemyDamage = Mathf.Max(0, def.attackDamage);
+
+        // 플레이어 스탯은 여기서는 기본값 (PlayerStats나 다른 곳에서 관리 가능)
+        _cachedPlayerAttackRange = 1;
+        _cachedPlayerAttackDamage = 1;
     }
 
     // =========================================================
@@ -548,26 +537,29 @@ public class FieldCombatController : MonoBehaviour
     }
 
     // =========================================================
-    // Click
+    // Click (간단한 레이캐스트)
     // =========================================================
     private bool TryGetClickedEnemy(out Transform hitTransform)
     {
         hitTransform = null;
-        if (worldCamera == null) return false;
+        Camera cam = Camera.main;
+        if (cam == null) return false;
 
         Vector3 mouse = Input.mousePosition;
 
-        Vector3 world = worldCamera.ScreenToWorldPoint(mouse);
+        // 2D 레이캐스트 시도
+        Vector3 world = cam.ScreenToWorldPoint(mouse);
         Vector2 world2 = new Vector2(world.x, world.y);
-        RaycastHit2D hit2D = Physics2D.Raycast(world2, Vector2.zero, 0f, enemyClickLayerMask);
+        RaycastHit2D hit2D = Physics2D.Raycast(world2, Vector2.zero, 0f);
         if (hit2D.collider != null)
         {
             hitTransform = hit2D.collider.transform;
             return true;
         }
 
-        Ray ray = worldCamera.ScreenPointToRay(mouse);
-        if (Physics.Raycast(ray, out RaycastHit hit3D, 500f, enemyClickLayerMask))
+        // 3D 레이캐스트 시도
+        Ray ray = cam.ScreenPointToRay(mouse);
+        if (Physics.Raycast(ray, out RaycastHit hit3D, 500f))
         {
             hitTransform = hit3D.collider.transform;
             return true;
