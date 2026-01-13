@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed1a95060182d8949b5f2582dbb883af, type: 3}
+  m_Name: FieldMapConfig_Test
+  m_EditorClassIdentifier: 
+  width: 23
+  height: 23
+  initialWallProbability: 0.45
+  iterations: 4
+  wallThreshold: 5
+  minDungeonEntrances: 1
+  maxDungeonEntrances: 2
+  dungeonEntrancePrefab: {fileID: 0}
+  enemySpawnCount: 0
+  enemyPrefab: {fileID: 0}
+  seed: 0
