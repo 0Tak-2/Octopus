@@ -136,13 +136,40 @@ public class MapRenderer : MonoBehaviour
     /// </summary>
     private void UpdateGridBoard(MapData mapData)
     {
-        // GridBoard의 moveBlockedCells 업데이트
-        // (기존 GridBoard가 벽 정보를 저장하는 방식에 따라 다름)
+        if (gridBoard == null)
+        {
+            if (logRendering)
+                Debug.LogWarning("[MapRenderer] GridBoard가 없어서 벽 정보 등록을 건너뜁니다.");
+            return;
+        }
         
-        // 예시: GridBoard에 UpdateWalls(MapData) 메서드가 있다면
-        // gridBoard.UpdateWalls(mapData);
+        // GridBoard 크기 업데이트
+        gridBoard.width = mapData.width;
+        gridBoard.height = mapData.height;
+        
+        // 기존 블록 리스트 초기화
+        gridBoard.blockedMoveCells.Clear();
+        gridBoard.blockedVisionCells.Clear();
+        
+        // 벽 정보 등록
+        int wallCount = 0;
+        for (int x = 0; x < mapData.width; x++)
+        {
+            for (int y = 0; y < mapData.height; y++)
+            {
+                TileType tileType = mapData.GetTile(x, y);
+                
+                // 벽이면 이동/시야 차단 등록
+                if (tileType == TileType.Wall || tileType == TileType.Tree)
+                {
+                    Vector2Int cellPos = new Vector2Int(x, y);
+                    gridBoard.RegisterCellBlock(cellPos, blocksMove: true, blocksVision: true);
+                    wallCount++;
+                }
+            }
+        }
         
         if (logRendering)
-            Debug.Log($"[MapRenderer] GridBoard 업데이트 완료");
+            Debug.Log($"[MapRenderer] GridBoard 업데이트 완료: {wallCount}개 벽 등록");
     }
 }
