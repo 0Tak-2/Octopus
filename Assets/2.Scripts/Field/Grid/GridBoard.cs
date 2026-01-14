@@ -17,11 +17,39 @@ public class GridBoard : MonoBehaviour
 
     private HashSet<Vector2Int> _blockedMove;
     private HashSet<Vector2Int> _blockedVision;
+    private Grid _unityGrid;
 
     private void Awake()
     {
         _blockedMove = new HashSet<Vector2Int>(blockedMoveCells);
         _blockedVision = new HashSet<Vector2Int>(blockedVisionCells);
+        _unityGrid = GetComponent<Grid>();
+        
+        Debug.Log("[GridBoard] Awake - _blockedMove.Count = " + _blockedMove.Count);
+        Debug.Log("[GridBoard] Unity Grid: " + (_unityGrid != null ? "Found" : "NULL"));
+    }
+
+    public void RefreshBlockedCells()
+    {
+        Debug.Log("[GridBoard] RefreshBlockedCells START - blockedMoveCells.Count = " + blockedMoveCells.Count);
+        
+        if (_blockedMove == null)
+            _blockedMove = new HashSet<Vector2Int>();
+        else
+            _blockedMove.Clear();
+        
+        if (_blockedVision == null)
+            _blockedVision = new HashSet<Vector2Int>();
+        else
+            _blockedVision.Clear();
+        
+        foreach (var cell in blockedMoveCells)
+            _blockedMove.Add(cell);
+        
+        foreach (var cell in blockedVisionCells)
+            _blockedVision.Add(cell);
+        
+        Debug.Log("[GridBoard] RefreshBlockedCells END - _blockedMove.Count = " + _blockedMove.Count);
     }
 
     public bool InBounds(Vector2Int cell)
@@ -55,11 +83,21 @@ public class GridBoard : MonoBehaviour
 
     public Vector3 CellToWorld(Vector2Int cell)
     {
+        if (_unityGrid != null)
+        {
+            return _unityGrid.CellToWorld(new Vector3Int(cell.x, cell.y, 0)) + _unityGrid.cellSize * 0.5f;
+        }
         return origin + new Vector3(cell.x * cellSize, cell.y * cellSize, 0f);
     }
 
     public Vector2Int WorldToCell(Vector3 worldPos)
     {
+        if (_unityGrid != null)
+        {
+            Vector3Int cell3 = _unityGrid.WorldToCell(worldPos);
+            return new Vector2Int(cell3.x, cell3.y);
+        }
+        
         Vector3 local = worldPos - origin;
         int x = Mathf.RoundToInt(local.x / cellSize);
         int y = Mathf.RoundToInt(local.y / cellSize);
@@ -69,36 +107,22 @@ public class GridBoard : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        Gizmos.color = new Color(1f, 1f, 1f, 0.25f);
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                Vector3 c = CellToWorld(new Vector2Int(x, y));
-                Gizmos.DrawWireCube(c, new Vector3(cellSize, cellSize, 0f));
-            }
-        }
+        if (_blockedMove == null || _blockedMove.Count == 0)
+            return;
 
-        // 이동 막힘
-        Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.55f);
-        if (blockedMoveCells != null)
-        {
-            foreach (var b in blockedMoveCells)
-            {
-                Vector3 c = CellToWorld(b);
-                Gizmos.DrawCube(c, new Vector3(cellSize, cellSize, 0f));
-            }
-        }
+        Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
 
-        // 시야 막힘 (파란색)
-        Gizmos.color = new Color(0.2f, 0.4f, 1f, 0.55f);
-        if (blockedVisionCells != null)
+        foreach (var cell in _blockedMove)
         {
-            foreach (var b in blockedVisionCells)
-            {
-                Vector3 c = CellToWorld(b);
-                Gizmos.DrawCube(c, new Vector3(cellSize * 0.85f, cellSize * 0.85f, 0f));
-            }
+            if (!InBounds(cell)) continue;
+
+            Vector3 worldPos = CellToWorld(cell);
+            
+            float size = cellSize;
+            if (_unityGrid != null)
+                size = _unityGrid.cellSize.x;
+            
+            Gizmos.DrawCube(worldPos, new Vector3(size, size, 0.1f));
         }
     }
 #endif

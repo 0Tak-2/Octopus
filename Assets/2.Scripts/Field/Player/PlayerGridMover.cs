@@ -8,7 +8,7 @@ public class PlayerGridMover : MonoBehaviour
     public FieldTimeManager fieldTime;
     public PlayerCrouch crouch;
     public RestController rest;
-    public GridOccupancyRegistry occupancy;   // ✅ 추가
+    public GridOccupancyRegistry occupancy;
 
     [Header("Move")]
     public float moveDuration = 0.12f;
@@ -29,7 +29,9 @@ public class PlayerGridMover : MonoBehaviour
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
         if (rest == null) rest = FindObjectOfType<RestController>();
-        if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>(); // ✅ 추가
+        if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+
+        Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
     }
 
     private void Start()
@@ -37,30 +39,28 @@ public class PlayerGridMover : MonoBehaviour
         CurrentCell = grid.WorldToCell(transform.position);
         transform.position = grid.CellToWorld(CurrentCell);
 
-        // ✅ 시작 위치 점유 등록
         if (occupancy != null)
         {
             occupancy.TryOccupy(transform, CurrentCell);
         }
+
+        Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell + ", blockedMoveCells: " + grid.blockedMoveCells.Count);
     }
 
     private void OnDisable()
     {
-        // ✅ 비활성화/파괴 시 점유 해제
         if (occupancy != null)
             occupancy.Release(transform);
     }
 
     private void Update()
     {
-        // ✅ 휴식 중에는 이동 완전 차단
         if (rest != null && rest.IsResting)
             return;
 
         if (_isMoving) return;
         if (grid == null) return;
 
-        // 테스트용 Time 증가
         if (Input.GetKeyDown(KeyCode.Space))
         {
             fieldTime?.Advance(1);
@@ -98,29 +98,40 @@ public class PlayerGridMover : MonoBehaviour
     {
         Vector2Int target = CurrentCell + dir;
 
+        Debug.Log("[PlayerGridMover] TryMove to " + target);
+
         if (!grid.InBounds(target))
+        {
+            Debug.Log("[PlayerGridMover] Out of bounds!");
             return;
+        }
 
-        if (grid.IsMoveBlocked(target))
+        bool isBlocked = grid.IsMoveBlocked(target);
+        Debug.Log("[PlayerGridMover] IsMoveBlocked(" + target + ") = " + isBlocked);
+
+        if (isBlocked)
+        {
+            Debug.Log("[PlayerGridMover] BLOCKED at " + target + "!");
             return;
+        }
 
-        // ✅ 점유 체크(플레이어가 적 칸으로 들어가 겹치는 것 방지)
+        Debug.Log("[PlayerGridMover] NOT blocked, moving to " + target);
+
         if (blockMoveIntoOccupiedCell && occupancy != null)
         {
             Transform occ = occupancy.GetOccupant(target);
             if (occ != null && occ != transform)
             {
-                // 점유된 칸이면 이동 금지 + Time 소비도 하지 않음
+                Debug.Log("[PlayerGridMover] Cell occupied by " + occ.name);
                 return;
             }
         }
 
-        // ✅ 가장 중요: "예약" 성공해야 실제 이동/Time소비
         if (occupancy != null)
         {
-            // 목적지 셀이 이미 누가 예약/점유 중이면 실패
             if (!occupancy.TryMoveReserve(transform, target))
             {
+                Debug.Log("[PlayerGridMover] Move reserve failed!");
                 return;
             }
         }

@@ -115,71 +115,32 @@ public class FieldMapGenerator : MonoBehaviour
         if (gm != null && gm.currentMapIndex > 0)
         {
             // 이전 맵에서 왔으면 입구 위치에 스폰
-            if (map.entranceFromPrevMap != Vector2Int.zero && map.IsWalkable(map.entranceFromPrevMap.x, map.entranceFromPrevMap.y))
+            if (map.entranceFromPrevMap != Vector2Int.zero)
                 return map.entranceFromPrevMap;
         }
         
-        // 첫 맵이거나 정보 없으면 중앙에서 안전한 위치 찾기
+        // 첫 맵이거나 정보 없으면 중앙에 스폰
         int centerX = map.width / 2;
         int centerY = map.height / 2;
         
-        // 중앙에서 나선형으로 빈 공간 찾기 (더 넓은 반경)
-        for (int radius = 0; radius < Mathf.Max(map.width, map.height) / 2; radius++)
+        // 중앙에서 가까운 빈 공간 찾기
+        for (int radius = 0; radius < map.width / 2; radius++)
         {
-            // 반경 내 모든 위치 체크
             for (int dx = -radius; dx <= radius; dx++)
             {
                 for (int dy = -radius; dy <= radius; dy++)
                 {
-                    // 현재 반경의 테두리만 체크 (효율성)
-                    if (Mathf.Abs(dx) != radius && Mathf.Abs(dy) != radius)
-                        continue;
-                    
                     int x = centerX + dx;
                     int y = centerY + dy;
                     
-                    // 빈 공간이고 주변도 안전한지 체크
-                    if (IsSafeSpawnPosition(map, x, y))
+                    if (map.IsWalkable(x, y))
                         return new Vector2Int(x, y);
                 }
             }
         }
         
-        // 여전히 못 찾으면 맵 전체 스캔 (최후의 수단)
-        for (int x = 2; x < map.width - 2; x++)
-        {
-            for (int y = 2; y < map.height - 2; y++)
-            {
-                if (IsSafeSpawnPosition(map, x, y))
-                    return new Vector2Int(x, y);
-            }
-        }
-        
-        // 정말 못 찾으면 (거의 없음)
-        Debug.LogWarning("[FieldMapGenerator] 안전한 스폰 위치를 못 찾았습니다. (2, 2) 사용");
-        return new Vector2Int(2, 2);
-    }
-    
-    /// <summary>
-    /// 안전한 스폰 위치인지 체크 (주변 3x3도 비어있어야 함)
-    /// </summary>
-    private bool IsSafeSpawnPosition(MapData map, int x, int y)
-    {
-        // 자기 자신이 비어있는지
-        if (!map.IsWalkable(x, y))
-            return false;
-        
-        // 주변 3x3도 비어있는지 체크
-        for (int dx = -1; dx <= 1; dx++)
-        {
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (!map.IsWalkable(x + dx, y + dy))
-                    return false;
-            }
-        }
-        
-        return true;
+        // 못 찾으면 (1, 1) 반환
+        return new Vector2Int(1, 1);
     }
     
     /// <summary>
