@@ -45,6 +45,7 @@ public class PlayerGridMover : MonoBehaviour
         }
 
         Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell + ", blockedMoveCells: " + grid.blockedMoveCells.Count);
+        Debug.Log($"[PlayerGridMover] grid={grid?.name} id={grid?.GetInstanceID()}");
     }
 
     private void OnDisable()

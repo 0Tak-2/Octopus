@@ -83,8 +83,10 @@ public class FieldMapGenerator : MonoBehaviour
         if (mapRenderer != null)
         {
             mapRenderer.RenderMap(currentMap);
+            Debug.Log($"[FieldMapGenerator] gridBoard={gridBoard?.name} id={gridBoard?.GetInstanceID()} / renderer.gridBoard={mapRenderer?.gridBoard?.name} id={mapRenderer?.gridBoard?.GetInstanceID()}");
+
         }
-        
+
         // 7. 플레이어 배치
         SpawnPlayer();
         

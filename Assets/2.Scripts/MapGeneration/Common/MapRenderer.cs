@@ -101,6 +101,7 @@ public class MapRenderer : MonoBehaviour
 
     private void UpdateGridBoard(MapData mapData)
     {
+        Debug.Log($"[MapRenderer] gridBoard={gridBoard?.name} id={gridBoard?.GetInstanceID()}");
         if (gridBoard == null)
         {
             if (logRendering)
