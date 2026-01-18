@@ -52,6 +52,14 @@ public class FieldCombatController : MonoBehaviour
 
     private void Awake()
     {
+        // Player 자동 찾기 (DontDestroyOnLoad 대응)
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+                player = playerObj.transform;
+        }
+
         if (fieldTimeManager == null)
             fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
 
@@ -60,6 +68,12 @@ public class FieldCombatController : MonoBehaviour
 
         if (gridBoard == null)
             gridBoard = FindObjectOfType<GridBoard>();
+
+        if (logTransitions)
+        {
+            Debug.Log($"[FieldCombat] Awake - Player: {(player != null ? player.name : "NULL")}");
+            Debug.Log($"[FieldCombat] Awake - GridBoard: {(gridBoard != null ? "Found" : "NULL")}");
+        }
     }
 
     public void StartCombatPublic(Transform enemy, bool enemyTurnFirst = true)
@@ -467,7 +481,7 @@ public class FieldCombatController : MonoBehaviour
     private bool CanMoveTo(Vector2Int cell)
     {
         if (gridBoard == null) return false;
-        
+
         // GridBoard가 IsMoveBlocked 메서드를 가지고 있는지 확인
         var m = gridBoard.GetType().GetMethod("IsMoveBlocked");
         if (m != null)

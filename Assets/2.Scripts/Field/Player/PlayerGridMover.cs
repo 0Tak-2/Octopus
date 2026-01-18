@@ -21,6 +21,21 @@ public class PlayerGridMover : MonoBehaviour
 
     public Vector2Int CurrentCell { get; private set; }
 
+
+    /// <summary>
+    /// 외부에서 플레이어의 현재 셀 위치를 강제로 설정 (던전 스폰 등)
+    /// </summary>
+    public void SetCurrentCell(Vector2Int cell)
+    {
+        CurrentCell = cell;
+
+        // 점유 시스템 업데이트
+        if (occupancy != null)
+        {
+            occupancy.Release(transform);
+            occupancy.TryOccupy(transform, cell);
+        }
+    }
     private bool _isMoving;
 
     private void Awake()

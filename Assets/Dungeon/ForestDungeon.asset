@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fa64873854e788409a35bb92d3406b3, type: 3}
+  m_Name: ForestDungeon
+  m_EditorClassIdentifier: 
+  dungeonName: "\uC232\uC758 \uB358\uC804"
+  minFloors: 2
+  maxFloors: 3
+  normalEnemyPrefabs: []
+  eliteEnemyPrefab: {fileID: 402535578931339595, guid: a8e3db54d28a50e4ea32938386aa0e74, type: 3}
+  bossPrefab: {fileID: 2153130167278374186, guid: 1c6f145b8f981ad4589a7fd8b97b6d25, type: 3}
+  minEnemiesPerRoom: 1
+  maxEnemiesPerRoom: 3
+  dungeonTint: {r: 1, g: 1, b: 1, a: 1}

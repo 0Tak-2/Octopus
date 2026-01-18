@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/1.Scene/NewMapScene.unity
     guid: b7ee9ee496ff36a42a6c9dd88a0506d8
+  - enabled: 1
+    path: Assets/1.Scene/DungeonScene.unity
+    guid: 4647bdb28d4cc4847ae11354ea404304
   m_configObjects: {}

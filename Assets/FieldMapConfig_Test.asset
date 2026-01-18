@@ -19,7 +19,7 @@ MonoBehaviour:
   wallThreshold: 5
   minDungeonEntrances: 1
   maxDungeonEntrances: 2
-  dungeonEntrancePrefab: {fileID: 0}
+  dungeonEntrancePrefab: {fileID: 5344730364721224667, guid: 31f5152c35056334f848b42dd5ea5aed, type: 3}
   enemySpawnCount: 0
   enemyPrefab: {fileID: 0}
   seed: 0
