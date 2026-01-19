@@ -3,31 +3,46 @@ using UnityEngine;
 
 /// <summary>
 /// BSP(Binary Space Partitioning) 알고리즘으로 던전 생성
-/// 방 7개 이상, 5x5~7x7 크기, 1타일 복도
+/// Inspector에서 조절 가능
 /// </summary>
 public class DungeonBSPGenerator
 {
-    private const int MIN_ROOM_SIZE = 6;
-    private const int MAX_ROOM_SIZE = 10;
-    private const int MIN_ROOMS = 7;
+    private const int MAX_RETRIES = 10;
 
     /// <summary>
-    /// 던전 층 생성
+    /// 던전 층 생성 (Inspector 설정값 사용)
     /// </summary>
-    public static DungeonFloorData GenerateFloor(int floorNumber, int mapWidth, int mapHeight, int seed)
+    public static DungeonFloorData GenerateFloor(int floorNumber, int mapWidth, int mapHeight, int seed,
+        int minRooms = 5, int minRoomSize = 8, int maxRoomSize = 12)
+    {
+        return GenerateFloorInternal(floorNumber, mapWidth, mapHeight, seed, minRooms, minRoomSize, maxRoomSize, 0);
+    }
+
+    /// <summary>
+    /// 던전 층 생성 내부 (재시도 포함)
+    /// </summary>
+    private static DungeonFloorData GenerateFloorInternal(int floorNumber, int mapWidth, int mapHeight, int seed,
+        int minRooms, int minRoomSize, int maxRoomSize, int retryCount)
     {
         Random.InitState(seed);
 
         DungeonFloorData floor = new DungeonFloorData(floorNumber, mapWidth, mapHeight);
 
         // 1. BSP로 공간 분할 후 방 생성
-        List<BSPNode> leafNodes = GenerateRooms(mapWidth, mapHeight, floor);
+        List<BSPNode> leafNodes = GenerateRooms(mapWidth, mapHeight, floor, minRoomSize, maxRoomSize);
 
-        // 2. 방이 7개 미만이면 재시도
-        if (floor.rooms.Count < MIN_ROOMS)
+        // 2. 방이 부족하면 재시도
+        if (floor.rooms.Count < minRooms)
         {
-            Debug.LogWarning($"[DungeonBSP] 방 개수 부족 ({floor.rooms.Count}), 재생성...");
-            return GenerateFloor(floorNumber, mapWidth, mapHeight, seed + 1);
+            if (retryCount < MAX_RETRIES)
+            {
+                Debug.LogWarning($"[DungeonBSP] 방 개수 부족 ({floor.rooms.Count}/{minRooms}), 재시도 {retryCount + 1}/{MAX_RETRIES}");
+                return GenerateFloorInternal(floorNumber, mapWidth, mapHeight, seed + 1, minRooms, minRoomSize, maxRoomSize, retryCount + 1);
+            }
+            else
+            {
+                Debug.LogError($"[DungeonBSP] {MAX_RETRIES}번 재시도 실패! 현재 {floor.rooms.Count}개로 진행");
+            }
         }
 
         // 3. 복도로 방 연결
@@ -42,14 +57,14 @@ public class DungeonBSPGenerator
     /// <summary>
     /// BSP로 공간 분할 및 방 생성
     /// </summary>
-    private static List<BSPNode> GenerateRooms(int width, int height, DungeonFloorData floor)
+    private static List<BSPNode> GenerateRooms(int width, int height, DungeonFloorData floor, int minRoomSize, int maxRoomSize)
     {
         BSPNode root = new BSPNode(0, 0, width, height);
 
         // 재귀적으로 분할
-        SplitNode(root, 0);
+        SplitNode(root, 0, minRoomSize);
 
-        // 리프 노드(실제 방이 들어갈 공간) 수집
+        // 리프 노드 수집
         List<BSPNode> leafNodes = new List<BSPNode>();
         CollectLeafNodes(root, leafNodes);
 
@@ -57,7 +72,7 @@ public class DungeonBSPGenerator
         int roomId = 0;
         foreach (var node in leafNodes)
         {
-            CreateRoomInNode(node, floor, roomId++);
+            CreateRoomInNode(node, floor, roomId++, minRoomSize, maxRoomSize);
         }
 
         return leafNodes;
@@ -66,13 +81,13 @@ public class DungeonBSPGenerator
     /// <summary>
     /// 노드를 재귀적으로 분할
     /// </summary>
-    private static void SplitNode(BSPNode node, int depth)
+    private static void SplitNode(BSPNode node, int depth, int minRoomSize)
     {
-        // 최대 깊이 도달 or 노드가 너무 작으면 중단
-        if (depth >= 4 || node.width < MIN_ROOM_SIZE * 2 + 4 || node.height < MIN_ROOM_SIZE * 2 + 4)
+        // 최대 깊이 or 노드가 너무 작으면 중단
+        if (depth >= 4 || node.width < minRoomSize * 2 + 4 || node.height < minRoomSize * 2 + 4)
             return;
 
-        // 분할 방향 결정 (너비가 크면 세로 분할, 높이가 크면 가로 분할)
+        // 분할 방향 결정
         bool splitHorizontal = Random.value > 0.5f;
 
         if (node.width > node.height && node.width / (float)node.height >= 1.25f)
@@ -83,25 +98,25 @@ public class DungeonBSPGenerator
         if (splitHorizontal)
         {
             // 가로 분할
-            int splitY = Random.Range(node.y + MIN_ROOM_SIZE + 2, node.y + node.height - MIN_ROOM_SIZE - 2);
+            int splitY = Random.Range(node.y + minRoomSize + 2, node.y + node.height - minRoomSize - 2);
             node.leftChild = new BSPNode(node.x, node.y, node.width, splitY - node.y);
             node.rightChild = new BSPNode(node.x, splitY, node.width, node.y + node.height - splitY);
         }
         else
         {
             // 세로 분할
-            int splitX = Random.Range(node.x + MIN_ROOM_SIZE + 2, node.x + node.width - MIN_ROOM_SIZE - 2);
+            int splitX = Random.Range(node.x + minRoomSize + 2, node.x + node.width - minRoomSize - 2);
             node.leftChild = new BSPNode(node.x, node.y, splitX - node.x, node.height);
             node.rightChild = new BSPNode(splitX, node.y, node.x + node.width - splitX, node.height);
         }
 
-        // 자식 노드도 재귀적으로 분할
-        SplitNode(node.leftChild, depth + 1);
-        SplitNode(node.rightChild, depth + 1);
+        // 자식 노드 재귀 분할
+        SplitNode(node.leftChild, depth + 1, minRoomSize);
+        SplitNode(node.rightChild, depth + 1, minRoomSize);
     }
 
     /// <summary>
-    /// 리프 노드(분할 안 된 노드) 수집
+    /// 리프 노드 수집
     /// </summary>
     private static void CollectLeafNodes(BSPNode node, List<BSPNode> leafNodes)
     {
@@ -118,11 +133,11 @@ public class DungeonBSPGenerator
     /// <summary>
     /// 노드 내부에 방 생성
     /// </summary>
-    private static void CreateRoomInNode(BSPNode node, DungeonFloorData floor, int roomId)
+    private static void CreateRoomInNode(BSPNode node, DungeonFloorData floor, int roomId, int minRoomSize, int maxRoomSize)
     {
-        // 노드보다 작은 랜덤 크기 방 생성
-        int roomWidth = Random.Range(MIN_ROOM_SIZE, Mathf.Min(MAX_ROOM_SIZE, node.width - 2) + 1);
-        int roomHeight = Random.Range(MIN_ROOM_SIZE, Mathf.Min(MAX_ROOM_SIZE, node.height - 2) + 1);
+        // 랜덤 크기 방 생성
+        int roomWidth = Random.Range(minRoomSize, Mathf.Min(maxRoomSize, node.width - 2) + 1);
+        int roomHeight = Random.Range(minRoomSize, Mathf.Min(maxRoomSize, node.height - 2) + 1);
 
         // 노드 내부 랜덤 위치
         int roomX = node.x + Random.Range(1, node.width - roomWidth - 1) + roomWidth / 2;
@@ -159,15 +174,15 @@ public class DungeonBSPGenerator
             // L자 복도 생성
             CreateLCorridor(roomA.Center, roomB.Center, floor);
 
-            // 방 연결 정보 저장
+            // 연결 정보 저장
             roomA.connectedRooms.Add(roomB);
             roomB.connectedRooms.Add(roomA);
         }
 
-        // 추가 연결 (더 촘촘하게)
+        // 추가 연결
         for (int i = 0; i < leafNodes.Count; i++)
         {
-            if (Random.value < 0.3f && i + 2 < leafNodes.Count) // 30% 확률로 추가 연결
+            if (Random.value < 0.3f && i + 2 < leafNodes.Count)
             {
                 DungeonRoom roomA = leafNodes[i].room;
                 DungeonRoom roomB = leafNodes[i + 2].room;
@@ -183,14 +198,14 @@ public class DungeonBSPGenerator
     }
 
     /// <summary>
-    /// L자 복도 생성 (1타일 너비)
+    /// L자 복도 생성
     /// </summary>
     private static void CreateLCorridor(Vector2Int start, Vector2Int end, DungeonFloorData floor)
     {
         int x = start.x;
         int y = start.y;
 
-        // 가로 먼저
+        // 가로
         while (x != end.x)
         {
             if (x >= 0 && x < floor.width && y >= 0 && y < floor.height)
@@ -216,29 +231,29 @@ public class DungeonBSPGenerator
     {
         if (floor.rooms.Count == 0) return;
 
-        // 시작 방 (첫 번째 방)
+        // 시작 방
         floor.startRoom = floor.rooms[0];
         floor.startRoom.roomType = DungeonRoomType.Start;
 
-        // 보스 방 (마지막 방)
+        // 보스 방
         floor.bossRoom = floor.rooms[floor.rooms.Count - 1];
         floor.bossRoom.roomType = DungeonRoomType.Boss;
 
-        // 계단 방 (보스 방 이전)
+        // 계단 방
         if (floor.rooms.Count > 1)
         {
             floor.stairsRoom = floor.rooms[floor.rooms.Count - 2];
             floor.stairsRoom.roomType = DungeonRoomType.Stairs;
         }
 
-        // 출구 방 (시작 방 다음, 모든 층)
+        // 출구 방 (모든 층)
         if (floor.rooms.Count > 1)
         {
             floor.exitRoom = floor.rooms[1];
             floor.exitRoom.roomType = DungeonRoomType.Exit;
         }
 
-        // 아이템 방 (랜덤 1-2개)
+        // 아이템 방
         int itemRoomCount = Random.Range(1, 3);
         for (int i = 0; i < itemRoomCount && i + 2 < floor.rooms.Count - 2; i++)
         {
@@ -246,8 +261,6 @@ public class DungeonBSPGenerator
             if (room.roomType == DungeonRoomType.Normal)
                 room.roomType = DungeonRoomType.Item;
         }
-
-        // 나머지는 일반 몹 방
     }
 }
 

@@ -20,6 +20,14 @@ public class DungeonController : MonoBehaviour
     public int mapWidth = 60;
     public int mapHeight = 60;
 
+    [Header("Room Generation")]
+    [Tooltip("최소 방 개수")]
+    [Range(3, 10)] public int minRooms = 5;
+    [Tooltip("최소 방 크기")]
+    [Range(5, 10)] public int minRoomSize = 8;
+    [Tooltip("최대 방 크기")]
+    [Range(8, 15)] public int maxRoomSize = 12;
+
     [Header("Prefabs")]
     public GameObject stairsPrefab;
     public GameObject exitPortalPrefab;
@@ -98,7 +106,7 @@ public class DungeonController : MonoBehaviour
 
         // BSP로 던전 생성
         int seed = System.DateTime.Now.Millisecond + floorNumber * 1000;
-        currentFloorData = DungeonBSPGenerator.GenerateFloor(floorNumber, mapWidth, mapHeight, seed);
+        currentFloorData = DungeonBSPGenerator.GenerateFloor(floorNumber, mapWidth, mapHeight, seed, minRooms, minRoomSize, maxRoomSize);
         allFloors[floorNumber] = currentFloorData;
         currentFloor = floorNumber;
 

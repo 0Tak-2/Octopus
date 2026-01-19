@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7fa64873854e788409a35bb92d3406b3, type: 3}
   m_Name: ForestDungeon
   m_EditorClassIdentifier: 
-  dungeonName: "\uC232\uC758 \uB358\uC804"
+  dungeonName: Forest Dungeon
   minFloors: 2
   maxFloors: 3
   normalEnemyPrefabs: []
