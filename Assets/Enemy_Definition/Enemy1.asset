@@ -20,4 +20,38 @@ MonoBehaviour:
   attackDamage: 1
   aiType: 1
   useDashAttackMotion: 1
+  fieldDetectionRange: 6
+  fieldRequireLoS: 1
+  wanderMoveChance: 0.3
+  detectionAlertDuration: 3
   baseEvasion: 0
+  enableEliteAP: 0
+  eliteStartAP: 1
+  eliteMaxAP: 5
+  eliteRegenPerTurn: 1
+  skill1_MeleeNormal: {fileID: 0}
+  skill2_MeleeCritical: {fileID: 0}
+  skill3_Range2: {fileID: 0}
+  skill4_AttackBuff: {fileID: 0}
+  bossSkill1_Basic: {fileID: 0}
+  bossSkill2_Stun: {fileID: 0}
+  bossSkill3_Charge: {fileID: 0}
+  bossSkill4_Withdraw: {fileID: 0}
+  bossSkill5_Meditation: {fileID: 0}
+  bossMaxAP: 5
+  bossBasicApCost: 1
+  bossStunApCost: 1
+  bossChargeApCost: 2
+  bossWithdrawApCost: 1
+  bossStunTurns: 1
+  bossChargeDashRange: 3
+  bossChargeUseChance: 0.35
+  bossWithdrawMoveDistance: 3
+  bossMeditationApGain: 1
+  bossMeditationTurns: 1
+  bossMeditationDamageReduceRatio: 0.5
+  bossMeditationApThreshold: 2
+  bossMeditationUseChance: 0.5
+  bossRageFullRatio: 0.4
+  bossRageMaxMultiplier: 2
+  bossFreeMovesPerTurn: 1

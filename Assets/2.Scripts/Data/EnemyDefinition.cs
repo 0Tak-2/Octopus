@@ -28,10 +28,16 @@ public class EnemyDefinition : ScriptableObject
     public bool useDashAttackMotion = true;
 
     [Header("Field Detection")]
-    [Tooltip("?꾨뱶?먯꽌 ?뚮젅?댁뼱瑜?媛먯??섎뒗 嫄곕━ (Chebyshev)")]
+    [Tooltip("필드에서 플레이어를 감지하는 거리 (Chebyshev)")]
     [Min(1)] public int fieldDetectionRange = 6;
-    [Tooltip("?꾨뱶 ?먯? ???쒖빞(LoS) ?꾩슂 ?щ?")]
+    [Tooltip("필드 감지 시야(LoS) 필요 여부")]
     public bool fieldRequireLoS = true;
+
+    [Header("Field Wander (배회)")]
+    [Tooltip("배회 시 매 턴마다 움직일 확률 (0~1, 0.3 = 30%)")]
+    [Range(0f, 1f)] public float wanderMoveChance = 0.3f;
+    [Tooltip("인식 시 느낌표 표시 시간 (초)")]
+    [Min(0f)] public float detectionAlertDuration = 1.5f;
 
     [Header("Evasion (optional)")]
     [Range(0f, 0.95f)] public float baseEvasion = 0f;
@@ -60,8 +66,8 @@ public class EnemyDefinition : ScriptableObject
     [Header("AI4 Boss Skills (Slots)")]
     public CombatAttackDefinition bossSkill1_Basic;       // 기본공격 (range1, 1AP)
     public CombatAttackDefinition bossSkill2_Stun;        // 기절 (range1, 1AP)
-    public CombatAttackDefinition bossSkill3_Charge;      // 차징/돌진 (2AP, 다음턴 돌진)
-    public CombatAttackDefinition bossSkill4_Withdraw;    // 빠지기공격 (1AP, 공격 후 3칸 후퇴)
+    public CombatAttackDefinition bossSkill3_Charge;      // 차지/돌진 (2AP, 다음턴 돌진)
+    public CombatAttackDefinition bossSkill4_Withdraw;    // 빈지기공격 (1AP, 공격 후 3칸 후퇴)
     public CombatAttackDefinition bossSkill5_Meditation;  // 명상 (+1AP, 피해감소, 플레이어턴 보장)
 
     // =========================
@@ -103,6 +109,6 @@ public class EnemyDefinition : ScriptableObject
     [Min(1f)] public float bossRageMaxMultiplier = 2f;
 
     [Header("Boss Movement (Optional)")]
-    [Tooltip("보스도 '무료이동 1회 + 이후 이동 액션 AP 1'을 쓰려면 1 유지")]
+    [Tooltip("보스도 '무료이동 1회 + 이후 이동 액션 AP 1'을 쓸려면 1 유지")]
     [Min(0)] public int bossFreeMovesPerTurn = 1;
 }

@@ -13,6 +13,12 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public FieldTimeManager timeManager;
     public GridOccupancyRegistry occupancy;
 
+    [Header("Alert UI")]
+    [Tooltip("인식 시 표시할 느낌표 프리팹")]
+    public GameObject alertIconPrefab;
+    private GameObject _alertInstance;
+    private float _alertTimer;
+
     [Header("Detect")]
     [Tooltip("(Deprecated) Definition에서 자동으로 읽어옴. 오버라이드하려면 useCustomDetection=true")]
     public int aggroRange = 6;              // Chebyshev
@@ -46,6 +52,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
     private Vector2Int _wanderTargetCell;
     private int _wanderTickCounter;
     private bool _moving;
+    private bool _wasChasing = false; // 이전 프레임에 추격 중이었는지
 
     private void Awake()
     {
@@ -89,6 +96,27 @@ public class FieldEnemyWanderChase : MonoBehaviour
 
         // ✅ 비활성/파괴 시 점유 해제
         if (occupancy != null) occupancy.Release(transform);
+
+        // 느낌표 제거
+        if (_alertInstance != null)
+        {
+            Destroy(_alertInstance);
+            _alertInstance = null;
+        }
+    }
+
+    private void Update()
+    {
+        // 느낌표 타이머 처리
+        if (_alertTimer > 0f)
+        {
+            _alertTimer -= Time.deltaTime;
+            if (_alertTimer <= 0f && _alertInstance != null)
+            {
+                Destroy(_alertInstance);
+                _alertInstance = null;
+            }
+        }
     }
 
     private void OnTimeAdvanced(int delta, int newTotalTime)
@@ -118,6 +146,13 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (canSee && requireLoS)
             canSee = FieldCombatUtils.HasLineOfSight(gridBoard, myCell, pCell);
 
+        // 인식 전환 시 느낌표 표시
+        if (canSee && !_wasChasing)
+        {
+            ShowAlertIcon();
+        }
+        _wasChasing = canSee;
+
         if (canSee) state = State.Chase;
         else if (enableWander) state = State.Wander;
         else state = State.Frozen;
@@ -139,8 +174,22 @@ public class FieldEnemyWanderChase : MonoBehaviour
             return;
         }
 
-        // Wander
+        // Wander - 확률 체크
         _wanderTickCounter++;
+
+        // Definition에서 확률 가져오기
+        float moveChance = 0.3f; // 기본값
+        if (_enemy != null && _enemy.definition != null)
+        {
+            moveChance = _enemy.definition.wanderMoveChance;
+        }
+
+        // 확률 체크 - 실패하면 이동 안 함
+        if (Random.value > moveChance)
+        {
+            return; // 이번 턴은 가만히 있음
+        }
+
         if (_wanderTickCounter >= Mathf.Max(1, wanderRetargetEveryTicks) ||
             FieldCombatUtils.Chebyshev(myCell, _wanderTargetCell) <= 0)
         {
@@ -151,6 +200,59 @@ public class FieldEnemyWanderChase : MonoBehaviour
         Vector2Int wNext = ChooseNextStep(myCell, _wanderTargetCell);
         if (wNext != myCell)
             TryStartStepMove(myCell, wNext);
+    }
+
+    /// <summary>
+    /// 느낌표 표시
+    /// </summary>
+    private void ShowAlertIcon()
+    {
+        // 이미 표시 중이면 타이머만 리셋
+        if (_alertInstance != null)
+        {
+            _alertTimer = _enemy?.definition?.detectionAlertDuration ?? 1.5f;
+            return;
+        }
+
+        // 프리팹이 있으면 사용
+        if (alertIconPrefab != null)
+        {
+            Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
+            _alertInstance = Instantiate(alertIconPrefab, spawnPos, Quaternion.identity, transform);
+        }
+        else
+        {
+            // 프리팹이 없으면 자동 생성 (빨간 느낌표)
+            _alertInstance = CreateAlertIcon();
+        }
+
+        _alertTimer = _enemy?.definition?.detectionAlertDuration ?? 1.5f;
+    }
+
+    /// <summary>
+    /// 느낌표 자동 생성 (프리팹 없을 때)
+    /// </summary>
+    private GameObject CreateAlertIcon()
+    {
+        GameObject alert = new GameObject("AlertIcon");
+        alert.transform.SetParent(transform);
+        alert.transform.localPosition = Vector3.up * 1.5f;
+
+        // TextMesh 사용 (기본 Unity)
+        TextMesh textMesh = alert.AddComponent<TextMesh>();
+        textMesh.text = "!";
+        textMesh.fontSize = 80;
+        textMesh.color = Color.red;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.alignment = TextAlignment.Center;
+        textMesh.characterSize = 0.1f;
+
+        // 카메라를 향하도록
+        var billboard = alert.AddComponent<Billboard>();
+
+        // 애니메이션 제거 - 고정
+
+        return alert;
     }
 
     private Vector2Int GetMyCell()

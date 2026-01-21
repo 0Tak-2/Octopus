@@ -13037,11 +13037,15 @@ MonoBehaviour:
   wallTilemap: {fileID: 1202317279}
   mapRenderer: {fileID: 444427614}
   dungeonDefinition: {fileID: 11400000, guid: 6de11745e4028634abe748674b071250, type: 2}
-  mapWidth: 35
-  mapHeight: 35
-  minRooms: 4
-  minRoomSize: 7
-  maxRoomSize: 9
+  gridWidth: 4
+  gridHeight: 4
+  minRooms: 5
+  maxRooms: 9
+  minRoomSize: 3
+  maxRoomSize: 7
+  minCorridorLength: 3
+  maxCorridorLength: 5
+  corridorWidth: 1
   stairsPrefab: {fileID: 4493694042050790611, guid: a7016a1cced7d6a47bb891b76655cbcf, type: 3}
   exitPortalPrefab: {fileID: 1683244893738025698, guid: be991f256a4777f49b8d4fca848bf172, type: 3}
   itemMarkerPrefab: {fileID: 53771765849652668, guid: caba18d9eaad1ef439cb27751ac77373, type: 3}

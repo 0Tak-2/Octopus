@@ -20,6 +20,10 @@ MonoBehaviour:
   attackDamage: 5
   aiType: 4
   useDashAttackMotion: 1
+  fieldDetectionRange: 6
+  fieldRequireLoS: 1
+  wanderMoveChance: 0.3
+  detectionAlertDuration: 3
   baseEvasion: 0.2
   enableEliteAP: 0
   eliteStartAP: 1

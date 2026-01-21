@@ -17,16 +17,34 @@ public class DungeonController : MonoBehaviour
 
     [Header("Dungeon Settings")]
     public DungeonDefinition dungeonDefinition;
-    public int mapWidth = 60;
-    public int mapHeight = 60;
 
-    [Header("Room Generation")]
+    [Header("Grid Generation Settings")]
+    [Tooltip("격자 너비 (방 개수)")]
+    [Range(3, 6)] public int gridWidth = 4;
+    [Tooltip("격자 높이 (방 개수)")]
+    [Range(3, 6)] public int gridHeight = 4;
+
+    [Header("Room Count")]
     [Tooltip("최소 방 개수")]
-    [Range(3, 10)] public int minRooms = 5;
-    [Tooltip("최소 방 크기")]
-    [Range(5, 10)] public int minRoomSize = 8;
-    [Tooltip("최대 방 크기")]
-    [Range(8, 15)] public int maxRoomSize = 12;
+    [Range(5, 20)] public int minRooms = 8;
+    [Tooltip("최대 방 개수")]
+    [Range(5, 20)] public int maxRooms = 12;
+
+    [Header("Room Size")]
+    [Tooltip("최소 방 크기 (타일)")]
+    [Range(3, 12)] public int minRoomSize = 5;
+    [Tooltip("최대 방 크기 (타일)")]
+    [Range(3, 15)] public int maxRoomSize = 8;
+
+    [Header("Corridor Length")]
+    [Tooltip("최소 복도 길이 (타일)")]
+    [Range(2, 15)] public int minCorridorLength = 3;
+    [Tooltip("최대 복도 길이 (타일)")]
+    [Range(2, 20)] public int maxCorridorLength = 7;
+
+    [Header("Corridor Width")]
+    [Tooltip("복도 넓이 (타일) - 실제 복도 두께")]
+    [Range(1, 5)] public int corridorWidth = 1;
 
     [Header("Prefabs")]
     public GameObject stairsPrefab;
@@ -104,9 +122,10 @@ public class DungeonController : MonoBehaviour
         // 이전 오브젝트 정리
         CleanupFloor();
 
-        // BSP로 던전 생성
+        // 격자 기반 던전 생성
         int seed = System.DateTime.Now.Millisecond + floorNumber * 1000;
-        currentFloorData = DungeonBSPGenerator.GenerateFloor(floorNumber, mapWidth, mapHeight, seed, minRooms, minRoomSize, maxRoomSize);
+        currentFloorData = DungeonGridGenerator.GenerateFloor(floorNumber, gridWidth, gridHeight, seed,
+            minRooms, maxRooms, minRoomSize, maxRoomSize, minCorridorLength, maxCorridorLength, corridorWidth);
         allFloors[floorNumber] = currentFloorData;
         currentFloor = floorNumber;
 
@@ -288,24 +307,56 @@ public class DungeonController : MonoBehaviour
     {
         if (dungeonDefinition == null) return;
 
+        int normalRoomCount = 0;
+        int eliteRoomCount = 0;
+        int bossRoomCount = 0;
+        int itemRoomCount = 0;
+        int stairsRoomCount = 0;
+
         foreach (var room in currentFloorData.rooms)
         {
-            if (room.roomType == DungeonRoomType.Normal)
+            Debug.Log($"[DungeonController] Room {room.id}: Type = {room.roomType}");
+
+            // Start와 Exit 방은 스킵
+            if (room.roomType == DungeonRoomType.Start || room.roomType == DungeonRoomType.Exit)
             {
-                // 일반 몹 방
-                SpawnNormalEnemies(room);
+                continue;
             }
-            else if (room.roomType == DungeonRoomType.Elite)
+
+            // Boss 방
+            if (room.roomType == DungeonRoomType.Boss)
             {
-                // 엘리트 방
-                SpawnElite(room);
-            }
-            else if (room.roomType == DungeonRoomType.Boss)
-            {
-                // 보스 방
+                bossRoomCount++;
                 SpawnBoss(room);
             }
+            // Elite 방
+            else if (room.roomType == DungeonRoomType.Elite)
+            {
+                eliteRoomCount++;
+                SpawnElite(room);
+            }
+            // Item 방 - 일반 몹 + 아이템
+            else if (room.roomType == DungeonRoomType.Item)
+            {
+                itemRoomCount++;
+                SpawnNormalEnemies(room);
+            }
+            // Stairs 방 - 일반 몹
+            else if (room.roomType == DungeonRoomType.Stairs)
+            {
+                stairsRoomCount++;
+                SpawnNormalEnemies(room);
+            }
+            // Normal 방
+            else if (room.roomType == DungeonRoomType.Normal)
+            {
+                normalRoomCount++;
+                SpawnNormalEnemies(room);
+            }
         }
+
+        Debug.Log($"[DungeonController] 방 타입 통계: Normal={normalRoomCount}, Elite={eliteRoomCount}, Boss={bossRoomCount}, Item={itemRoomCount}, Stairs={stairsRoomCount}");
+        Debug.Log($"[DungeonController] 일반 몹 스폰 방: {normalRoomCount + itemRoomCount + stairsRoomCount}개");
     }
 
     /// <summary>
@@ -314,9 +365,14 @@ public class DungeonController : MonoBehaviour
     private void SpawnNormalEnemies(DungeonRoom room)
     {
         if (dungeonDefinition.normalEnemyPrefabs == null || dungeonDefinition.normalEnemyPrefabs.Length == 0)
+        {
+            Debug.LogWarning($"[DungeonController] normalEnemyPrefabs가 비어있습니다!");
             return;
+        }
 
         int enemyCount = Random.Range(dungeonDefinition.minEnemiesPerRoom, dungeonDefinition.maxEnemiesPerRoom + 1);
+
+        Debug.Log($"[DungeonController] Room {room.id}에 일반 몹 {enemyCount}마리 스폰");
 
         for (int i = 0; i < enemyCount; i++)
         {

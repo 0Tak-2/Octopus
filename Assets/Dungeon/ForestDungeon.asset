@@ -15,9 +15,11 @@ MonoBehaviour:
   dungeonName: Forest Dungeon
   minFloors: 2
   maxFloors: 3
-  normalEnemyPrefabs: []
+  normalEnemyPrefabs:
+  - {fileID: 6559632347274676861, guid: 40b0180ac90ade147b1bdf87de3b7f6d, type: 3}
+  - {fileID: 1770311080000714726, guid: a1c2a4b6ddfc6ca4ea84581ed96157a9, type: 3}
   eliteEnemyPrefab: {fileID: 402535578931339595, guid: a8e3db54d28a50e4ea32938386aa0e74, type: 3}
   bossPrefab: {fileID: 2153130167278374186, guid: 1c6f145b8f981ad4589a7fd8b97b6d25, type: 3}
   minEnemiesPerRoom: 1
-  maxEnemiesPerRoom: 3
-  dungeonTint: {r: 1, g: 1, b: 1, a: 1}
+  maxEnemiesPerRoom: 4
+  dungeonTint: {r: 0.7075472, g: 0.7075472, b: 0.7075472, a: 1}
