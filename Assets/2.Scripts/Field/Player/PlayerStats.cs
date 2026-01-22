@@ -1,11 +1,11 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class PlayerStats : MonoBehaviour
 {
     [Header("Max Values")]
     public int maxHP = 100;
-    public int maxFatigue = 100;   // ³ôÀ»¼ö·Ï '´ú ÇÇ°ïÇÔ'(È¸º¹ °ÔÀÌÁö)
-    public int maxHunger = 100;    // ³ôÀ»¼ö·Ï '¹èºÎ¸§'
+    public int maxFatigue = 100;
+    public int maxHunger = 100;
 
     [Header("Current Values")]
     public int hp = 80;
@@ -14,8 +14,8 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Periodic Drain (per 5 Time)")]
     public int drainIntervalTime = 5;
-    public int fatigueDrainPerInterval = 1; // 5 Time¸¶´Ù ÇÇ·Î -1
-    public int hungerDrainPerInterval = 2;  // 5 Time¸¶´Ù Çã±â -2
+    public int fatigueDrainPerInterval = 1;
+    public int hungerDrainPerInterval = 2;
 
     private FieldTimeManager _fieldTime;
     private int _nextDrainAtTime = 5;
@@ -30,7 +30,6 @@ public class PlayerStats : MonoBehaviour
         _fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (_fieldTime != null)
         {
-            // ÇöÀç time ±âÁØÀ¸·Î ´ÙÀ½ µå·¹ÀÎ Å¸ÀÌ¹Ö ¸ÂÃß±â
             int t = _fieldTime.time;
             _nextDrainAtTime = Mathf.Max(drainIntervalTime, ((t / drainIntervalTime) + 1) * drainIntervalTime);
 
@@ -46,10 +45,8 @@ public class PlayerStats : MonoBehaviour
 
     private void HandleTimeAdvanced(int delta, int newTotalTime)
     {
-        // ½Ã°£ÀÌ ÇÑ ¹ø¿¡ ¸¹ÀÌ Áõ°¡ÇÒ ¼ö ÀÖÀ¸´Ï while·Î Ã³¸®
         while (newTotalTime >= _nextDrainAtTime)
         {
-            // 5 Time¸¶´Ù: ÇÇ·Î -1, Çã±â -2
             fatigue -= Mathf.Max(0, fatigueDrainPerInterval);
             hunger -= Mathf.Max(0, hungerDrainPerInterval);
             ClampAll();
@@ -66,24 +63,40 @@ public class PlayerStats : MonoBehaviour
     }
 
     /// <summary>
-    /// ÈŞ½Ä Æ½(1 time)¿¡¼­ ÇÇ·Î/Ã¼·ÂÀ» °°ÀÌ È¸º¹.
-    /// ±ÔÄ¢: fatigue +1´ç hp +1
+    /// íœ´ì‹ ì‹œ í”¼ë¡œ/ì²´ë ¥ íšŒë³µ
     /// </summary>
     public void RestRecover(int fatigueGainPerTick)
     {
         int gain = Mathf.Max(0, fatigueGainPerTick);
 
-        // ÇÇ·Î°¡ ÀÌ¹Ì Ç®ÀÌ¶ó¸é È¸º¹ 0
         int fatigueBefore = fatigue;
         fatigue = Mathf.Min(maxFatigue, fatigue + gain);
 
         int actualFatigueGained = fatigue - fatigueBefore;
         if (actualFatigueGained > 0)
         {
-            hp = Mathf.Min(maxHP, hp + actualFatigueGained); // ÇÇ·Î +1´ç Ã¼·Â +1
+            hp = Mathf.Min(maxHP, hp + actualFatigueGained);
         }
 
         ClampAll();
+    }
+
+    /// <summary>
+    /// ë°ë¯¸ì§€ë¥¼ ë°›ìŒ
+    /// </summary>
+    public void TakeDamage(int damage)
+    {
+        hp -= Mathf.Max(0, damage);
+        ClampAll();
+
+        // âœ… í”¼ê²© íš¨ê³¼ ì¶”ê°€
+        HitEffectManager hitEffect = HitEffectManager.Instance ?? FindObjectOfType<HitEffectManager>();
+        if (hitEffect != null)
+        {
+            hitEffect.ShowHitEffect(transform, damage);
+        }
+
+        Debug.Log($"[PlayerStats] Took {damage} damage. HP: {hp}/{maxHP}");
     }
 
     public bool IsStarving => hunger <= 0;

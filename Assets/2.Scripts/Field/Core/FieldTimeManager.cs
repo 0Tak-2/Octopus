@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class FieldTimeManager : MonoBehaviour
 {
@@ -26,8 +26,27 @@ public class FieldTimeManager : MonoBehaviour
         if (delta <= 0) return;
 
         time += delta;
+
+        // ✅ 모든 적의 턴 초기화
+        ResetAllEnemyTurns();
+
         OnTimeAdvanced?.Invoke(delta, time);
 
         Debug.Log($"[FieldTime] +{delta} => {time}");
+    }
+
+    /// <summary>
+    /// 모든 적의 행동 플래그 초기화
+    /// </summary>
+    private void ResetAllEnemyTurns()
+    {
+        EnemyInstance[] enemies = FindObjectsOfType<EnemyInstance>();
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.gameObject.activeInHierarchy)
+            {
+                enemy.ResetTurn();
+            }
+        }
     }
 }

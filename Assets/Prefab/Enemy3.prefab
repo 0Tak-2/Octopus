@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4779792515924272657}
   - component: {fileID: 1219867494520688159}
   - component: {fileID: 5315461834625119}
-  - component: {fileID: 1789044416135499801}
+  - component: {fileID: -1822322736002341931}
   m_Layer: 6
   m_Name: Enemy3
   m_TagString: Enemy
@@ -159,7 +159,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
---- !u!114 &1789044416135499801
+--- !u!114 &-1822322736002341931
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -175,17 +175,20 @@ MonoBehaviour:
   gridBoard: {fileID: 0}
   timeManager: {fileID: 0}
   occupancy: {fileID: 0}
-  aggroRange: 3
-  requireLoS: 1
+  alertIconPrefab: {fileID: 0}
+  aggroRange: 6
+  requireLoS: 0
+  aggroDropDistance: 15
   useCustomDetection: 0
   enableWander: 1
-  wanderRadius: 2
-  wanderRetargetEveryTicks: 2
+  wanderRadius: 4
+  wanderRetargetEveryTicks: 4
   allowDiagonal: 1
-  stepMoveDuration: 0.3
+  stepMoveDuration: 0.35
   pauseWhenAnyCombatActive: 1
   startCombatWhenAdjacent: 1
   combatStartRange: 1
   fieldCombat: {fileID: 0}
   enemyTurnFirst: 1
   state: 0
+  isAggro: 0

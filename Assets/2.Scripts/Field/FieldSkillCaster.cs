@@ -248,6 +248,13 @@ public class FieldSkillCaster : MonoBehaviour
         // Time 1 소비
         fieldTimeManager.Advance(1);
 
+        // ✅ 적들 반격!
+        FieldMultiEnemyAttack multiAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+        if (multiAttack != null)
+        {
+            multiAttack.OnPlayerTurnEnd();
+        }
+
         // 시전 성공 후 자동 무장 해제(추천 UX)
         if (autoDisarmAfterCast)
             Disarm();
@@ -313,11 +320,8 @@ public class FieldSkillCaster : MonoBehaviour
                 var inst = hits2D[h].GetComponentInParent<EnemyInstance>();
                 if (inst == null || inst.currentHP <= 0) continue;
 
-                inst.currentHP -= damage;
-                inst.Clamp();
-
-                if (inst.currentHP <= 0)
-                    inst.gameObject.SetActive(false);
+                // ✅ TakeDamage 사용 (피격 효과 포함)
+                inst.TakeDamage(damage);
 
                 hitEnemies++;
             }

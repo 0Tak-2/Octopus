@@ -9,6 +9,7 @@ public class PlayerGridMover : MonoBehaviour
     public PlayerCrouch crouch;
     public RestController rest;
     public GridOccupancyRegistry occupancy;
+    public FieldMultiEnemyAttack multiEnemyAttack;
 
     [Header("Move")]
     public float moveDuration = 0.12f;
@@ -45,6 +46,7 @@ public class PlayerGridMover : MonoBehaviour
         if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
         if (rest == null) rest = FindObjectOfType<RestController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+        if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
 
         Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
     }
@@ -80,6 +82,13 @@ public class PlayerGridMover : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             fieldTime?.Advance(1);
+
+            // ✅ 대기 시에도 주변 적들이 공격!
+            if (multiEnemyAttack != null)
+            {
+                multiEnemyAttack.OnPlayerTurnEnd();
+            }
+
             return;
         }
 
@@ -153,12 +162,11 @@ public class PlayerGridMover : MonoBehaviour
         }
 
         int cost = GetMoveTimeCost();
-        fieldTime?.Advance(cost);
-
-        StartCoroutine(MoveRoutine(target));
+        // ✅ 이동 완료 후 시간 진행하도록 수정
+        StartCoroutine(MoveRoutine(target, cost));
     }
 
-    private IEnumerator MoveRoutine(Vector2Int targetCell)
+    private IEnumerator MoveRoutine(Vector2Int targetCell, int timeCost)
     {
         _isMoving = true;
 
@@ -179,5 +187,15 @@ public class PlayerGridMover : MonoBehaviour
         CurrentCell = targetCell;
 
         _isMoving = false;
+
+        // ✅ 이동 완료 후 시간 진행!
+        Debug.Log($"[FieldTime] Player move complete, advancing time by {timeCost}");
+        fieldTime?.Advance(timeCost);
+
+        // ✅ 주변 모든 적이 공격!
+        if (multiEnemyAttack != null)
+        {
+            multiEnemyAttack.OnPlayerTurnEnd();
+        }
     }
 }

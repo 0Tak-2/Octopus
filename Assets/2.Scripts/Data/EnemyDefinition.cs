@@ -33,11 +33,23 @@ public class EnemyDefinition : ScriptableObject
     [Tooltip("필드 감지 시야(LoS) 필요 여부")]
     public bool fieldRequireLoS = true;
 
+    [Header("Aggro System (어그로)")]
+    [Tooltip("한 번 인식 후 이 거리 이상 벌어지면 어그로 해제")]
+    [Min(1)] public int aggroDropDistance = 15;
+    [Tooltip("어그로 중에는 시야(LoS) 무시")]
+    public bool ignoreLoSWhenAggro = true;
+
     [Header("Field Wander (배회)")]
     [Tooltip("배회 시 매 턴마다 움직일 확률 (0~1, 0.3 = 30%)")]
     [Range(0f, 1f)] public float wanderMoveChance = 0.3f;
     [Tooltip("인식 시 느낌표 표시 시간 (초)")]
     [Min(0f)] public float detectionAlertDuration = 1.5f;
+
+    [Header("Projectile (발사체)")]
+    [Tooltip("원거리 공격 시 사용할 발사체 프리팹 (없으면 기본 효과)")]
+    public GameObject projectilePrefab;
+    [Tooltip("발사체가 회전하는가? (화살 = true, 구체 = false)")]
+    public bool projectileRotates = true;
 
     [Header("Evasion (optional)")]
     [Range(0f, 0.95f)] public float baseEvasion = 0f;

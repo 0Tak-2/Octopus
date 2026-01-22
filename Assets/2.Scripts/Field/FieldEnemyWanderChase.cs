@@ -24,6 +24,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public int aggroRange = 6;              // Chebyshev
     [Tooltip("(Deprecated) Definition에서 자동으로 읽어옴")]
     public bool requireLoS = false;
+    [Tooltip("(Deprecated) Definition에서 자동으로 읽어옴")]
+    public int aggroDropDistance = 15;
     [Tooltip("Definition 대신 위 값을 사용")]
     public bool useCustomDetection = false;
 
@@ -47,6 +49,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
 
     [Header("Debug")]
     public State state = State.Wander;
+    public bool isAggro = false; // 어그로 상태
 
     private EnemyInstance _enemy;
     private Vector2Int _wanderTargetCell;
@@ -72,6 +75,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
         {
             aggroRange = Mathf.Max(1, _enemy.definition.fieldDetectionRange);
             requireLoS = _enemy.definition.fieldRequireLoS;
+            aggroDropDistance = Mathf.Max(aggroRange + 1, _enemy.definition.aggroDropDistance);
         }
 
         // ✅ 시작 위치 점유 등록
@@ -142,20 +146,52 @@ public class FieldEnemyWanderChase : MonoBehaviour
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
         int distToPlayer = FieldCombatUtils.Chebyshev(myCell, pCell);
 
+        // 시야 체크 (첫 인식)
         bool canSee = distToPlayer <= aggroRange;
         if (canSee && requireLoS)
             canSee = FieldCombatUtils.HasLineOfSight(gridBoard, myCell, pCell);
 
-        // 인식 전환 시 느낌표 표시
+        // 어그로 시스템
+        if (canSee)
+        {
+            // 플레이어 발견 - 어그로 활성화
+            if (!isAggro)
+            {
+                isAggro = true;
+                ShowAlertIcon(); // 느낌표!
+            }
+        }
+        else if (isAggro)
+        {
+            // 어그로 중 - 거리 체크로만 해제
+            if (distToPlayer > aggroDropDistance)
+            {
+                // 너무 멀어짐 - 어그로 해제
+                isAggro = false;
+            }
+            // 아니면 어그로 유지 (벽 뒤로 가도 계속 쫓아옴!)
+        }
+
+        // 인식 전환 시 느낌표 표시 (백업)
         if (canSee && !_wasChasing)
         {
             ShowAlertIcon();
         }
-        _wasChasing = canSee;
+        _wasChasing = canSee || isAggro;
 
-        if (canSee) state = State.Chase;
-        else if (enableWander) state = State.Wander;
-        else state = State.Frozen;
+        // 상태 결정
+        if (isAggro || canSee)
+        {
+            state = State.Chase;
+        }
+        else if (enableWander)
+        {
+            state = State.Wander;
+        }
+        else
+        {
+            state = State.Frozen;
+        }
 
         if (state == State.Frozen) return;
 
@@ -168,9 +204,31 @@ public class FieldEnemyWanderChase : MonoBehaviour
                 return;
             }
 
-            Vector2Int next = ChooseNextStep(myCell, pCell);
-            if (next != myCell)
-                TryStartStepMove(myCell, next);
+            // ✅ 다음 칸에 아군이 있는지만 체크 (넓은 공간에서 우회 가능하게)
+            Vector2Int nextStep = ChooseNextStep(myCell, pCell);
+            bool nextCellBlocked = (nextStep == myCell) || IsOccupiedByOther(nextStep);
+
+            if (nextCellBlocked)
+            {
+                // 다음 칸이 막혔음
+
+                // 원거리 공격 가능한지 체크
+                bool isRanged = _enemy != null && _enemy.definition != null && _enemy.definition.attackRange >= 2;
+
+                if (isRanged && distToPlayer <= _enemy.definition.attackRange)
+                {
+                    // TODO: 원거리 공격 (현재는 대기)
+                    // 나중에 원거리 공격 시스템 추가
+                    return;
+                }
+
+                // 근접 적이고 다음 칸 막혔음 → 대기
+                return;
+            }
+
+            // 다음 칸 비었음 → 전진!
+            if (nextStep != myCell)
+                TryStartStepMove(myCell, nextStep);
             return;
         }
 
@@ -264,6 +322,46 @@ public class FieldEnemyWanderChase : MonoBehaviour
         return gridBoard.WorldToCell(transform.position);
     }
 
+    /// <summary>
+    /// 목표까지 경로에 아군(다른 적)이 있는지 체크
+    /// </summary>
+    private bool HasAllyInPath(Vector2Int from, Vector2Int to)
+    {
+        if (occupancy == null) return false;
+
+        // 직선 경로상의 모든 셀 체크
+        int dx = to.x - from.x;
+        int dy = to.y - from.y;
+
+        int steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+        if (steps == 0) return false;
+
+        // 방향 벡터 정규화
+        float stepX = (float)dx / steps;
+        float stepY = (float)dy / steps;
+
+        // 경로상의 각 셀 체크 (자신과 목표 제외)
+        for (int i = 1; i < steps; i++)
+        {
+            int checkX = from.x + Mathf.RoundToInt(stepX * i);
+            int checkY = from.y + Mathf.RoundToInt(stepY * i);
+            Vector2Int checkCell = new Vector2Int(checkX, checkY);
+
+            // 이 셀에 다른 적이 있는지 확인
+            var occupant = occupancy.GetOccupant(checkCell);
+            if (occupant != null && occupant != transform)
+            {
+                // 적인지 확인 (EnemyInstance 있으면 적)
+                if (occupant.GetComponent<EnemyInstance>() != null)
+                {
+                    return true; // 경로에 아군 발견!
+                }
+            }
+        }
+
+        return false; // 경로 깨끗함
+    }
+
     // =========================================================
     // 이동 시작(예약 먼저!)
     // =========================================================
@@ -301,6 +399,12 @@ public class FieldEnemyWanderChase : MonoBehaviour
 
         transform.position = b;
         _moving = false;
+
+        // ✅ 이동했으므로 행동 완료 표시
+        if (_enemy != null)
+        {
+            _enemy.MarkAsActed();
+        }
     }
 
     // =========================================================

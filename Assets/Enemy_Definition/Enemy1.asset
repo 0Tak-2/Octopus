@@ -22,8 +22,12 @@ MonoBehaviour:
   useDashAttackMotion: 1
   fieldDetectionRange: 6
   fieldRequireLoS: 1
+  aggroDropDistance: 15
+  ignoreLoSWhenAggro: 1
   wanderMoveChance: 0.3
-  detectionAlertDuration: 3
+  detectionAlertDuration: 2
+  projectilePrefab: {fileID: 0}
+  projectileRotates: 1
   baseEvasion: 0
   enableEliteAP: 0
   eliteStartAP: 1

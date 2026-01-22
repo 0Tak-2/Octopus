@@ -7078,8 +7078,10 @@ MonoBehaviour:
   gridBoard: {fileID: 0}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
+  alertIconPrefab: {fileID: 0}
   aggroRange: 2
   requireLoS: 1
+  aggroDropDistance: 15
   useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
@@ -7092,6 +7094,7 @@ MonoBehaviour:
   fieldCombat: {fileID: 0}
   enemyTurnFirst: 1
   state: 0
+  isAggro: 0
 --- !u!1 &596959678
 GameObject:
   m_ObjectHideFlags: 0
@@ -7406,8 +7409,10 @@ MonoBehaviour:
   gridBoard: {fileID: 0}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
+  alertIconPrefab: {fileID: 0}
   aggroRange: 2
   requireLoS: 1
+  aggroDropDistance: 15
   useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
@@ -7420,6 +7425,7 @@ MonoBehaviour:
   fieldCombat: {fileID: 0}
   enemyTurnFirst: 1
   state: 0
+  isAggro: 0
 --- !u!1 &621184133
 GameObject:
   m_ObjectHideFlags: 0
@@ -9445,6 +9451,7 @@ MonoBehaviour:
   crouch: {fileID: 931578459}
   rest: {fileID: 931578461}
   occupancy: {fileID: 710611694}
+  multiEnemyAttack: {fileID: 1154835357}
   moveDuration: 0.3
   baseMoveTimeCost: 1
   crouchExtraTimeCost: 1
@@ -10305,6 +10312,58 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1109582189}
   m_CullTransparentMesh: 1
+--- !u!1 &1154835356
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1154835358}
+  - component: {fileID: 1154835357}
+  m_Layer: 0
+  m_Name: 'FieldMultiEnemyAttack '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1154835357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154835356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 290fc14fa77fcd14984397654e835672, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 931578457}
+  gridBoard: {fileID: 1867473543}
+  playerStats: {fileID: 931578460}
+  occupancy: {fileID: 710611694}
+  detectionRange: 6
+  attackDelay: 0.2
+  dashDuration: 0.15
+  showDebugLogs: 1
+--- !u!4 &1154835358
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154835356}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1167304929
 GameObject:
   m_ObjectHideFlags: 0
@@ -10398,7 +10457,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1177859469
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15477,8 +15536,10 @@ MonoBehaviour:
   gridBoard: {fileID: 0}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
+  alertIconPrefab: {fileID: 0}
   aggroRange: 2
   requireLoS: 1
+  aggroDropDistance: 15
   useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
@@ -15491,6 +15552,7 @@ MonoBehaviour:
   fieldCombat: {fileID: 0}
   enemyTurnFirst: 1
   state: 0
+  isAggro: 0
 --- !u!1 &1864150768
 GameObject:
   m_ObjectHideFlags: 0
@@ -16734,8 +16796,10 @@ MonoBehaviour:
   gridBoard: {fileID: 0}
   timeManager: {fileID: 1768082966}
   occupancy: {fileID: 0}
+  alertIconPrefab: {fileID: 0}
   aggroRange: 2
   requireLoS: 1
+  aggroDropDistance: 15
   useCustomDetection: 0
   enableWander: 1
   wanderRadius: 2
@@ -16748,6 +16812,7 @@ MonoBehaviour:
   fieldCombat: {fileID: 0}
   enemyTurnFirst: 1
   state: 0
+  isAggro: 0
 --- !u!1 &1967667040
 GameObject:
   m_ObjectHideFlags: 0
@@ -17601,3 +17666,4 @@ SceneRoots:
   - {fileID: 1582121051}
   - {fileID: 444427615}
   - {fileID: 762836646}
+  - {fileID: 1154835358}
