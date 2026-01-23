@@ -50,6 +50,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
     [Header("Debug")]
     public State state = State.Wander;
     public bool isAggro = false; // 어그로 상태
+    public bool showDebugLogs = false; // 디버그 로그 표시
 
     private EnemyInstance _enemy;
     private Vector2Int _wanderTargetCell;
@@ -204,25 +205,27 @@ public class FieldEnemyWanderChase : MonoBehaviour
                 return;
             }
 
+            // ✅ 원거리 적은 사거리 안으로 접근하지 않음
+            bool isRanged = _enemy != null && _enemy.definition != null && _enemy.definition.attackRange >= 2;
+            if (isRanged && distToPlayer <= _enemy.definition.attackRange)
+            {
+                // 사거리 안에 있음 → 더 이상 접근하지 않음
+                if (showDebugLogs)
+                    Debug.Log($"[WanderChase] {_enemy.definition.displayName} in range ({distToPlayer} <= {_enemy.definition.attackRange}). Stay.");
+                return;
+            }
+
+            // ✅ 사거리 밖이면 추격
+            if (showDebugLogs && isRanged)
+                Debug.Log($"[WanderChase] {_enemy.definition.displayName} out of range ({distToPlayer} > {_enemy.definition.attackRange}). Chase!");
+
             // ✅ 다음 칸에 아군이 있는지만 체크 (넓은 공간에서 우회 가능하게)
             Vector2Int nextStep = ChooseNextStep(myCell, pCell);
             bool nextCellBlocked = (nextStep == myCell) || IsOccupiedByOther(nextStep);
 
             if (nextCellBlocked)
             {
-                // 다음 칸이 막혔음
-
-                // 원거리 공격 가능한지 체크
-                bool isRanged = _enemy != null && _enemy.definition != null && _enemy.definition.attackRange >= 2;
-
-                if (isRanged && distToPlayer <= _enemy.definition.attackRange)
-                {
-                    // TODO: 원거리 공격 (현재는 대기)
-                    // 나중에 원거리 공격 시스템 추가
-                    return;
-                }
-
-                // 근접 적이고 다음 칸 막혔음 → 대기
+                // 다음 칸이 막혔음 → 대기
                 return;
             }
 

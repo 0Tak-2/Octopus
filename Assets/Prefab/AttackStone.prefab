@@ -97,6 +97,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a64cc77a30cd0cc4db6693fdece42f30, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 10
-  rotateTowardsTarget: 1
+  speed: 30
+  rotateTowardsTarget: 0
   maxLifetime: 3

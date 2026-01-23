@@ -7027,6 +7027,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   definition: {fileID: 11400000, guid: a4ad2434e5c9fd84e8ce0cb043fb72dd, type: 2}
   currentHP: 30
+  hasActedThisTurn: 0
 --- !u!70 &577187978
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -7095,6 +7096,7 @@ MonoBehaviour:
   enemyTurnFirst: 1
   state: 0
   isAggro: 0
+  showDebugLogs: 0
 --- !u!1 &596959678
 GameObject:
   m_ObjectHideFlags: 0
@@ -7358,6 +7360,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   definition: {fileID: 11400000, guid: c95c3a24d773b5545b0a9db271ebcf9a, type: 2}
   currentHP: 3
+  hasActedThisTurn: 0
 --- !u!70 &608908254
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -7426,6 +7429,7 @@ MonoBehaviour:
   enemyTurnFirst: 1
   state: 0
   isAggro: 0
+  showDebugLogs: 0
 --- !u!1 &621184133
 GameObject:
   m_ObjectHideFlags: 0
@@ -10345,6 +10349,7 @@ MonoBehaviour:
   gridBoard: {fileID: 1867473543}
   playerStats: {fileID: 931578460}
   occupancy: {fileID: 710611694}
+  hitEffectManager: {fileID: 0}
   detectionRange: 6
   attackDelay: 0.2
   dashDuration: 0.15
@@ -13699,6 +13704,53 @@ MonoBehaviour:
   freeMoveText: {fileID: 0}
   rangeText: {fileID: 0}
   evasionText: {fileID: 0}
+--- !u!1 &1517654837
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1517654839}
+  - component: {fileID: 1517654838}
+  m_Layer: 0
+  m_Name: HitEffectManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1517654838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517654837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4eadae8b800df448897110205a4436b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shakeDuration: 0.2
+  shakeAmount: 0.15
+  showDamageText: 1
+--- !u!4 &1517654839
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517654837}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 45.665543, y: 39.85097, z: -0.23194364}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1535879118
 GameObject:
   m_ObjectHideFlags: 0
@@ -15411,6 +15463,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   definition: {fileID: 11400000, guid: 4393b9a2282255144a2f0abac88d843d, type: 2}
   currentHP: 50
+  hasActedThisTurn: 0
 --- !u!114 &1843907662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15553,6 +15606,7 @@ MonoBehaviour:
   enemyTurnFirst: 1
   state: 0
   isAggro: 0
+  showDebugLogs: 0
 --- !u!1 &1864150768
 GameObject:
   m_ObjectHideFlags: 0
@@ -16745,6 +16799,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   definition: {fileID: 11400000, guid: 4e6017d557cf7104d849445cd011b7f8, type: 2}
   currentHP: 5
+  hasActedThisTurn: 0
 --- !u!70 &1966310118
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -16813,6 +16868,7 @@ MonoBehaviour:
   enemyTurnFirst: 1
   state: 0
   isAggro: 0
+  showDebugLogs: 0
 --- !u!1 &1967667040
 GameObject:
   m_ObjectHideFlags: 0
@@ -17667,3 +17723,4 @@ SceneRoots:
   - {fileID: 444427615}
   - {fileID: 762836646}
   - {fileID: 1154835358}
+  - {fileID: 1517654839}

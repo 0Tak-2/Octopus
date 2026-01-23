@@ -132,7 +132,6 @@ public class FieldMultiEnemyAttack : MonoBehaviour
                 Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} already acted this turn. Skip.");
             yield break;
         }
-        yield break;
 
         Vector2Int enemyCell = gridBoard.WorldToCell(enemy.transform.position);
         Vector2Int playerCell = gridBoard.WorldToCell(player.position);
@@ -146,6 +145,18 @@ public class FieldMultiEnemyAttack : MonoBehaviour
             if (showDebugLogs)
                 Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} too far ({distance} > {attackRange})");
             yield break;
+        }
+
+        // ✅ 원거리 공격은 시야 필요!
+        if (attackRange >= 2)
+        {
+            bool hasLoS = FieldCombatUtils.HasLineOfSight(gridBoard, enemyCell, playerCell);
+            if (!hasLoS)
+            {
+                if (showDebugLogs)
+                    Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} no line of sight!");
+                yield break;
+            }
         }
 
         // 공격!
