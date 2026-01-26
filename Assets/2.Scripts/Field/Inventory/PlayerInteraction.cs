@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 플레이어 상호작용 - F키로 채집/습득
@@ -23,6 +24,10 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
+        // UI 클릭 중이면 입력 무시
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
         // F키 입력
         if (Input.GetKeyDown(KeyCode.F))
         {
@@ -62,15 +67,24 @@ public class PlayerInteraction : MonoBehaviour
     {
         DroppedItem[] items = FindObjectsOfType<DroppedItem>();
         DroppedItem nearest = null;
-        float nearestDist = interactionRange;
+        float nearestDist = float.MaxValue;
+
+        // 플레이어 셀 위치
+        Vector2Int playerCell = gridBoard != null ? gridBoard.WorldToCell(transform.position) : Vector2Int.zero;
 
         foreach (var item in items)
         {
-            float dist = Vector3.Distance(transform.position, item.transform.position);
-            if (dist < nearestDist)
+            // 그리드 기반 거리 체크
+            Vector2Int itemCell = gridBoard != null ? gridBoard.WorldToCell(item.transform.position) : Vector2Int.zero;
+            int gridDistance = Mathf.Abs(playerCell.x - itemCell.x) + Mathf.Abs(playerCell.y - itemCell.y);
+
+            float worldDist = Vector3.Distance(transform.position, item.transform.position);
+
+            // 같은 칸(0)만 허용
+            if (gridDistance == 0 && worldDist < nearestDist)
             {
                 nearest = item;
-                nearestDist = dist;
+                nearestDist = worldDist;
             }
         }
 
@@ -83,19 +97,41 @@ public class PlayerInteraction : MonoBehaviour
     private Harvestable FindNearestHarvestable()
     {
         Harvestable[] harvestables = FindObjectsOfType<Harvestable>();
+
+        Debug.Log($"[Interaction] Found {harvestables.Length} harvestables in scene");
+
         Harvestable nearest = null;
-        float nearestDist = interactionRange;
+        float nearestDist = float.MaxValue;
+
+        // 플레이어 셀 위치
+        Vector2Int playerCell = gridBoard != null ? gridBoard.WorldToCell(transform.position) : Vector2Int.zero;
 
         foreach (var harvestable in harvestables)
         {
             if (harvestable.isHarvested) continue;
 
-            float dist = Vector3.Distance(transform.position, harvestable.transform.position);
-            if (dist < nearestDist)
+            // 그리드 기반 거리 체크
+            Vector2Int harvestableCell = gridBoard != null ? gridBoard.WorldToCell(harvestable.transform.position) : Vector2Int.zero;
+            int gridDistance = Mathf.Abs(playerCell.x - harvestableCell.x) + Mathf.Abs(playerCell.y - harvestableCell.y);
+
+            float worldDist = Vector3.Distance(transform.position, harvestable.transform.position);
+            Debug.Log($"[Interaction] {harvestable.itemName} at grid distance {gridDistance} (world: {worldDist:F2})");
+
+            // 같은 칸(0)만 허용
+            if (gridDistance == 0 && worldDist < nearestDist)
             {
                 nearest = harvestable;
-                nearestDist = dist;
+                nearestDist = worldDist;
             }
+        }
+
+        if (nearest != null)
+        {
+            Debug.Log($"[Interaction] Nearest: {nearest.itemName} at {nearestDist:F2}");
+        }
+        else
+        {
+            Debug.Log("[Interaction] No harvestable in same cell");
         }
 
         return nearest;
@@ -130,6 +166,15 @@ public class PlayerInteraction : MonoBehaviour
     private void HarvestObject(Harvestable harvestable)
     {
         if (harvestable == null) return;
+
+        // 채집 가능한지 확인 (도구 체크)
+        string reason;
+        if (!harvestable.CanHarvest(out reason))
+        {
+            Debug.Log($"[Interaction] Cannot harvest: {reason}");
+            // 경고 메시지는 Console에만 표시
+            return;
+        }
 
         if (showDebugLogs)
             Debug.Log($"[Interaction] Harvesting {harvestable.itemName}");

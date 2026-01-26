@@ -1,14 +1,18 @@
 using UnityEngine;
 
 /// <summary>
-/// 채집 가능한 오브젝트 (해초, 산호, 조개 등 모두 처리)
+/// 채집 가능한 오브젝트 (해초, 산호, 암석, 모래 등)
 /// </summary>
 public class Harvestable : MonoBehaviour
 {
     [Header("아이템 설정")]
     public string itemName = "해초"; // 아이템 이름
-    public int itemID = 1; // 아이템 ID (1=해초, 2=산호, 3=조개...)
+    public int itemID = 1; // 아이템 ID (1=해초, 2=산호, 3=암석, 4=모래...)
     public GameObject itemDropPrefab; // 떨어질 아이템 프리팹
+
+    [Header("도구 요구사항")]
+    public bool requiresPickaxe = false; // 곡괭이 필요 (암석)
+    public bool requiresShovel = false; // 삽 필요 (모래)
 
     [Header("드랍 설정")]
     public int minDropCount = 1; // 최소 드랍 개수
@@ -26,6 +30,41 @@ public class Harvestable : MonoBehaviour
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    /// <summary>
+    /// 채집 가능한지 확인
+    /// </summary>
+    public bool CanHarvest(out string reason)
+    {
+        if (isHarvested)
+        {
+            reason = "이미 채집했습니다.";
+            return false;
+        }
+
+        // 곡괭이 필요
+        if (requiresPickaxe)
+        {
+            if (ToolManager.Instance == null || !ToolManager.Instance.HasPickaxe())
+            {
+                reason = $"{itemName}을(를) 캐려면 곡괭이가 필요합니다!";
+                return false;
+            }
+        }
+
+        // 삽 필요
+        if (requiresShovel)
+        {
+            if (ToolManager.Instance == null || !ToolManager.Instance.HasShovel())
+            {
+                reason = $"{itemName}을(를) 캐려면 삽이 필요합니다!";
+                return false;
+            }
+        }
+
+        reason = "";
+        return true;
     }
 
     /// <summary>

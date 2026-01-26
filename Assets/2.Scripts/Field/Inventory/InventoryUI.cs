@@ -22,6 +22,10 @@ public class InventoryUI : MonoBehaviour
     public GameObject tooltip;
     public TextMeshProUGUI tooltipText;
 
+    [Header("제작 UI (선택)")]
+    public CraftingUI craftingUI;
+    public Button craftButton; // 제작 버튼
+
     private List<InventorySlot> itemSlots = new List<InventorySlot>();
 
     private void Start()
@@ -31,6 +35,14 @@ public class InventoryUI : MonoBehaviour
 
         if (tooltip != null)
             tooltip.SetActive(false);
+
+        // 제작 버튼 자동 연결
+        if (craftButton != null)
+        {
+            craftButton.onClick.RemoveAllListeners();
+            craftButton.onClick.AddListener(OpenCrafting);
+            Debug.Log("[InventoryUI] Craft button connected!");
+        }
     }
 
     public void RefreshUI()
@@ -139,12 +151,33 @@ public class InventoryUI : MonoBehaviour
 
         tooltip.SetActive(true);
         tooltipText.text = text;
-        tooltip.transform.position = position;
+
+        // 마우스 옆으로 위치 (슬롯 위가 아닌!)
+        Vector3 mousePos = Input.mousePosition;
+        tooltip.transform.position = mousePos + new Vector3(10f, 10f, 0f);
     }
 
     public void HideTooltip()
     {
         if (tooltip != null)
             tooltip.SetActive(false);
+    }
+
+    /// <summary>
+    /// 제작 UI 열기
+    /// </summary>
+    public void OpenCrafting()
+    {
+        Debug.Log("[InventoryUI] OpenCrafting called!");
+
+        if (craftingUI != null)
+        {
+            Debug.Log("[InventoryUI] CraftingUI found, opening...");
+            craftingUI.OpenCrafting();
+        }
+        else
+        {
+            Debug.LogWarning("[InventoryUI] CraftingUI is null!");
+        }
     }
 }

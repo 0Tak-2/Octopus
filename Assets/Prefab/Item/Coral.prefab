@@ -97,9 +97,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 617a48b58fd735840bebe8118b54bd4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: "\uC0B0\uD638"
+  itemName: Coral
   itemID: 2
   itemDropPrefab: {fileID: 1233796633913846338, guid: 69cd169f42e7bdb40951d15687044864, type: 3}
+  requiresPickaxe: 0
+  requiresShovel: 0
   minDropCount: 1
   maxDropCount: 2
   dropSpread: 0.2

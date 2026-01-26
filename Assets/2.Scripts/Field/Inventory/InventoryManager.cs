@@ -2,7 +2,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 인벤토리 시스템
+/// 인벤토리 시스템 (개선 버전)
 /// </summary>
 public class InventoryManager : MonoBehaviour
 {
@@ -10,14 +10,14 @@ public class InventoryManager : MonoBehaviour
 
     [Header("Inventory")]
     public Dictionary<int, InventoryItem> items = new Dictionary<int, InventoryItem>();
-    public int maxInventorySize = 20; // 인벤토리 최대 크기
+    public int maxInventorySize = 20; // 최대 크기 (Inspector에서 조절)
 
     [Header("UI")]
     public GameObject inventoryUI;
     public bool isInventoryOpen = false;
 
     [Header("Pickup Text")]
-    public GameObject pickupTextPrefab; // 플로팅 텍스트 프리팹
+    public GameObject pickupTextPrefab;
 
     private void Awake()
     {
@@ -31,11 +31,10 @@ public class InventoryManager : MonoBehaviour
 
     private void Start()
     {
-        // UI 숨기기
         if (inventoryUI != null)
         {
             inventoryUI.SetActive(false);
-            isInventoryOpen = false; // ← 이거 추가!
+            isInventoryOpen = false;
         }
     }
 
@@ -53,7 +52,23 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public void AddItem(int itemID, string itemName, int count, Vector3 playerPosition)
     {
-        // 인벤토리 가득 참 체크
+        AddItemInternal(itemID, itemName, count, playerPosition, true);
+    }
+
+    /// <summary>
+    /// 아이템 추가 (제작용 - 플로팅 텍스트 없음)
+    /// </summary>
+    public void AddItemFromCrafting(int itemID, string itemName, int count)
+    {
+        AddItemInternal(itemID, itemName, count, Vector3.zero, false);
+    }
+
+    /// <summary>
+    /// 아이템 추가 내부 구현
+    /// </summary>
+    private void AddItemInternal(int itemID, string itemName, int count, Vector3 playerPosition, bool showFloatingText)
+    {
+        // 가득 참 체크
         if (items.Count >= maxInventorySize && !items.ContainsKey(itemID))
         {
             Debug.LogWarning("[Inventory] Inventory is full!");
@@ -87,20 +102,19 @@ public class InventoryManager : MonoBehaviour
 
         Debug.Log($"[Inventory] Added {itemName} x{count}. Total: {items[itemID].count}");
 
-        // ✅ 플로팅 텍스트 표시
-        ShowPickupText(itemName, count, playerPosition);
+        // 플로팅 텍스트 표시 (선택적)
+        if (showFloatingText)
+        {
+            ShowPickupText(itemName, count, playerPosition);
+        }
 
-        // ✅ 인벤토리가 열려있으면 즉시 갱신
+        // 인벤토리가 열려있으면 UI 갱신
         if (isInventoryOpen)
         {
             UpdateInventoryUI();
         }
-        // 닫혀있으면 다음에 열 때 갱신됨 (OpenInventory에서)
     }
 
-    /// <summary>
-    /// 플로팅 텍스트 표시
-    /// </summary>
     private void ShowPickupText(string itemName, int count, Vector3 position)
     {
         if (pickupTextPrefab == null) return;
@@ -114,24 +128,16 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 인벤토리 열기
-    /// </summary>
     public void OpenInventory()
     {
         if (inventoryUI != null)
         {
             inventoryUI.SetActive(true);
             isInventoryOpen = true;
-
-            // ✅ 열 때마다 UI 갱신 (밀린 아이템 표시)
             UpdateInventoryUI();
         }
     }
 
-    /// <summary>
-    /// 인벤토리 닫기
-    /// </summary>
     public void CloseInventory()
     {
         if (inventoryUI != null)
@@ -139,11 +145,15 @@ public class InventoryManager : MonoBehaviour
             inventoryUI.SetActive(false);
             isInventoryOpen = false;
         }
+
+        // 제작창도 함께 닫기
+        CraftingUI craftingUI = FindObjectOfType<CraftingUI>();
+        if (craftingUI != null)
+        {
+            craftingUI.CloseCrafting();
+        }
     }
 
-    /// <summary>
-    /// 인벤토리 토글
-    /// </summary>
     public void ToggleInventory()
     {
         if (isInventoryOpen)
@@ -152,21 +162,59 @@ public class InventoryManager : MonoBehaviour
             OpenInventory();
     }
 
-    /// <summary>
-    /// UI 갱신
-    /// </summary>
     private void UpdateInventoryUI()
     {
+        // 인벤토리 UI 갱신
         InventoryUI ui = FindObjectOfType<InventoryUI>();
         if (ui != null)
         {
             ui.RefreshUI();
         }
+
+        // 제작 UI도 갱신 (열려있으면)
+        CraftingUI craftingUI = FindObjectOfType<CraftingUI>();
+        if (craftingUI != null && craftingUI.IsOpen())
+        {
+            craftingUI.RefreshRecipes();
+        }
     }
 
     /// <summary>
-    /// 아이템 개수 가져오기
+    /// 아이템 제거
     /// </summary>
+    public bool RemoveItem(int itemID, int count)
+    {
+        if (!items.ContainsKey(itemID))
+        {
+            Debug.LogWarning($"[Inventory] Cannot remove - item {itemID} not found");
+            return false;
+        }
+
+        if (items[itemID].count < count)
+        {
+            Debug.LogWarning($"[Inventory] Cannot remove - not enough items");
+            return false;
+        }
+
+        items[itemID].count -= count;
+
+        // 0개가 되면 삭제
+        if (items[itemID].count <= 0)
+        {
+            items.Remove(itemID);
+        }
+
+        Debug.Log($"[Inventory] Removed item {itemID} x{count}");
+
+        // UI 갱신
+        if (isInventoryOpen)
+        {
+            UpdateInventoryUI();
+        }
+
+        return true;
+    }
+
     public int GetItemCount(int itemID)
     {
         if (items.ContainsKey(itemID))
@@ -184,6 +232,6 @@ public class InventoryItem
     public int itemID;
     public string itemName;
     public int count;
-    public Sprite icon; // 아이콘
-    public string description; // 설명
+    public Sprite icon;
+    public string description;
 }
