@@ -68,12 +68,59 @@ public class DungeonController : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("[DungeonController] ===== Start 시작 =====");
+
         // Player 찾기 (DontDestroyOnLoad 때문에 씬에 없을 수 있음)
         if (player == null)
         {
+            Debug.Log("[DungeonController] Player 찾기 시작...");
+
+            // 방법 1: Tag로 찾기
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+
+            // 방법 2: Tag로 못 찾으면 모든 PlayerGridMover 찾기
+            if (playerObj == null)
+            {
+                Debug.LogWarning("[DungeonController] Player tag not found, searching by PlayerGridMover...");
+
+                PlayerGridMover[] allPlayers = FindObjectsOfType<PlayerGridMover>(true); // includeInactive = true
+                Debug.Log($"[DungeonController] Found {allPlayers.Length} PlayerGridMover components");
+
+                if (allPlayers.Length > 0)
+                {
+                    playerObj = allPlayers[0].gameObject;
+
+                    // Player 활성화
+                    if (!playerObj.activeSelf)
+                    {
+                        Debug.Log("[DungeonController] Player was inactive, activating...");
+                        playerObj.SetActive(true);
+                    }
+
+                    Debug.Log($"[DungeonController] Found Player via PlayerGridMover: {playerObj.name}");
+                }
+            }
+
+            // 방법 3: 아예 이름으로 찾기
+            if (playerObj == null)
+            {
+                Debug.LogWarning("[DungeonController] Searching by name 'Player'...");
+                playerObj = GameObject.Find("Player");
+            }
+
             if (playerObj != null)
+            {
                 player = playerObj.transform;
+                Debug.Log($"[DungeonController] Player 설정 완료: {player.name} at {player.position}");
+            }
+            else
+            {
+                Debug.LogError("[DungeonController] Player를 찾을 수 없습니다!");
+            }
+        }
+        else
+        {
+            Debug.Log($"[DungeonController] Player already assigned: {player.name}");
         }
 
         // GridBoard 찾기
@@ -88,8 +135,8 @@ public class DungeonController : MonoBehaviour
 
         if (player == null)
         {
-            Debug.LogError("[DungeonController] Player를 찾을 수 없습니다! Player 태그를 확인하세요.");
-            return;
+            Debug.LogWarning("[DungeonController] Player를 찾을 수 없습니다! 일부 기능이 작동하지 않을 수 있습니다.");
+            // return 하지 않고 계속 진행 (Player 없어도 던전은 생성)
         }
 
         if (gridBoard == null)
@@ -109,6 +156,8 @@ public class DungeonController : MonoBehaviour
 
         // 플레이어 데이터 복원 (HP 등)
         GameManager.Instance?.RestorePlayerData();
+
+        Debug.Log("[DungeonController] ===== Start 완료 =====");
     }
 
     /// <summary>
@@ -248,12 +297,42 @@ public class DungeonController : MonoBehaviour
     /// </summary>
     private void SpawnPlayer(DungeonRoom startRoom)
     {
-        if (player == null || gridBoard == null) return;
+        Debug.Log($"[DungeonController] SpawnPlayer 호출 - player={player != null}, gridBoard={gridBoard != null}");
+
+        if (player == null)
+        {
+            Debug.LogError("[DungeonController] player가 null입니다! Player를 찾을 수 없습니다.");
+
+            // 다시 한 번 찾기 시도
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj == null)
+            {
+                PlayerGridMover playerMover = FindObjectOfType<PlayerGridMover>(true);
+                if (playerMover != null)
+                {
+                    playerObj = playerMover.gameObject;
+                    Debug.Log("[DungeonController] SpawnPlayer에서 Player를 재탐색하여 찾음!");
+                }
+            }
+
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+            }
+        }
+
+        if (player == null || gridBoard == null)
+        {
+            Debug.LogError($"[DungeonController] SpawnPlayer 실패 - player={player}, gridBoard={gridBoard}");
+            return;
+        }
 
         // 시작 방 내부에서 이동 가능한 타일 찾기
         Vector2Int spawnPos = FindWalkablePositionInRoom(startRoom);
 
         Vector3 spawnWorld = gridBoard.CellToWorld(spawnPos);
+        Debug.Log($"[DungeonController] 플레이어 이동: {player.position} → {spawnWorld} (Cell: {spawnPos})");
+
         player.position = spawnWorld;
 
         // PlayerGridMover 동기화
@@ -261,10 +340,15 @@ public class DungeonController : MonoBehaviour
         if (mover != null)
         {
             mover.SetCurrentCell(spawnPos);
+            Debug.Log($"[DungeonController] PlayerGridMover 셀 동기화: {spawnPos}");
+        }
+        else
+        {
+            Debug.LogWarning("[DungeonController] PlayerGridMover 컴포넌트를 찾을 수 없습니다!");
         }
 
         if (logGeneration)
-            Debug.Log($"[DungeonController] 플레이어 스폰: {spawnPos}");
+            Debug.Log($"[DungeonController] 플레이어 스폰 완료: {spawnPos}");
     }
 
     /// <summary>

@@ -27,6 +27,7 @@ public class InventoryManager : MonoBehaviour
             return;
         }
         Instance = this;
+        DontDestroyOnLoad(gameObject); // 씬 전환 시 유지
     }
 
     private void Start()
