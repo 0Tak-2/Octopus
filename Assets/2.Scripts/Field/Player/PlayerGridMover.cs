@@ -51,24 +51,79 @@ public class PlayerGridMover : MonoBehaviour
         Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        CurrentCell = grid.WorldToCell(transform.position);
-        transform.position = grid.CellToWorld(CurrentCell);
-
-        if (occupancy != null)
-        {
-            occupancy.TryOccupy(transform, CurrentCell);
-        }
-
-        Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell + ", blockedMoveCells: " + grid.blockedMoveCells.Count);
-        Debug.Log($"[PlayerGridMover] grid={grid?.name} id={grid?.GetInstanceID()}");
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnDisable()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+
         if (occupancy != null)
             occupancy.Release(transform);
+    }
+
+    /// <summary>
+    /// 씬 로드 시 참조 다시 찾기 (던전/필드 전환 시 필수)
+    /// </summary>
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // 딜레이 후 참조 찾기 (DungeonController.Start()가 GridBoard 설정한 후에 실행되도록)
+        StartCoroutine(RefreshReferencesDelayed());
+    }
+
+    private System.Collections.IEnumerator RefreshReferencesDelayed()
+    {
+        // 다른 Start()들이 실행될 때까지 대기
+        yield return null;
+        yield return null;
+        yield return new WaitForEndOfFrame();
+
+        // 새 씬의 GridBoard 찾기
+        grid = FindObjectOfType<GridBoard>();
+        fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        rest = FindObjectOfType<RestController>();
+        occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+        multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+
+        Debug.Log($"[PlayerGridMover] RefreshReferences - Grid: {(grid != null ? grid.name : "NULL")}");
+
+        if (grid != null)
+        {
+            Debug.Log($"[PlayerGridMover] GridBoard blockedMoveCells count: {grid.blockedMoveCells.Count}");
+            Debug.Log($"[PlayerGridMover] GridBoard size: {grid.width}x{grid.height}");
+        }
+
+        // 현재 위치로 CurrentCell 동기화
+        if (grid != null)
+        {
+            CurrentCell = grid.WorldToCell(transform.position);
+
+            if (occupancy != null)
+            {
+                occupancy.TryOccupy(transform, CurrentCell);
+            }
+
+            Debug.Log($"[PlayerGridMover] Synced CurrentCell: {CurrentCell}");
+        }
+    }
+
+    private void Start()
+    {
+        // 첫 씬 로드 시 초기화
+        if (grid != null)
+        {
+            CurrentCell = grid.WorldToCell(transform.position);
+            transform.position = grid.CellToWorld(CurrentCell);
+
+            if (occupancy != null)
+            {
+                occupancy.TryOccupy(transform, CurrentCell);
+            }
+
+            Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell);
+        }
     }
 
     private void Update()
@@ -103,10 +158,24 @@ public class PlayerGridMover : MonoBehaviour
         int dx = 0;
         int dy = 0;
 
-        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) dy = 1;
-        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) dy = -1;
-        else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
-        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
+        // ✅ 대각선 이동 지원 - 두 키 동시에 누르면 대각선
+        bool up = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow);
+        bool down = Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow);
+        bool left = Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow);
+        bool right = Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow);
+
+        // 현재 누르고 있는 키도 체크 (대각선용)
+        bool holdUp = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+        bool holdDown = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+        bool holdLeft = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
+        bool holdRight = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
+
+        // 방향 결정
+        if (up || (holdUp && (left || right))) dy = 1;
+        else if (down || (holdDown && (left || right))) dy = -1;
+
+        if (left || (holdLeft && (up || down))) dx = -1;
+        else if (right || (holdRight && (up || down))) dx = 1;
 
         return new Vector2Int(dx, dy);
     }

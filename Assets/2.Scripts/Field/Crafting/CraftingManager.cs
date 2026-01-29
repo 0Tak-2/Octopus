@@ -1,15 +1,15 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Á¦ÀÛ ½Ã½ºÅÛ °ü¸®
+/// ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 /// </summary>
 public class CraftingManager : MonoBehaviour
 {
     public static CraftingManager Instance { get; private set; }
 
-    [Header("·¹½ÃÇÇ ¸ñ·Ï")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½")]
     public List<CraftingRecipe> allRecipes = new List<CraftingRecipe>();
 
     private void Awake()
@@ -20,10 +20,13 @@ public class CraftingManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // ì”¬ ì „í™˜í•´ë„ ìœ ì§€
+        DontDestroyOnLoad(gameObject);
     }
 
     /// <summary>
-    /// Ä«Å×°í¸®º° ·¹½ÃÇÇ °¡Á®¿À±â
+    /// Ä«ï¿½×°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public List<CraftingRecipe> GetRecipesByCategory(RecipeCategory category)
     {
@@ -34,7 +37,7 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Á¦ÀÛ °¡´ÉÇÑ ·¹½ÃÇÇ¸¸ °¡Á®¿À±â
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public List<CraftingRecipe> GetCraftableRecipes(RecipeCategory category)
     {
@@ -45,7 +48,7 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛ Á¦ÀÛ
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public bool CraftItem(CraftingRecipe recipe)
     {
@@ -57,10 +60,10 @@ public class CraftingManager : MonoBehaviour
             return false;
         }
 
-        // Àç·á ¼Ò¸ğ
+        // ï¿½ï¿½ï¿½ ï¿½Ò¸ï¿½
         recipe.ConsumeIngredients(inventory);
 
-        // °á°ú¹° Ãß°¡ (Á¦ÀÛ¿ë ÇÔ¼ö »ç¿ë)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ (ï¿½ï¿½ï¿½Û¿ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½)
         ItemData resultData = ItemDatabase.Instance.GetItemData(recipe.resultItemID);
         if (resultData != null)
         {
@@ -70,7 +73,7 @@ public class CraftingManager : MonoBehaviour
                 recipe.resultCount
             );
 
-            // µµ±¸ ÀÚµ¿ Âø¿ë
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
             AutoEquipTool(recipe.resultItemID, resultData);
 
             Debug.Log($"[CraftingManager] Crafted {resultData.itemName} x{recipe.resultCount}");
@@ -82,18 +85,18 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// µµ±¸ ÀÚµ¿ Âø¿ë
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     private void AutoEquipTool(int itemID, ItemData itemData)
     {
         if (ToolManager.Instance == null) return;
 
-        // °î±ªÀÌ Âø¿ë (ID: 101=»êÈ£ °î±ªÀÌ, 103=µ¹ °î±ªÀÌ)
+        // ï¿½î±ªï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ID: 101=ï¿½ï¿½È£ ï¿½î±ªï¿½ï¿½, 103=ï¿½ï¿½ ï¿½î±ªï¿½ï¿½)
         if (itemID == 101 || itemID == 103)
         {
             ToolManager.Instance.EquipPickaxe(itemID);
         }
-        // »ğ Âø¿ë (ID: 104=µ¹ »ğ)
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ID: 104=ï¿½ï¿½ ï¿½ï¿½)
         else if (itemID == 104)
         {
             ToolManager.Instance.EquipShovel(itemID);

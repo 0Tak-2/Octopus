@@ -18,8 +18,8 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
 
     [Header("Prompt (world text)")]
     public TextMeshProUGUI promptText;
-    [TextArea] public string promptMessage = "집중해서 싸운다\n(E)";
-    public KeyCode interactKey = KeyCode.E;
+    [TextArea] public string promptMessage = "집중해서 싸운다\n(F)";
+    public KeyCode interactKey = KeyCode.F;
 
     [Header("Enemy Cell (optional)")]
     public bool useTransformToCell = true;
@@ -64,7 +64,11 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
         Vector2Int p = playerMover.CurrentCell;
         Vector2Int e = GetEnemyCell();
 
-        bool adjacent = (Mathf.Abs(p.x - e.x) + Mathf.Abs(p.y - e.y)) == 1;
+        // ✅ 8방향 인접 체크 (대각선 포함)
+        int dx = Mathf.Abs(p.x - e.x);
+        int dy = Mathf.Abs(p.y - e.y);
+        bool adjacent = dx <= 1 && dy <= 1 && !(dx == 0 && dy == 0);
+
         if (!adjacent)
         {
             HidePrompt();

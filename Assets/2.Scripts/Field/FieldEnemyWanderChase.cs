@@ -38,14 +38,12 @@ public class FieldEnemyWanderChase : MonoBehaviour
     public bool allowDiagonal = true;
     public float stepMoveDuration = 0.08f;
 
-    [Tooltip("전투 진행 중이면 적 배회/추격을 멈춤")]
-    public bool pauseWhenAnyCombatActive = true;
+    // FieldCombatController 제거됨 - 이 옵션은 더 이상 사용 안 함
+    // [Tooltip("전투 진행 중이면 적 배회/추격을 멈춤")]
+    // public bool pauseWhenAnyCombatActive = true;
 
-    [Header("Combat Link (optional)")]
-    public bool startCombatWhenAdjacent = true;
-    public int combatStartRange = 1;
-    public FieldCombatController fieldCombat;
-    public bool enemyTurnFirst = true;
+    // Combat Link 섹션 제거됨 (FieldCombatController 의존)
+    // 이제 FieldMultiEnemyAttack이 전투를 처리함
 
     [Header("Debug")]
     public State state = State.Wander;
@@ -68,7 +66,6 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (player == null) player = GameObject.FindGameObjectWithTag("Player")?.transform;
         if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
         if (timeManager == null) timeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
-        if (fieldCombat == null) fieldCombat = FindObjectOfType<FieldCombatController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
 
         // ✅ EnemyDefinition에서 시야 읽어오기
@@ -137,11 +134,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (_moving) return;
         if (gridBoard == null || player == null) return;
 
-        if (pauseWhenAnyCombatActive && fieldCombat != null)
-        {
-            if (GetCombatActiveBestEffort(fieldCombat))
-                return;
-        }
+        // FieldCombatController 체크 제거됨
 
         Vector2Int myCell = GetMyCell();
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
@@ -198,12 +191,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
 
         if (state == State.Chase)
         {
-            if (startCombatWhenAdjacent && fieldCombat != null && distToPlayer <= combatStartRange)
-            {
-                if (!GetCombatActiveBestEffort(fieldCombat))
-                    TryStartCombat(fieldCombat, transform, enemyTurnFirst);
-                return;
-            }
+            // FieldCombatController 기반 전투 시작 로직 제거됨
+            // 이제 FieldMultiEnemyAttack이 플레이어 턴 종료 시 자동으로 공격 처리
 
             // ✅ 원거리 적은 사거리 안으로 접근하지 않음
             bool isRanged = _enemy != null && _enemy.definition != null && _enemy.definition.attackRange >= 2;
@@ -248,52 +237,58 @@ public class FieldEnemyWanderChase : MonoBehaviour
         // 확률 체크 - 실패하면 이동 안 함
         if (Random.value > moveChance)
         {
-            return; // 이번 턴은 가만히 있음
-        }
-
-        if (_wanderTickCounter >= Mathf.Max(1, wanderRetargetEveryTicks) ||
-            FieldCombatUtils.Chebyshev(myCell, _wanderTargetCell) <= 0)
-        {
-            _wanderTickCounter = 0;
-            PickNewWanderTarget();
-        }
-
-        Vector2Int wNext = ChooseNextStep(myCell, _wanderTargetCell);
-        if (wNext != myCell)
-            TryStartStepMove(myCell, wNext);
-    }
-
-    /// <summary>
-    /// 느낌표 표시
-    /// </summary>
-    private void ShowAlertIcon()
-    {
-        // 이미 표시 중이면 타이머만 리셋
-        if (_alertInstance != null)
-        {
-            _alertTimer = _enemy?.definition?.detectionAlertDuration ?? 1.5f;
             return;
         }
+
+        // 목표 재설정
+        if (_wanderTickCounter >= wanderRetargetEveryTicks)
+        {
+            PickNewWanderTarget();
+            _wanderTickCounter = 0;
+        }
+
+        // 목표로 이동
+        Vector2Int wanderStep = ChooseNextStep(myCell, _wanderTargetCell);
+        if (wanderStep != myCell && !IsOccupiedByOther(wanderStep))
+        {
+            TryStartStepMove(myCell, wanderStep);
+        }
+    }
+
+    // =============================================================
+    // Alert Icon
+    // =============================================================
+    private void ShowAlertIcon()
+    {
+        // 이미 표시 중이면 시간만 갱신
+        if (_alertInstance != null)
+        {
+            _alertTimer = 1.5f;
+            return;
+        }
+
+        // Definition에서 시간 가져오기
+        float duration = 1.5f;
+        if (_enemy != null && _enemy.definition != null)
+        {
+            duration = _enemy.definition.detectionAlertDuration;
+        }
+
+        _alertTimer = duration;
 
         // 프리팹이 있으면 사용
         if (alertIconPrefab != null)
         {
-            Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
-            _alertInstance = Instantiate(alertIconPrefab, spawnPos, Quaternion.identity, transform);
-        }
-        else
-        {
-            // 프리팹이 없으면 자동 생성 (빨간 느낌표)
-            _alertInstance = CreateAlertIcon();
+            _alertInstance = Instantiate(alertIconPrefab, transform);
+            _alertInstance.transform.localPosition = Vector3.up * 1.5f;
+            return;
         }
 
-        _alertTimer = _enemy?.definition?.detectionAlertDuration ?? 1.5f;
+        // 없으면 기본 생성
+        _alertInstance = CreateDefaultAlertIcon();
     }
 
-    /// <summary>
-    /// 느낌표 자동 생성 (프리팹 없을 때)
-    /// </summary>
-    private GameObject CreateAlertIcon()
+    private GameObject CreateDefaultAlertIcon()
     {
         GameObject alert = new GameObject("AlertIcon");
         alert.transform.SetParent(transform);
@@ -491,56 +486,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
     }
 
     // =========================================================
-    // Combat helpers (reflection-safe)
+    // Combat helpers 제거됨 (FieldCombatController 의존)
     // =========================================================
-    private bool GetCombatActiveBestEffort(FieldCombatController fc)
-    {
-        if (fc == null) return false;
-
-        var t = fc.GetType();
-        foreach (var name in new[] { "IsInCombat", "isInCombat", "InCombat", "inCombat", "Active", "active" })
-        {
-            var p = t.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (p != null && p.PropertyType == typeof(bool))
-            {
-                object v = p.GetValue(fc);
-                if (v is bool b) return b;
-            }
-
-            var f = t.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (f != null && f.FieldType == typeof(bool))
-            {
-                object v = f.GetValue(fc);
-                if (v is bool b) return b;
-            }
-        }
-
-        return false;
-    }
-
-    private void TryStartCombat(FieldCombatController fc, Transform enemy, bool enemyFirst)
-    {
-        if (fc == null || enemy == null) return;
-
-        var t = fc.GetType();
-        string[] candidates =
-        {
-            "StartCombatPublic",
-            "StartCombatRequest",
-            "RequestStartCombat",
-            "BeginCombatFromFieldAI",
-            "EnterFromFieldAI"
-        };
-
-        foreach (var name in candidates)
-        {
-            var m2 = t.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
-                new[] { typeof(Transform), typeof(bool) }, null);
-            if (m2 != null) { m2.Invoke(fc, new object[] { enemy, enemyFirst }); return; }
-
-            var m1 = t.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
-                new[] { typeof(Transform) }, null);
-            if (m1 != null) { m1.Invoke(fc, new object[] { enemy }); return; }
-        }
-    }
+    // GetCombatActiveBestEffort() 제거
+    // TryStartCombat() 제거
 }

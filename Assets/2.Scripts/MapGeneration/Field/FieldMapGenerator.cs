@@ -61,7 +61,22 @@ public class FieldMapGenerator : MonoBehaviour
             return;
         }
 
-        GenerateAndRender(config.seed);
+        // ✅ GameManager에서 저장된 시드 가져오기 (없으면 config.seed 사용)
+        int seed = config.seed;
+
+        if (GameManager.Instance != null)
+        {
+            seed = GameManager.Instance.GetFieldMapSeed();
+            if (logGeneration)
+                Debug.Log($"[FieldMapGenerator] GameManager에서 시드 가져옴: {seed}");
+        }
+        else if (seed == 0)
+        {
+            // config.seed가 0이면 랜덤 시드 생성
+            seed = Random.Range(1, int.MaxValue);
+        }
+
+        GenerateAndRender(seed);
     }
 
     /// <summary>
@@ -310,6 +325,28 @@ public class FieldMapGenerator : MonoBehaviour
     {
         if (player != null && gridBoard != null)
         {
+            // ✅ GameManager에서 복원할 위치가 있으면 그걸 사용
+            if (GameManager.Instance != null)
+            {
+                Vector2Int entrancePos = GameManager.Instance.playerData.dungeonEntrancePosition;
+                Debug.Log($"[FieldMapGenerator] SpawnPlayer - dungeonEntrancePosition: {entrancePos}");
+
+                if (entrancePos != Vector2Int.zero)
+                {
+                    // 던전에서 돌아온 경우 - 입구 위치 사용
+                    Vector3 entranceWorld = gridBoard.CellToWorld(entrancePos);
+                    player.position = entranceWorld;
+
+                    if (logGeneration)
+                        Debug.Log($"[FieldMapGenerator] 플레이어 던전 입구로 복귀: {entrancePos}");
+
+                    // ✅ 사용 후 초기화 (다음 스폰 때는 일반 스폰)
+                    GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
+                    return;
+                }
+            }
+
+            // 일반 스폰 (새 맵이거나 던전에서 안 돌아온 경우)
             Vector3 spawnWorld = gridBoard.CellToWorld(currentMap.playerSpawnPos);
             player.position = spawnWorld;
 

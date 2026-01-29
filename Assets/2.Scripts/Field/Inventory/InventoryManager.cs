@@ -27,14 +27,89 @@ public class InventoryManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // ✅ 씬 전환해도 유지
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
     {
-        if (inventoryUI != null)
+        // UI 참조 찾기 (씬 전환 후 다시 찾아야 함)
+        FindInventoryUI();
+    }
+
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // ✅ 씬 로드 후 UI 다시 찾기 (딜레이 필요)
+        StartCoroutine(FindInventoryUIDelayed());
+    }
+
+    private System.Collections.IEnumerator FindInventoryUIDelayed()
+    {
+        // 씬 오브젝트가 활성화될 때까지 대기
+        yield return null;
+        yield return null;
+
+        FindInventoryUI();
+
+        // 인벤토리 닫힌 상태로 시작
+        isInventoryOpen = false;
+    }
+
+    /// <summary>
+    /// 씬에서 인벤토리 UI 찾기
+    /// </summary>
+    private void FindInventoryUI()
+    {
+        // 기존 참조 초기화 (씬 전환 시 이전 씬 오브젝트 참조 제거)
+        inventoryUI = null;
+
+        // 1. 이름으로 찾기 (활성/비활성 모두)
+        GameObject found = GameObject.Find("InventoryUI");
+
+        // 2. 못 찾으면 비활성화된 것도 찾기
+        if (found == null)
         {
+            // Canvas 아래에서 찾기
+            Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+            foreach (var canvas in canvases)
+            {
+                Transform child = canvas.transform.Find("InventoryUI");
+                if (child != null)
+                {
+                    found = child.gameObject;
+                    break;
+                }
+            }
+        }
+
+        // 3. InventoryUI 컴포넌트로 찾기
+        if (found == null)
+        {
+            InventoryUI ui = FindObjectOfType<InventoryUI>(true);
+            if (ui != null)
+                found = ui.gameObject;
+        }
+
+        if (found != null)
+        {
+            inventoryUI = found;
             inventoryUI.SetActive(false);
-            isInventoryOpen = false;
+            Debug.Log($"[InventoryManager] UI 찾음: {found.name}");
+        }
+        else
+        {
+            Debug.LogWarning("[InventoryManager] InventoryUI를 찾을 수 없습니다!");
         }
     }
 
