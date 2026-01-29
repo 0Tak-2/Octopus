@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class PlayerGridMover : MonoBehaviour
 {
@@ -42,82 +41,28 @@ public class PlayerGridMover : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("[PlayerGridMover] Awake called");
-        RefreshReferences();
-    }
-
-    private void OnEnable()
-    {
-        Debug.Log("[PlayerGridMover] OnEnable - Refreshing references");
-        // 약간의 딜레이 후 재탐색 (씬 로드 완료 대기)
-        StartCoroutine(RefreshReferencesDelayed());
-    }
-
-    private IEnumerator RefreshReferencesDelayed()
-    {
-        yield return new WaitForEndOfFrame();
-        RefreshReferences();
-    }
-
-    private void Start()
-    {
-        Debug.Log("[PlayerGridMover] Start called");
-
-        // 참조 재확인
-        RefreshReferences();
-
-        if (grid != null)
-        {
-            CurrentCell = grid.WorldToCell(transform.position);
-            transform.position = grid.CellToWorld(CurrentCell);
-
-            if (occupancy != null)
-            {
-                occupancy.TryOccupy(transform, CurrentCell);
-            }
-
-            Debug.Log($"[PlayerGridMover] Start - CurrentCell: {CurrentCell}, blockedMoveCells: {grid.blockedMoveCells.Count}");
-            Debug.Log($"[PlayerGridMover] grid={grid?.name} id={grid?.GetInstanceID()}");
-        }
-        else
-        {
-            Debug.LogError("[PlayerGridMover] Start - GridBoard is NULL!");
-        }
-    }
-
-    /// <summary>
-    /// 참조 재탐색 (씬 전환 시 필요)
-    /// </summary>
-    private void RefreshReferences()
-    {
-        // GridBoard는 씬마다 다르므로 항상 재탐색
-        GridBoard newGrid = FindObjectOfType<GridBoard>();
-        if (newGrid != null)
-        {
-            if (grid != newGrid)
-            {
-                Debug.Log($"[PlayerGridMover] GridBoard changed: {(grid != null ? grid.name : "null")} → {newGrid.name}");
-                grid = newGrid;
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[PlayerGridMover] GridBoard not found in scene!");
-        }
-
-        // FieldTimeManager
-        if (fieldTime == null)
-        {
-            fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
-        }
-
-        // 나머지 참조들
-        if (crouch == null) crouch = GetComponent<PlayerCrouch>();
+        if (grid == null) grid = FindObjectOfType<GridBoard>();
+        if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
         if (rest == null) rest = FindObjectOfType<RestController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
         if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
 
-        Debug.Log($"[PlayerGridMover] References: Grid={grid?.name}, FieldTime={fieldTime != null}, Occupancy={occupancy != null}");
+        Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
+    }
+
+    private void Start()
+    {
+        CurrentCell = grid.WorldToCell(transform.position);
+        transform.position = grid.CellToWorld(CurrentCell);
+
+        if (occupancy != null)
+        {
+            occupancy.TryOccupy(transform, CurrentCell);
+        }
+
+        Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell + ", blockedMoveCells: " + grid.blockedMoveCells.Count);
+        Debug.Log($"[PlayerGridMover] grid={grid?.name} id={grid?.GetInstanceID()}");
     }
 
     private void OnDisable()
@@ -128,17 +73,6 @@ public class PlayerGridMover : MonoBehaviour
 
     private void Update()
     {
-        // UI 클릭 중이면 입력 무시
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            return;
-
-        // GridBoard 체크 (씬 전환 후 null일 수 있음)
-        if (grid == null)
-        {
-            RefreshReferences();
-            if (grid == null) return; // 여전히 없으면 이동 불가
-        }
-
         if (rest != null && rest.IsResting)
             return;
 

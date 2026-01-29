@@ -18,27 +18,8 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Awake()
     {
-        RefreshReferences();
-    }
-
-    private void OnEnable()
-    {
-        RefreshReferences();
-    }
-
-    /// <summary>
-    /// 참조 재탐색 (씬 전환 시 필요)
-    /// </summary>
-    private void RefreshReferences()
-    {
-        if (gridBoard == null)
-            gridBoard = FindObjectOfType<GridBoard>();
-
-        if (fieldTimeManager == null)
-            fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
-
-        if (showDebugLogs)
-            Debug.Log($"[PlayerInteraction] References: GridBoard={gridBoard?.name}, FieldTime={fieldTimeManager != null}");
+        if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
+        if (fieldTimeManager == null) fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
     }
 
     private void Update()
