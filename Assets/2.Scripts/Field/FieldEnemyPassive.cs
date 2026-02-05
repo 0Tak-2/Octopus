@@ -1,0 +1,482 @@
+using System.Collections;
+using UnityEngine;
+
+/// <summary>
+/// AI6 - Passive Enemy (초식/도망)
+/// - Does NOT aggro first
+/// - Does NOT counterattack when hit
+/// - Flees when hit or when player gets too close
+/// - Example: Razor Clam, Clam
+/// </summary>
+[RequireComponent(typeof(EnemyInstance))]
+public class FieldEnemyPassive : MonoBehaviour
+{
+    public enum State { Idle, Wander, Fleeing }
+
+    [Header("Refs")]
+    public Transform player;
+    public GridBoard gridBoard;
+    public FieldTimeManager timeManager;
+    public GridOccupancyRegistry occupancy;
+
+    [Header("Alert UI")]
+    public GameObject alertIconPrefab;
+    private GameObject _alertInstance;
+    private float _alertTimer;
+
+    [Header("Wander")]
+    public bool enableWander = true;
+    public int wanderRadius = 2;
+    public int wanderRetargetEveryTicks = 6;
+    [Range(0f, 1f)] public float wanderMoveChance = 0.15f;
+
+    [Header("Flee Settings")]
+    [Tooltip("Start fleeing when player is within this range")]
+    public int fleeStartRange = 3;
+    
+    [Tooltip("How far to flee when triggered")]
+    public int fleeDistance = 4;
+    
+    [Tooltip("Chance to move each turn while fleeing")]
+    [Range(0f, 1f)] public float fleeMoveChance = 0.9f;
+    
+    [Tooltip("How many turns to keep fleeing after trigger")]
+    public int fleeDuration = 3;
+
+    [Header("Move")]
+    public bool allowDiagonal = true;
+    public float stepMoveDuration = 0.06f; // Faster than normal enemies
+
+    [Header("Debug")]
+    public State state = State.Idle;
+    public bool showDebugLogs = false;
+
+    private EnemyInstance _enemy;
+    private Vector2Int _wanderTargetCell;
+    private int _wanderTickCounter;
+    private bool _moving;
+    private int _fleeTimer = 0;
+    private int _lastHP;
+
+    private void Awake()
+    {
+        _enemy = GetComponent<EnemyInstance>();
+    }
+
+    private void Start()
+    {
+        if (player == null) player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
+        if (timeManager == null) timeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+
+        // Load from definition
+        if (_enemy != null && _enemy.definition != null)
+        {
+            fleeDistance = Mathf.Max(1, _enemy.definition.fleeDistance);
+            fleeMoveChance = _enemy.definition.fleeChance;
+        }
+
+        // Track HP
+        if (_enemy != null)
+            _lastHP = _enemy.currentHP;
+
+        // Register occupancy
+        if (occupancy != null && gridBoard != null)
+        {
+            Vector2Int myCell = gridBoard.WorldToCell(transform.position);
+            occupancy.TryOccupy(transform, myCell);
+        }
+
+        PickNewWanderTarget();
+    }
+
+    private void OnEnable()
+    {
+        if (timeManager == null) timeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (timeManager != null) timeManager.OnTimeAdvanced += OnTimeAdvanced;
+    }
+
+    private void OnDisable()
+    {
+        if (timeManager != null) timeManager.OnTimeAdvanced -= OnTimeAdvanced;
+        if (occupancy != null) occupancy.Release(transform);
+
+        if (_alertInstance != null)
+        {
+            Destroy(_alertInstance);
+            _alertInstance = null;
+        }
+    }
+
+    private void Update()
+    {
+        // Alert timer
+        if (_alertTimer > 0f)
+        {
+            _alertTimer -= Time.deltaTime;
+            if (_alertTimer <= 0f && _alertInstance != null)
+            {
+                Destroy(_alertInstance);
+                _alertInstance = null;
+            }
+        }
+
+        // Check if we got hit
+        if (_enemy != null && _enemy.currentHP < _lastHP)
+        {
+            OnHit();
+            _lastHP = _enemy.currentHP;
+        }
+    }
+
+    /// <summary>
+    /// Called when this enemy takes damage - triggers flee
+    /// </summary>
+    private void OnHit()
+    {
+        StartFleeing();
+        
+        if (showDebugLogs)
+            Debug.Log($"[Passive] {_enemy?.definition?.displayName ?? name} hit! Fleeing!");
+    }
+
+    private void StartFleeing()
+    {
+        if (state != State.Fleeing)
+        {
+            ShowAlertIcon("!");
+        }
+        
+        state = State.Fleeing;
+        _fleeTimer = fleeDuration;
+    }
+
+    private void OnTimeAdvanced(int delta, int newTotalTime)
+    {
+        int ticks = Mathf.Max(1, delta);
+        for (int i = 0; i < ticks; i++)
+            TickOnce();
+    }
+
+    private void TickOnce()
+    {
+        if (_enemy != null && _enemy.currentHP <= 0) return;
+        if (_moving) return;
+        if (gridBoard == null) return;
+
+        Vector2Int myCell = GetMyCell();
+
+        // Check player proximity - start fleeing if too close
+        if (player != null && state != State.Fleeing)
+        {
+            Vector2Int pCell = gridBoard.WorldToCell(player.position);
+            int dist = FieldCombatUtils.Chebyshev(myCell, pCell);
+            
+            if (dist <= fleeStartRange)
+            {
+                StartFleeing();
+            }
+        }
+
+        // Flee timer countdown
+        if (_fleeTimer > 0)
+        {
+            _fleeTimer--;
+            if (_fleeTimer <= 0 && state == State.Fleeing)
+            {
+                state = enableWander ? State.Wander : State.Idle;
+                if (showDebugLogs)
+                    Debug.Log($"[Passive] {_enemy?.definition?.displayName ?? name} stopped fleeing.");
+            }
+        }
+
+        // State machine
+        switch (state)
+        {
+            case State.Idle:
+                if (enableWander && Random.value < 0.1f)
+                    state = State.Wander;
+                break;
+
+            case State.Wander:
+                DoWander(myCell);
+                break;
+
+            case State.Fleeing:
+                DoFlee(myCell);
+                break;
+        }
+    }
+
+    private void DoWander(Vector2Int myCell)
+    {
+        _wanderTickCounter++;
+
+        if (Random.value > wanderMoveChance)
+            return;
+
+        if (_wanderTickCounter >= wanderRetargetEveryTicks)
+        {
+            PickNewWanderTarget();
+            _wanderTickCounter = 0;
+        }
+
+        Vector2Int nextStep = ChooseNextStep(myCell, _wanderTargetCell);
+        if (nextStep != myCell && !IsOccupiedByOther(nextStep))
+        {
+            TryStartStepMove(myCell, nextStep);
+        }
+    }
+
+    private void DoFlee(Vector2Int myCell)
+    {
+        if (player == null) return;
+
+        // Flee chance check
+        if (Random.value > fleeMoveChance)
+            return;
+
+        Vector2Int pCell = gridBoard.WorldToCell(player.position);
+        
+        // Find direction away from player
+        Vector2Int fleeDir = myCell - pCell;
+        
+        // Normalize to unit direction
+        int dx = fleeDir.x == 0 ? 0 : (fleeDir.x > 0 ? 1 : -1);
+        int dy = fleeDir.y == 0 ? 0 : (fleeDir.y > 0 ? 1 : -1);
+
+        // Try to move away
+        Vector2Int[] candidates = GetFleeCandidates(myCell, dx, dy);
+        
+        foreach (var candidate in candidates)
+        {
+            if (IsWalkable(candidate) && !IsOccupiedByOther(candidate))
+            {
+                TryStartStepMove(myCell, candidate);
+                return;
+            }
+        }
+
+        // Nowhere to flee - try random direction
+        Vector2Int randomStep = GetRandomWalkableNeighbor(myCell);
+        if (randomStep != myCell)
+        {
+            TryStartStepMove(myCell, randomStep);
+        }
+    }
+
+    /// <summary>
+    /// Get flee direction candidates, prioritizing direct away, then diagonals
+    /// </summary>
+    private Vector2Int[] GetFleeCandidates(Vector2Int from, int dx, int dy)
+    {
+        // Priority: direct away > diagonals away > perpendicular
+        return new Vector2Int[]
+        {
+            new Vector2Int(from.x + dx, from.y + dy),           // Direct away
+            new Vector2Int(from.x + dx, from.y),                // Horizontal away
+            new Vector2Int(from.x, from.y + dy),                // Vertical away
+            new Vector2Int(from.x + dx, from.y - dy),           // Diagonal variant 1
+            new Vector2Int(from.x - dx, from.y + dy),           // Diagonal variant 2
+        };
+    }
+
+    private Vector2Int GetRandomWalkableNeighbor(Vector2Int from)
+    {
+        Vector2Int[] dirs = new Vector2Int[]
+        {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1),
+            new Vector2Int(1, 1), new Vector2Int(-1, 1),
+            new Vector2Int(1, -1), new Vector2Int(-1, -1),
+        };
+
+        // Shuffle
+        for (int i = dirs.Length - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            var temp = dirs[i];
+            dirs[i] = dirs[j];
+            dirs[j] = temp;
+        }
+
+        foreach (var dir in dirs)
+        {
+            if (!allowDiagonal && Mathf.Abs(dir.x) + Mathf.Abs(dir.y) == 2)
+                continue;
+
+            Vector2Int candidate = from + dir;
+            if (IsWalkable(candidate) && !IsOccupiedByOther(candidate))
+                return candidate;
+        }
+
+        return from;
+    }
+
+    // =========================================================
+    // Movement
+    // =========================================================
+    private void TryStartStepMove(Vector2Int fromCell, Vector2Int toCell)
+    {
+        if (occupancy != null)
+        {
+            if (!occupancy.TryMoveReserve(transform, toCell))
+                return;
+        }
+
+        StartCoroutine(StepMove(fromCell, toCell));
+    }
+
+    private IEnumerator StepMove(Vector2Int fromCell, Vector2Int toCell)
+    {
+        _moving = true;
+
+        Vector3 a = gridBoard.CellToWorld(fromCell);
+        Vector3 b = gridBoard.CellToWorld(toCell);
+
+        float dur = Mathf.Max(0.001f, stepMoveDuration);
+        float t = 0f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / dur;
+            transform.position = Vector3.Lerp(a, b, Mathf.Clamp01(t));
+            yield return null;
+        }
+
+        transform.position = b;
+        _moving = false;
+
+        if (_enemy != null)
+            _enemy.MarkAsActed();
+    }
+
+    private Vector2Int ChooseNextStep(Vector2Int from, Vector2Int goal)
+    {
+        Vector2Int best = from;
+        int bestDist = FieldCombatUtils.Chebyshev(from, goal);
+
+        for (int dx = -1; dx <= 1; dx++)
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            if (dx == 0 && dy == 0) continue;
+            if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
+
+            Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
+
+            if (!IsWalkable(n)) continue;
+            if (IsOccupiedByOther(n)) continue;
+
+            int d = FieldCombatUtils.Chebyshev(n, goal);
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = n;
+            }
+        }
+
+        return best;
+    }
+
+    // =========================================================
+    // Helpers
+    // =========================================================
+    private Vector2Int GetMyCell()
+    {
+        if (occupancy != null && occupancy.TryGetCurrentCell(transform, out var c))
+            return c;
+        return gridBoard.WorldToCell(transform.position);
+    }
+
+    private bool IsOccupiedByOther(Vector2Int cell)
+    {
+        if (occupancy == null) return false;
+        var occ = occupancy.GetOccupant(cell);
+        return occ != null && occ != transform;
+    }
+
+    private bool IsWalkable(Vector2Int cell)
+    {
+        var t = gridBoard.GetType();
+        foreach (var name in new[] { "IsCellBlocked", "IsMoveBlocked", "IsBlocked" })
+        {
+            var m = t.GetMethod(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+            if (m != null)
+            {
+                object r = m.Invoke(gridBoard, new object[] { cell });
+                if (r is bool b) return !b;
+            }
+        }
+        return true;
+    }
+
+    private void PickNewWanderTarget()
+    {
+        if (gridBoard == null) return;
+
+        Vector2Int myCell = GetMyCell();
+
+        for (int t = 0; t < 16; t++)
+        {
+            int dx = Random.Range(-wanderRadius, wanderRadius + 1);
+            int dy = Random.Range(-wanderRadius, wanderRadius + 1);
+            Vector2Int c = new Vector2Int(myCell.x + dx, myCell.y + dy);
+
+            if (!IsWalkable(c)) continue;
+            if (IsOccupiedByOther(c)) continue;
+
+            _wanderTargetCell = c;
+            return;
+        }
+
+        _wanderTargetCell = myCell;
+    }
+
+    // =========================================================
+    // Alert Icon
+    // =========================================================
+    private void ShowAlertIcon(string text = "!")
+    {
+        if (_alertInstance != null)
+        {
+            _alertTimer = 1.0f;
+            return;
+        }
+
+        _alertTimer = 1.0f;
+
+        if (alertIconPrefab != null)
+        {
+            _alertInstance = Instantiate(alertIconPrefab, transform);
+            _alertInstance.transform.localPosition = Vector3.up * 1.5f;
+            return;
+        }
+
+        _alertInstance = CreateDefaultAlertIcon(text);
+    }
+
+    private GameObject CreateDefaultAlertIcon(string text)
+    {
+        GameObject alert = new GameObject("AlertIcon");
+        alert.transform.SetParent(transform);
+        alert.transform.localPosition = Vector3.up * 1.5f;
+
+        TextMesh textMesh = alert.AddComponent<TextMesh>();
+        textMesh.text = text;
+        textMesh.fontSize = 80;
+        textMesh.color = Color.cyan; // Cyan for passive fleeing
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.alignment = TextAlignment.Center;
+        textMesh.characterSize = 0.1f;
+
+        alert.AddComponent<Billboard>();
+
+        return alert;
+    }
+
+    /// <summary>
+    /// Passive enemies never fight back
+    /// </summary>
+    public bool IsHostile => false;
+}

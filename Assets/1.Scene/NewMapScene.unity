@@ -11588,6 +11588,9 @@ GameObject:
   - component: {fileID: 931578463}
   - component: {fileID: 931578465}
   - component: {fileID: 931578466}
+  - component: {fileID: 931578469}
+  - component: {fileID: 931578468}
+  - component: {fileID: 931578467}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -11711,12 +11714,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50144f570b19c6e40ad061d8aa1a5aad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHP: 100
+  baseMaxHP: 100
   maxFatigue: 100
   maxHunger: 100
+  equipmentMaxHPBonus: 0
+  relicMaxHPBonus: 0
   hp: 100
   fatigue: 100
   hunger: 100
+  baseATK: 10
+  baseDEF: 0
+  baseEVA: 0.05
+  baseCRIT: 0.05
+  baseCRIT_DMG: 1.5
+  bonusATK: 0
+  bonusDEF: 0
+  bonusEVA: 0
+  bonusCRIT: 0
+  bonusCRIT_DMG: 0
+  colorModuleATKPercent: 0
+  colorModuleEVAPercent: 0
+  colorModuleCRIT_DMGPercent: 0
+  colorModuleEVAPenalty: 0
+  colorModuleHealPenalty: 0
   drainIntervalTime: 5
   fatigueDrainPerInterval: 1
   hungerDrainPerInterval: 2
@@ -11829,6 +11849,53 @@ MonoBehaviour:
   selectKey: 113
   confirmKey: 102
   logSelection: 1
+--- !u!114 &931578467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 931578455}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c8a6cc7143219643af8e7b57be7a5ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  combat: {fileID: 0}
+  playerStats: {fileID: 0}
+  slots: {fileID: 0}
+--- !u!114 &931578468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 931578455}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b24627a8b20e4bc40bc5ac226d45c125, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  equippedDefinitions:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  requireSafeZone: 1
+--- !u!114 &931578469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 931578455}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b253957e3ad0a6141ac00516520f8580, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ownedModuleDefinitions: []
 --- !u!1 &935586115
 GameObject:
   m_ObjectHideFlags: 0
@@ -18198,6 +18265,7 @@ MonoBehaviour:
   playerData:
     hp: 80
     maxHP: 100
+    baseMaxHP: 100
     fatigue: 60
     maxFatigue: 100
     hunger: 70

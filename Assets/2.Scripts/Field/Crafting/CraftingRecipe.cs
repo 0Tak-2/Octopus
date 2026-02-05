@@ -2,26 +2,27 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// 제작 레시피 정의
+/// Crafting recipe definition
 /// </summary>
 [CreateAssetMenu(fileName = "NewRecipe", menuName = "Crafting/Recipe")]
 public class CraftingRecipe : ScriptableObject
 {
-    [Header("결과물")]
+    [Header("Result")]
     public int resultItemID;
     public int resultCount = 1;
 
-    [Header("재료")]
+    [Header("Ingredients")]
     public List<RecipeIngredient> ingredients = new List<RecipeIngredient>();
 
-    [Header("카테고리")]
+    [Header("Category")]
     public RecipeCategory category;
 
-    [Header("제작 조건 (선택)")]
-    public int requiredToolID = -1; // -1이면 조건 없음 (예: 작업대 필요)
+    [Header("Crafting Condition (Optional)")]
+    [Tooltip("-1 = no condition, otherwise requires this tool/station")]
+    public int requiredToolID = -1;
 
     /// <summary>
-    /// 제작 가능한지 체크
+    /// Check if can craft with current inventory
     /// </summary>
     public bool CanCraft(InventoryManager inventory)
     {
@@ -35,7 +36,7 @@ public class CraftingRecipe : ScriptableObject
     }
 
     /// <summary>
-    /// 재료 소모
+    /// Consume ingredients from inventory
     /// </summary>
     public void ConsumeIngredients(InventoryManager inventory)
     {
@@ -47,7 +48,7 @@ public class CraftingRecipe : ScriptableObject
 }
 
 /// <summary>
-/// 레시피 재료
+/// Recipe ingredient
 /// </summary>
 [System.Serializable]
 public class RecipeIngredient
@@ -57,12 +58,18 @@ public class RecipeIngredient
 }
 
 /// <summary>
-/// 레시피 카테고리
+/// Recipe category
 /// </summary>
 public enum RecipeCategory
 {
-    All,        // 전체
-    Tool,       // 도구 (곡괭이, 삽, 검 등)
-    Building,   // 제작 (작업대, 포션제작대 등)
-    Storage     // 저장소 (은신처, 창고 등)
+    All,        // All recipes
+    Tool,       // Tools (pickaxe, shovel, etc.)
+    Building,   // Building (crafting table, shelter, etc.)
+    Storage,    // Storage (chest, etc.)
+    Food,       // Food (cooked meals)
+    Medicine,   // Recovery items (bandage, ointment, etc.)
+    Weapon,     // Weapons
+    Armor,      // Armor
+    Accessory,  // Accessories
+    Material    // Intermediate materials (seaweed fiber, etc.)
 }
