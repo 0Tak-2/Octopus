@@ -1,34 +1,60 @@
 using UnityEngine;
 
 /// <summary>
-/// ¾ÆÀÌÅÛ Á¤ÀÇ µ¥ÀÌÅÍ
+/// ì•„ì´í…œ ì •ì˜ ë°ì´í„°
 /// </summary>
 [CreateAssetMenu(fileName = "NewItemData", menuName = "Inventory/Item Data")]
 public class ItemData : ScriptableObject
 {
-    [Header("±âº» Á¤º¸")]
+    [Header("ê¸°ë³¸ ì •ë³´")]
     public int itemID;
     public string itemName;
     public Sprite icon;
 
-    [Header("¼³¸í")]
+    [Header("ì„¤ëª…")]
     [TextArea(3, 5)]
     public string description;
 
-    [Header("¼Ó¼º")]
+    [Header("ì†ì„±")]
     public ItemType itemType;
     public int maxStackSize = 99;
+    
+    [Header("ì¥ë¹„ ì—°ê²° (ItemTypeì´ Weapon/Armor/Accessoryì¼ ë•Œ)")]
+    [Tooltip("ì´ ì•„ì´í…œì´ ì¥ë¹„ë¼ë©´ EquipmentDefinition ì—°ê²°")]
+    public EquipmentDefinition equipmentDefinition;
+    
+    [Header("ì†Œë¹„ íš¨ê³¼ (Food/Consumable)")]
+    [Tooltip("ë°°ê³ í”” íšŒë³µëŸ‰")]
+    public int hungerRestore = 0;
+    
+    [Tooltip("HP íšŒë³µëŸ‰")]
+    public int hpRestore = 0;
+    
+    [Tooltip("í”¼ë¡œ íšŒë³µëŸ‰")]
+    public int fatigueRestore = 0;
+    
+    /// <summary>
+    /// ì¥ë¹„ ê°€ëŠ¥í•œ ì•„ì´í…œì¸ì§€
+    /// </summary>
+    public bool IsEquipable => equipmentDefinition != null;
+    
+    /// <summary>
+    /// ì†Œë¹„ ê°€ëŠ¥í•œ ì•„ì´í…œì¸ì§€
+    /// </summary>
+    public bool IsConsumable => itemType == ItemType.Food || itemType == ItemType.Consumable;
 }
 
 /// <summary>
-/// ¾ÆÀÌÅÛ Å¸ÀÔ
+/// ì•„ì´í…œ íƒ€ì…
 /// </summary>
 public enum ItemType
 {
-    Resource,    // ÀÚ¿ø (ÇØÃÊ, »êÈ£)
-    Food,        // À½½Ä
-    Tool,        // µµ±¸
-    Weapon,      // ¹«±â
-    Material,    // Á¦ÀÛ Àç·á
-    Consumable   // ¼Òºñ ¾ÆÀÌÅÛ
+    Resource,    // ìì› (í•´ì´ˆ, ì‚°í˜¸)
+    Food,        // ìŒì‹
+    Tool,        // ë„êµ¬
+    Weapon,      // ë¬´ê¸°
+    Armor,       // ê°‘ì˜·
+    Accessory,   // ì¥ì‹ êµ¬
+    Material,    // ì œì‘ ì¬ë£Œ
+    Consumable   // ì†Œë¹„ ì•„ì´í…œ (íšŒë³µ ë“±)
 }

@@ -124,6 +124,15 @@ public class FocusedCombatManager : MonoBehaviour
     private EncounterContext _pendingContext;
 
     private int _effectivePlayerMaxHP;
+    
+    // ✅ Phase 1: 상태이상 & 스탯 참조
+    private StatusEffectManager _playerStatusEffects;
+    private StatusEffectManager _enemyStatusEffects;
+    private PlayerStats _playerStats;
+    
+    public StatusEffectManager PlayerStatusEffects => _playerStatusEffects;
+    public StatusEffectManager EnemyStatusEffects => _enemyStatusEffects;
+    public PlayerStats PlayerStatsRef => _playerStats;
 
     public CombatState State { get; private set; } = new CombatState();
     public CombatMovementService Movement { get; private set; }
@@ -432,6 +441,15 @@ public class FocusedCombatManager : MonoBehaviour
         BuildEscapeTile();
 
         _playerStunTurns = 0;
+        
+        // ✅ Phase 1: 상태이상 매니저 초기화
+        InitializeStatusEffects();
+        
+        // ✅ Phase 1: 플레이어 스탯 참조 캐싱
+        if (_pendingContext != null && _pendingContext.playerStats != null)
+            _playerStats = _pendingContext.playerStats;
+        else
+            _playerStats = FindObjectOfType<PlayerStats>();
 
         if (bossAI != null) bossAI.ResetBossState();
 
@@ -518,9 +536,13 @@ public class FocusedCombatManager : MonoBehaviour
 
         gridData = null;
         _hasEscapeTile = false;
+        
+        // ✅ Phase 1: 상태이상 정리
+        CleanupStatusEffects();
 
         _pendingEnemyDef = null;
         _pendingContext = null;
+        _playerStats = null;
 
         _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
 
@@ -574,6 +596,10 @@ public class FocusedCombatManager : MonoBehaviour
         if (hud != null) hud.RefreshAll();
 
         State.ResetTurn();
+        
+        // ✅ Phase 1: 플레이어 턴 시작 시 스턴 적용자 추적 초기화
+        if (_playerStatusEffects != null)
+            _playerStatusEffects.OnTurnStart();
 
         // ✅ STUN: delay + then give enemy turn (so it doesn't look like double-hit instant)
         if (_playerStunTurns > 0)
@@ -588,6 +614,24 @@ public class FocusedCombatManager : MonoBehaviour
 
             StartCoroutine(StunSkipToEnemyTurnRoutine());
             return;
+        }
+        
+        // ✅ Phase 1: 플레이어가 스턴 상태이상이면 AP 감소
+        if (_playerStatusEffects != null && _playerStatusEffects.IsStunned)
+        {
+            int apReduction = StatusEffectConstants.STUN_AP_REDUCTION;
+            if (State.currentAP >= apReduction)
+            {
+                State.currentAP -= apReduction;
+                if (vfx != null) vfx.ShowPopup(_playerToken, $"스턴! AP -{apReduction}");
+            }
+            else
+            {
+                // AP가 부족하면 턴 스킵
+                if (vfx != null) vfx.ShowPopup(_playerToken, "기절!");
+                StartCoroutine(StunSkipToEnemyTurnRoutine());
+                return;
+            }
         }
 
         terrainFx.Apply(gridData, State.playerCell, _playerToken);
@@ -615,6 +659,13 @@ public class FocusedCombatManager : MonoBehaviour
     {
         State.isPlayerTurn = false;
         State.isBusy = false;
+        
+        // ✅ Phase 1: 플레이어 턴 종료 시 상태이상 처리 (출혈 피해 등)
+        ProcessTurnEndStatusEffects(isPlayerTurn: true);
+        
+        // ✅ Phase 1: 적 턴 시작 시 스턴 적용자 추적 초기화
+        if (_enemyStatusEffects != null)
+            _enemyStatusEffects.OnTurnStart();
 
         terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
         terrainFx.Apply(gridData, State.playerCell, _playerToken);
@@ -627,6 +678,21 @@ public class FocusedCombatManager : MonoBehaviour
 
     private IEnumerator EnemyTurnRoutine()
     {
+        // ✅ Phase 1: 적이 스턴 상태면 턴 스킵
+        if (_enemyStatusEffects != null && _enemyStatusEffects.IsStunned)
+        {
+            if (vfx != null) vfx.ShowPopup(_enemyToken, "기절!");
+            yield return new WaitForSeconds(0.5f);
+            
+            // 적 턴 종료 시 상태이상 처리
+            ProcessTurnEndStatusEffects(isPlayerTurn: false);
+            ConsumeTimeForEnemyTurn();
+            
+            if (!State.isInCombat) yield break;
+            BeginPlayerTurn(initialStart: false);
+            yield break;
+        }
+        
         EnemyAIType type = GetEnemyAIType();
 
         if (type == EnemyAIType.AI4_Boss)
@@ -639,6 +705,9 @@ public class FocusedCombatManager : MonoBehaviour
             if (enemyAI != null)
                 yield return StartCoroutine(enemyAI.TakeTurn());
         }
+        
+        // ✅ Phase 1: 적 턴 종료 시 상태이상 처리 (출혈 피해 등)
+        ProcessTurnEndStatusEffects(isPlayerTurn: false);
 
         // ✅ 적 턴 종료 시 Time 소비
         ConsumeTimeForEnemyTurn();
@@ -1135,5 +1204,184 @@ public class FocusedCombatManager : MonoBehaviour
         if (fieldTimeManager == null) return;
 
         fieldTimeManager.Advance(timePerEnemyTurn);
+    }
+    
+    // ==========================
+    // Phase 1: Status Effect System
+    // ==========================
+    private void InitializeStatusEffects()
+    {
+        // 플레이어 토큰에 StatusEffectManager 추가/가져오기
+        if (_playerToken != null)
+        {
+            _playerStatusEffects = _playerToken.GetComponent<StatusEffectManager>();
+            if (_playerStatusEffects == null)
+                _playerStatusEffects = _playerToken.gameObject.AddComponent<StatusEffectManager>();
+            _playerStatusEffects.ClearAll();
+        }
+        
+        // 적 토큰에 StatusEffectManager 추가/가져오기
+        if (_enemyToken != null)
+        {
+            _enemyStatusEffects = _enemyToken.GetComponent<StatusEffectManager>();
+            if (_enemyStatusEffects == null)
+                _enemyStatusEffects = _enemyToken.gameObject.AddComponent<StatusEffectManager>();
+            _enemyStatusEffects.ClearAll();
+        }
+    }
+    
+    private void CleanupStatusEffects()
+    {
+        if (_playerStatusEffects != null)
+            _playerStatusEffects.ClearAll();
+        if (_enemyStatusEffects != null)
+            _enemyStatusEffects.ClearAll();
+            
+        _playerStatusEffects = null;
+        _enemyStatusEffects = null;
+    }
+    
+    /// <summary>
+    /// 적 방어력 가져오기
+    /// </summary>
+    public int GetEnemyDEF()
+        => (_pendingEnemyDef != null) ? _pendingEnemyDef.defense : 0;
+    
+    /// <summary>
+    /// 플레이어 → 적 피해 (전투 공식 적용)
+    /// </summary>
+    /// <param name="skillBonusDamage">스킬 추가 피해</param>
+    /// <param name="forceCrit">확정 치명타</param>
+    /// <param name="attackMultiplier">공격력 배율</param>
+    /// <returns>피해 결과</returns>
+    public DamageResult DamageEnemyWithFormula(int skillBonusDamage = 0, bool forceCrit = false, float attackMultiplier = 1f)
+    {
+        if (_playerStats == null || _enemyToken == null)
+        {
+            // fallback: 기존 방식
+            int fallbackDmg = Mathf.Max(1, _playerStats?.ATK ?? 10);
+            TryDamageEnemy(fallbackDmg);
+            return new DamageResult { finalDamage = fallbackDmg };
+        }
+        
+        // 지형 효과 적용
+        terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
+        
+        // 적 회피율
+        float enemyEVA = GetEnemyBaseEvasion();
+        CombatUnitStats cs = _enemyToken.GetComponent<CombatUnitStats>();
+        if (cs != null) enemyEVA = Mathf.Clamp01(enemyEVA + cs.Evasion);
+        
+        // 전투 공식으로 계산
+        var result = CombatCalculator.CalculatePlayerAttack(
+            _playerStats,
+            _enemyStatusEffects,
+            skillBonusDamage,
+            GetEnemyDEF(),
+            enemyEVA,
+            forceCrit,
+            attackMultiplier
+        );
+        
+        if (result.isEvaded)
+        {
+            if (vfx.popupPrefab == null && playerHintPrefab != null) vfx.popupPrefab = playerHintPrefab;
+            vfx.ShowPopup(_enemyToken, "회피!");
+            return result;
+        }
+        
+        // Boss meditation damage reduction
+        if (GetEnemyAIType() == EnemyAIType.AI4_Boss && bossAI != null)
+        {
+            BossState bs = bossAI.GetState();
+            if (bs != null && bs.MeditationActive)
+                result.finalDamage = Mathf.Max(1, Mathf.RoundToInt(result.finalDamage * 0.5f));
+        }
+        
+        // 피해 적용
+        State.enemyHP = Mathf.Max(0, State.enemyHP - result.finalDamage);
+        StartCoroutine(vfx.HitPulse(_enemyToken));
+        
+        // 치명타 팝업
+        if (result.isCritical)
+        {
+            if (vfx.popupPrefab == null && playerHintPrefab != null) vfx.popupPrefab = playerHintPrefab;
+            vfx.ShowPopup(_enemyToken, "치명타!");
+        }
+        
+        RefreshUI();
+        
+        if (State.enemyHP <= 0)
+            ExitFocusedCombat();
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// 적 → 플레이어 피해 (전투 공식 적용)
+    /// </summary>
+    public DamageResult DamagePlayerWithFormula(int enemyATK)
+    {
+        if (_playerStats == null || _playerToken == null)
+        {
+            // fallback
+            TryDamagePlayer(enemyATK);
+            return new DamageResult { finalDamage = enemyATK };
+        }
+        
+        // 지형 효과 적용
+        terrainFx.Apply(gridData, State.playerCell, _playerToken);
+        
+        // 전투 공식으로 계산
+        var result = CombatCalculator.CalculateEnemyAttack(
+            enemyATK,
+            _playerStats,
+            _playerStatusEffects
+        );
+        
+        if (result.isEvaded)
+        {
+            if (vfx.popupPrefab == null && playerHintPrefab != null) vfx.popupPrefab = playerHintPrefab;
+            vfx.ShowPopup(_playerToken, "회피!");
+            return result;
+        }
+        
+        // 피해 적용
+        State.playerHP = Mathf.Max(0, State.playerHP - result.finalDamage);
+        StartCoroutine(vfx.HitPulse(_playerToken));
+        
+        RefreshUI();
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// 턴 종료 시 상태이상 처리 (출혈 등)
+    /// </summary>
+    public void ProcessTurnEndStatusEffects(bool isPlayerTurn)
+    {
+        if (isPlayerTurn && _playerStatusEffects != null)
+        {
+            int bleedDmg = _playerStatusEffects.OnTurnEnd();
+            if (bleedDmg > 0)
+            {
+                State.playerHP = Mathf.Max(0, State.playerHP - bleedDmg);
+                if (vfx != null) vfx.ShowPopup(_playerToken, $"출혈 -{bleedDmg}");
+                RefreshUI();
+            }
+        }
+        else if (!isPlayerTurn && _enemyStatusEffects != null)
+        {
+            int bleedDmg = _enemyStatusEffects.OnTurnEnd();
+            if (bleedDmg > 0)
+            {
+                State.enemyHP = Mathf.Max(0, State.enemyHP - bleedDmg);
+                if (vfx != null) vfx.ShowPopup(_enemyToken, $"출혈 -{bleedDmg}");
+                RefreshUI();
+                
+                if (State.enemyHP <= 0)
+                    ExitFocusedCombat();
+            }
+        }
     }
 }

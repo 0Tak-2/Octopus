@@ -19,6 +19,7 @@ public class EnemyDefinition : ScriptableObject
 
     [Header("Stats")]
     [Min(1)] public int maxHP = 10;
+    [Min(0)] public int defense = 0;  // ë°©ì–´ë ¥
     [Min(1)] public int moveRange = 2;
     [Min(1)] public int attackRange = 1;
     [Min(0)] public int attackDamage = 1;
@@ -123,4 +124,17 @@ public class EnemyDefinition : ScriptableObject
     [Header("Boss Movement (Optional)")]
     [Tooltip("º¸½ºµµ '¹«·áÀÌµ¿ 1È¸ + ÀÌÈÄ ÀÌµ¿ ¾×¼Ç AP 1'À» ¾µ·Á¸é 1 À¯Áö")]
     [Min(0)] public int bossFreeMovesPerTurn = 1;
+    
+    // =========================
+    // ìƒ‰ ëª¨ë“ˆ ë“œë í™•ë¥  (Phase 2)
+    // =========================
+    [Header("Color Module Drop")]
+    [Tooltip("ë¹¨ê°• ëª¨ë“ˆ ë“œë í™•ë¥  (0~1)")]
+    [Range(0f, 1f)] public float redModuleDropChance = 0f;
+    
+    [Tooltip("íŒŒë‘ ëª¨ë“ˆ ë“œë í™•ë¥  (0~1)")]
+    [Range(0f, 1f)] public float blueModuleDropChance = 0f;
+    
+    [Tooltip("ê²€ì • ëª¨ë“ˆ ë“œë í™•ë¥  (0~1)")]
+    [Range(0f, 1f)] public float blackModuleDropChance = 0f;
 }

@@ -9,11 +9,12 @@ using UnityEngine;
 public class PlayerSaveData
 {
     [Header("Stats")]
-    public int hp = 80;
-    public int maxHP = 100;
-    public int fatigue = 60;
+    public int hp = 100;
+    public int maxHP = 100;      // 최종 maxHP (읽기용)
+    public int baseMaxHP = 100;  // 기본 maxHP (저장/복원용)
+    public int fatigue = 100;
     public int maxFatigue = 100;
-    public int hunger = 70;
+    public int hunger = 100;
     public int maxHunger = 100;
 
     [Header("Position")]

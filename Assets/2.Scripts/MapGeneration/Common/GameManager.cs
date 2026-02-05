@@ -124,7 +124,8 @@ public class GameManager : MonoBehaviour
         if (stats == null) return;
 
         playerData.hp = stats.hp;
-        playerData.maxHP = stats.maxHP;
+        playerData.maxHP = stats.maxHP;  // 읽기는 OK (프로퍼티)
+        playerData.baseMaxHP = stats.baseMaxHP;  // 기본값 저장
         playerData.fatigue = stats.fatigue;
         playerData.maxFatigue = stats.maxFatigue;
         playerData.hunger = stats.hunger;
@@ -147,7 +148,7 @@ public class GameManager : MonoBehaviour
         if (stats == null) return;
 
         stats.hp = playerData.hp;
-        stats.maxHP = playerData.maxHP;
+        stats.baseMaxHP = playerData.baseMaxHP;  // baseMaxHP에 할당
         stats.fatigue = playerData.fatigue;
         stats.maxFatigue = playerData.maxFatigue;
         stats.hunger = playerData.hunger;
