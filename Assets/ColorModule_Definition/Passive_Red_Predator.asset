@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Passive_Red_Predator
   m_EditorClassIdentifier: 
   moduleName: "\uD3EC\uC2DD"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uC801 HP 20% \uC774\uD558 \uC2DC \uCC98\uD615 + \uD53C\uD574 100%
+    \uD68C\uBCF5"
   icon: {fileID: 0}
   colorType: 0
   moduleType: 1

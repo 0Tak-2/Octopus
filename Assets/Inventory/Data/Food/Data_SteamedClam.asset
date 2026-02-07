@@ -20,5 +20,5 @@ MonoBehaviour:
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
   hungerRestore: 35
-  hpRestore: 0
+  hpRestore: 10
   fatigueRestore: 0

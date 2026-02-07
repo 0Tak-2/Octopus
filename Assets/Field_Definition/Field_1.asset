@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c674be71bdb27e4288c498b97c496ab, type: 3}
+  m_Name: Field_1
+  m_EditorClassIdentifier: 
+  fieldID: field_1
+  fieldName: "\uC595\uC740 \uBC14\uB2E4"
+  description: Starting area
+  fieldIndex: 1
+  width: 30
+  height: 30
+  wallProbability: 0.5
+  caIterations: 6
+  dungeons:
+  - {fileID: 11400000, guid: c2ec1b303c1813043bc89d2f741f4db9, type: 2}
+  - {fileID: 11400000, guid: afe834c51b79fd34790875bf3088afec, type: 2}
+  normalEnemyPrefabs:
+  - {fileID: 9105843625278447542, guid: 8ccfbc201905d744d99ebd5084231304, type: 3}
+  - {fileID: 9105843625278447542, guid: c3b1c0fad2b525f47aa9dd5af9881849, type: 3}
+  - {fileID: 9105843625278447542, guid: 859e8164987e3334fb76c35d1bf6d094, type: 3}
+  normalEnemyCount: 5
+  eliteEnemyPrefabs: []
+  eliteEnemyCount: 0
+  neutralEnemyPrefabs:
+  - {fileID: 9105843625278447542, guid: eebb886367f316d48aeea46b7b50573d, type: 3}
+  - {fileID: 9105843625278447542, guid: 9b8ae3499265f7940acfea512ac82138, type: 3}
+  neutralEnemyCount: 3
+  passiveEnemyPrefabs:
+  - {fileID: 9105843625278447542, guid: c551e8a5d522427468dac83482a27a3b, type: 3}
+  - {fileID: 9105843625278447542, guid: e5fe301d16591914e88d31a45c0c9371, type: 3}
+  passiveEnemyCount: 2
+  seaweedCount: 30
+  coralCount: 10
+  rockCount: 8
+  sandCount: 5
+  spongeCount: 3
+  hasNextFieldExit: 1
+  nextField: {fileID: 11400000, guid: aef2ab60ae59ffd44a3487e43819538e, type: 2}
+  previousField: {fileID: 0}
+  ambientTint: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.1, g: 0.2, b: 0.3, a: 1}
+  ambientMusic: {fileID: 0}
+  ambientSFX: {fileID: 0}

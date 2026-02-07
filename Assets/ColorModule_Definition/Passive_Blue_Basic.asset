@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Passive_Blue_Basic
   m_EditorClassIdentifier: 
   moduleName: "\uAE30\uBCF8\uAE30"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uAE30\uBCF8\uACF5\uACA9 25% \uD655\uB960 2\uD68C \uACF5\uACA9"
   icon: {fileID: 0}
   colorType: 1
   moduleType: 1

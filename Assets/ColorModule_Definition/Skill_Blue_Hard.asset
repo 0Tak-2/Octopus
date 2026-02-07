@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Skill_Blue_Hard
   m_EditorClassIdentifier: 
   moduleName: "\uB2E8\uB2E8\uD55C\uCD09\uC218"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uBD88\uC644\uC804 \uBD80\uC5EC (\uCD5C\uB300 4\uC911\uCCA9)"
   icon: {fileID: 0}
   colorType: 1
   moduleType: 0

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Skill_Black_Crit
   m_EditorClassIdentifier: 
   moduleName: "\uCE58\uBA85\uC801\uC778\uCD09\uC218"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uD574\uB2F9 \uC801 \uCCAB \uACF5\uACA9 \uC2DC \uD655\uC815 \uCE58\uBA85\uD0C0"
   icon: {fileID: 0}
   colorType: 2
   moduleType: 0

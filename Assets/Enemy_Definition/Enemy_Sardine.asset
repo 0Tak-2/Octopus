@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81b364627e75ebd4a8a53fdaf54bcbf5, type: 3}
   m_Name: Enemy_Sardine
   m_EditorClassIdentifier: 
-  displayName: Enemy
-  tokenPrefab: {fileID: 0}
-  maxHP: 10
+  displayName: "\uC815\uC5B4\uB9AC"
+  tokenPrefab: {fileID: 4667636831984045804, guid: c4ca831d250d6ab458fad8b4b487ddc3, type: 3}
+  maxHP: 20
   defense: 0
-  moveRange: 2
+  moveRange: 1
   attackRange: 1
-  attackDamage: 1
-  aiType: 1
+  attackDamage: 6
+  aiType: 5
   useDashAttackMotion: 1
   fieldDetectionRange: 6
   fieldRequireLoS: 1
@@ -60,11 +60,11 @@ MonoBehaviour:
   bossRageFullRatio: 0.4
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
-  redModuleDropChance: 0
-  blueModuleDropChance: 0
+  redModuleDropChance: 0.05
+  blueModuleDropChance: 0.05
   blackModuleDropChance: 0
-  dropFood: {fileID: 0}
-  dropMaterial: {fileID: 0}
+  dropFood: {fileID: 11400000, guid: 3e421fea7f86c7f4793d63d9fe134cd8, type: 2}
+  dropMaterial: {fileID: 11400000, guid: 9e6b91734e51a4942b491fbda6191d86, type: 2}
   dropMaterial2: {fileID: 0}
   foodDropChance: 0.5
   materialDropChance: 0.7

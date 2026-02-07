@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Skill_Black_Rage
   m_EditorClassIdentifier: 
   moduleName: "\uC751\uC9D5\uD558\uB294\uCD09\uC218"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "1\uD134\uAC04 ATK 1.75\uBC30"
   icon: {fileID: 0}
   colorType: 2
   moduleType: 0

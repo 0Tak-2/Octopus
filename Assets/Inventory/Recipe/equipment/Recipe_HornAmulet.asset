@@ -15,7 +15,7 @@ MonoBehaviour:
   resultItemID: 702
   resultCount: 1
   ingredients:
-  - itemID: 111
+  - itemID: 159
     count: 1
   - itemID: 6
     count: 2

@@ -19,7 +19,7 @@ MonoBehaviour:
     count: 3
   - itemID: 2
     count: 1
-  - itemID: 102
+  - itemID: 151
     count: 1
   category: 6
   requiredToolID: -1

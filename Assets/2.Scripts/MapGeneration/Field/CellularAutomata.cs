@@ -7,34 +7,57 @@ using UnityEngine;
 public static class CellularAutomata
 {
     /// <summary>
-    /// CA로 맵 생성
+    /// CA로 맵 생성 (FieldDefinition 기반)
+    /// </summary>
+    public static MapData Generate(FieldDefinition fieldDef, int seed)
+    {
+        if (seed == 0) seed = Random.Range(1, 999999);
+        Random.InitState(seed);
+
+        MapData map = new MapData(fieldDef.width, fieldDef.height);
+
+        InitializeRandom(map, fieldDef.wallProbability);
+
+        for (int i = 0; i < fieldDef.caIterations; i++)
+        {
+            map = ApplyCellularAutomata(map, 5);
+        }
+
+        CreateBorder(map);
+        FloodFillCleanup(map);
+
+        return map;
+    }
+
+    /// <summary>
+    /// CA로 맵 생성 (FieldMapConfig 기반, 기존 호환)
     /// </summary>
     public static MapData Generate(FieldMapConfig config, int seed)
     {
         // 시드 설정
         if (seed == 0) seed = Random.Range(1, 999999);
         Random.InitState(seed);
-        
+
         MapData map = new MapData(config.width, config.height);
-        
+
         // 1단계: 랜덤 초기화
         InitializeRandom(map, config.initialWallProbability);
-        
+
         // 2단계: CA 반복 적용
         for (int i = 0; i < config.iterations; i++)
         {
             map = ApplyCellularAutomata(map, config.wallThreshold);
         }
-        
+
         // 3단계: 외곽 벽 생성
         CreateBorder(map);
-        
+
         // 4단계: 고립된 영역 제거 (접근 가능한 영역만 남김)
         FloodFillCleanup(map);
-        
+
         return map;
     }
-    
+
     /// <summary>
     /// 1단계: 랜덤 노이즈로 초기화
     /// </summary>
@@ -58,7 +81,7 @@ public static class CellularAutomata
             }
         }
     }
-    
+
     /// <summary>
     /// 2단계: Cellular Automata 룰 적용
     /// 4-5 룰: 주변 8칸 중 5칸 이상 벽이면 벽으로
@@ -66,7 +89,7 @@ public static class CellularAutomata
     private static MapData ApplyCellularAutomata(MapData oldMap, int wallThreshold)
     {
         MapData newMap = new MapData(oldMap.width, oldMap.height);
-        
+
         for (int x = 0; x < oldMap.width; x++)
         {
             for (int y = 0; y < oldMap.height; y++)
@@ -77,10 +100,10 @@ public static class CellularAutomata
                     newMap.SetTile(x, y, TileType.Wall);
                     continue;
                 }
-                
+
                 // 이웃 벽 개수 세기
                 int wallCount = CountWallNeighbors(oldMap, x, y);
-                
+
                 // 룰 적용
                 if (wallCount >= wallThreshold)
                     newMap.SetTile(x, y, TileType.Wall);
@@ -88,35 +111,35 @@ public static class CellularAutomata
                     newMap.SetTile(x, y, TileType.Empty);
             }
         }
-        
+
         return newMap;
     }
-    
+
     /// <summary>
     /// 주변 8칸의 벽 개수 세기
     /// </summary>
     private static int CountWallNeighbors(MapData map, int x, int y)
     {
         int count = 0;
-        
+
         for (int dx = -1; dx <= 1; dx++)
         {
             for (int dy = -1; dy <= 1; dy++)
             {
                 if (dx == 0 && dy == 0) continue; // 자기 자신 제외
-                
+
                 int nx = x + dx;
                 int ny = y + dy;
-                
+
                 // 범위 밖은 벽으로 취급
                 if (!map.InBounds(nx, ny) || map.GetTile(nx, ny) == TileType.Wall)
                     count++;
             }
         }
-        
+
         return count;
     }
-    
+
     /// <summary>
     /// 3단계: 외곽 벽 확실히 만들기
     /// </summary>
@@ -127,14 +150,14 @@ public static class CellularAutomata
             map.SetTile(x, 0, TileType.Wall);
             map.SetTile(x, map.height - 1, TileType.Wall);
         }
-        
+
         for (int y = 0; y < map.height; y++)
         {
             map.SetTile(0, y, TileType.Wall);
             map.SetTile(map.width - 1, y, TileType.Wall);
         }
     }
-    
+
     /// <summary>
     /// 4단계: FloodFill로 가장 큰 영역만 남기기
     /// (고립된 작은 공간 제거)
@@ -145,7 +168,7 @@ public static class CellularAutomata
         bool[,] visited = new bool[map.width, map.height];
         int maxSize = 0;
         Vector2Int bestStart = Vector2Int.zero;
-        
+
         for (int x = 1; x < map.width - 1; x++)
         {
             for (int y = 1; y < map.height - 1; y++)
@@ -161,11 +184,11 @@ public static class CellularAutomata
                 }
             }
         }
-        
+
         // 가장 큰 영역 외에는 모두 벽으로
         visited = new bool[map.width, map.height];
         FloodFillMark(map, visited, bestStart.x, bestStart.y);
-        
+
         for (int x = 1; x < map.width - 1; x++)
         {
             for (int y = 1; y < map.height - 1; y++)
@@ -175,7 +198,7 @@ public static class CellularAutomata
             }
         }
     }
-    
+
     /// <summary>
     /// FloodFill로 영역 크기 세기
     /// </summary>
@@ -183,19 +206,19 @@ public static class CellularAutomata
     {
         if (!map.InBounds(x, y) || visited[x, y] || !map.IsWalkable(x, y))
             return 0;
-        
+
         visited[x, y] = true;
         int count = 1;
-        
+
         // 4방향 탐색
         count += FloodFillCount(map, visited, x + 1, y);
         count += FloodFillCount(map, visited, x - 1, y);
         count += FloodFillCount(map, visited, x, y + 1);
         count += FloodFillCount(map, visited, x, y - 1);
-        
+
         return count;
     }
-    
+
     /// <summary>
     /// FloodFill로 영역 마킹
     /// </summary>
@@ -203,9 +226,9 @@ public static class CellularAutomata
     {
         if (!map.InBounds(x, y) || visited[x, y] || !map.IsWalkable(x, y))
             return;
-        
+
         visited[x, y] = true;
-        
+
         // 4방향 탐색
         FloodFillMark(map, visited, x + 1, y);
         FloodFillMark(map, visited, x - 1, y);

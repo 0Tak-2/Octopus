@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Data_SeaweedFiber
   m_EditorClassIdentifier: 
   itemID: 6
-  itemName: 
+  itemName: SeaweedFiber
   icon: {fileID: 0}
   description: 
-  itemType: 0
+  itemType: 6
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
   hungerRestore: 0

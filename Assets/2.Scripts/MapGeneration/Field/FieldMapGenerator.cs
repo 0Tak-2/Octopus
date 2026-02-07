@@ -3,13 +3,18 @@ using UnityEngine;
 
 /// <summary>
 /// 필드맵 생성 메인 클래스
-/// Inspector에서 Generate 버튼으로 맵 생성 가능
+/// FieldDefinition 기반으로 적, 자원, 던전 입구 스폰
+/// WorldProgressManager에서 현재 필드를 자동으로 가져옴
 /// </summary>
 public class FieldMapGenerator : MonoBehaviour
 {
-    [Header("Config")]
-    [Tooltip("맵 생성 설정 (ScriptableObject)")]
+    [Header("Config (Fallback)")]
+    [Tooltip("기존 맵 생성 설정 (FieldDefinition이 없을 때 사용)")]
     public FieldMapConfig config;
+
+    [Header("Field Definition (자동 연결)")]
+    [Tooltip("현재 필드 정의 (비워두면 WorldProgressManager에서 자동 가져옴)")]
+    public FieldDefinition fieldDefinition;
 
     [Header("References")]
     [Tooltip("GridBoard (기존 시스템)")]
@@ -22,11 +27,27 @@ public class FieldMapGenerator : MonoBehaviour
     public Transform player;
 
     [Header("Exit/Entrance")]
-    [Tooltip("다음 맵 출구 프리팹")]
+    [Tooltip("다음 필드 출구 프리팹")]
     public GameObject mapExitPrefab;
 
-    [Tooltip("이전 맵 입구 프리팹 (선택)")]
+    [Tooltip("이전 필드 입구 프리팹 (선택)")]
     public GameObject mapEntrancePrefab;
+
+    [Header("Dungeon")]
+    [Tooltip("던전 입구 프리팹 (FieldDefinition용)")]
+    public GameObject dungeonEntrancePrefab;
+
+    [Header("Resource Prefabs")]
+    [Tooltip("해초 프리팹")]
+    public GameObject seaweedPrefab;
+    [Tooltip("산호 프리팹")]
+    public GameObject coralPrefab;
+    [Tooltip("암석 프리팹")]
+    public GameObject rockPrefab;
+    [Tooltip("모래 프리팹")]
+    public GameObject sandPrefab;
+    [Tooltip("해면 프리팹")]
+    public GameObject spongePrefab;
 
     [Header("Runtime")]
     [Tooltip("생성된 맵 데이터 (읽기 전용)")]
@@ -34,6 +55,9 @@ public class FieldMapGenerator : MonoBehaviour
 
     [Header("Debug")]
     public bool logGeneration = true;
+
+    // 스폰된 오브젝트 추적 (맵 재생성 시 정리용)
+    private List<GameObject> spawnedObjects = new List<GameObject>();
 
     private void Start()
     {
@@ -43,6 +67,14 @@ public class FieldMapGenerator : MonoBehaviour
         {
             Debug.Log("[FieldMapGenerator] 던전 씬이므로 맵 생성 스킵");
             return;
+        }
+
+        // WorldProgressManager에서 현재 필드 가져오기
+        if (fieldDefinition == null && WorldProgressManager.Instance != null)
+        {
+            fieldDefinition = WorldProgressManager.Instance.CurrentField;
+            if (logGeneration && fieldDefinition != null)
+                Debug.Log($"[FieldMapGenerator] WorldProgressManager에서 필드 가져옴: {fieldDefinition.fieldName}");
         }
 
         // 게임 시작 시 자동 생성
@@ -55,13 +87,94 @@ public class FieldMapGenerator : MonoBehaviour
     [ContextMenu("Generate Map")]
     public void GenerateMap()
     {
-        if (config == null)
+        // FieldDefinition이 있으면 그걸 사용, 없으면 기존 config 사용
+        if (fieldDefinition != null)
         {
-            Debug.LogError("[FieldMapGenerator] Config가 없습니다!");
-            return;
+            GenerateFromFieldDefinition();
+        }
+        else if (config != null)
+        {
+            GenerateFromConfig();
+        }
+        else
+        {
+            Debug.LogError("[FieldMapGenerator] FieldDefinition도 Config도 없습니다!");
+        }
+    }
+
+    // ============================================
+    // FieldDefinition 기반 생성 (새 시스템)
+    // ============================================
+
+    private void GenerateFromFieldDefinition()
+    {
+        // 시드 결정
+        int seed = 0;
+        if (GameManager.Instance != null)
+        {
+            seed = GameManager.Instance.GetFieldMapSeed();
+        }
+        if (seed == 0)
+        {
+            seed = Random.Range(1, int.MaxValue);
         }
 
-        // ✅ GameManager에서 저장된 시드 가져오기 (없으면 config.seed 사용)
+        if (logGeneration)
+            Debug.Log($"[FieldMapGenerator] 필드맵 생성 시작 - {fieldDefinition.fieldName} (Seed: {seed})");
+
+        // 이전 스폰 오브젝트 정리
+        ClearSpawnedObjects();
+
+        // 1. 맵 데이터 생성 (FieldDefinition의 크기/설정 사용)
+        currentMap = CellularAutomata.Generate(fieldDefinition, seed);
+
+        // 2. 플레이어 스폰 위치
+        currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
+
+        // 3. 던전 입구 위치
+        FindDungeonEntrancePositions(currentMap);
+
+        // 4. 적 스폰 위치 (카테고리별)
+        FindEnemySpawnPositions(currentMap);
+
+        // 5. 맵 출구/입구 위치
+        FindMapConnectionPositions(currentMap);
+
+        // 6. 렌더링
+        if (mapRenderer != null)
+        {
+            mapRenderer.RenderMap(currentMap);
+        }
+
+        // 7. 플레이어 배치
+        SpawnPlayer();
+
+        // 8. 던전 입구 생성
+        SpawnDungeonEntrances();
+
+        // 9. 적 생성 (카테고리별)
+        SpawnEnemiesFromDefinition();
+
+        // 10. 자원 생성
+        SpawnResources();
+
+        // 11. 맵 출구/입구 생성
+        SpawnMapConnections();
+
+        if (logGeneration)
+        {
+            Debug.Log($"[FieldMapGenerator] 맵 생성 완료! - {fieldDefinition.fieldName}");
+            Debug.Log($"- 던전 입구: {currentMap.dungeonEntrances.Count}개");
+            Debug.Log($"- 적 스폰: {currentMap.enemySpawns.Count}개");
+        }
+    }
+
+    // ============================================
+    // 기존 Config 기반 생성 (Fallback)
+    // ============================================
+
+    private void GenerateFromConfig()
+    {
         int seed = config.seed;
 
         if (GameManager.Instance != null)
@@ -72,7 +185,6 @@ public class FieldMapGenerator : MonoBehaviour
         }
         else if (seed == 0)
         {
-            // config.seed가 0이면 랜덤 시드 생성
             seed = Random.Range(1, int.MaxValue);
         }
 
@@ -80,46 +192,29 @@ public class FieldMapGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// 맵 생성 + 렌더링 + 스폰
+    /// 기존 맵 생성 + 렌더링 + 스폰 (Config 기반)
     /// </summary>
     public void GenerateAndRender(int seed)
     {
         if (logGeneration)
-            Debug.Log($"[FieldMapGenerator] 맵 생성 시작 (Seed: {seed})");
+            Debug.Log($"[FieldMapGenerator] 맵 생성 시작 (Config, Seed: {seed})");
 
-        // 1. 맵 데이터 생성 (Cellular Automata)
+        ClearSpawnedObjects();
+
         currentMap = CellularAutomata.Generate(config, seed);
-
-        // 2. 플레이어 스폰 위치 찾기
         currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
-
-        // 3. 던전 입구 위치 찾기
         FindDungeonEntrancePositions(currentMap);
-
-        // 4. 적 스폰 위치 찾기
         FindEnemySpawnPositions(currentMap);
-
-        // 5. 맵 출구/입구 위치 찾기
         FindMapConnectionPositions(currentMap);
 
-        // 6. 렌더링 (Tilemap + GridBoard 업데이트)
         if (mapRenderer != null)
         {
             mapRenderer.RenderMap(currentMap);
-            Debug.Log($"[FieldMapGenerator] gridBoard={gridBoard?.name} id={gridBoard?.GetInstanceID()} / renderer.gridBoard={mapRenderer?.gridBoard?.name} id={mapRenderer?.gridBoard?.GetInstanceID()}");
-
         }
 
-        // 7. 플레이어 배치
         SpawnPlayer();
-
-        // 8. 던전 입구 프리팹 생성
         SpawnDungeonEntrances();
-
-        // 9. 적 프리팹 생성
         SpawnEnemies();
-
-        // 10. 맵 출구/입구 프리팹 생성
         SpawnMapConnections();
 
         if (logGeneration)
@@ -130,25 +225,22 @@ public class FieldMapGenerator : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 플레이어 스폰 위치 찾기 (맵 중앙 부근의 빈 공간)
-    /// </summary>
+    // ============================================
+    // 스폰 위치 찾기
+    // ============================================
+
     private Vector2Int FindPlayerSpawnPosition(MapData map)
     {
-        // GameManager에서 이전 맵 정보 확인
         GameManager gm = GameManager.Instance;
         if (gm != null && gm.currentMapIndex > 0)
         {
-            // 이전 맵에서 왔으면 입구 위치에 스폰
             if (map.entranceFromPrevMap != Vector2Int.zero)
                 return map.entranceFromPrevMap;
         }
 
-        // 첫 맵이거나 정보 없으면 중앙에 스폰
         int centerX = map.width / 2;
         int centerY = map.height / 2;
 
-        // 중앙에서 가까운 빈 공간 찾기
         for (int radius = 0; radius < map.width / 2; radius++)
         {
             for (int dx = -radius; dx <= radius; dx++)
@@ -157,67 +249,457 @@ public class FieldMapGenerator : MonoBehaviour
                 {
                     int x = centerX + dx;
                     int y = centerY + dy;
-
                     if (map.IsWalkable(x, y))
                         return new Vector2Int(x, y);
                 }
             }
         }
 
-        // 못 찾으면 (1, 1) 반환
         return new Vector2Int(1, 1);
     }
 
-    /// <summary>
-    /// 던전 입구 위치 찾기
-    /// </summary>
     private void FindDungeonEntrancePositions(MapData map)
     {
-        int count = Random.Range(config.minDungeonEntrances, config.maxDungeonEntrances + 1);
+        int count;
+
+        if (fieldDefinition != null && fieldDefinition.dungeons != null)
+        {
+            // FieldDefinition: 던전 수만큼 입구 생성
+            count = fieldDefinition.dungeons.Length;
+        }
+        else if (config != null)
+        {
+            count = Random.Range(config.minDungeonEntrances, config.maxDungeonEntrances + 1);
+        }
+        else
+        {
+            count = 1;
+        }
 
         for (int i = 0; i < count; i++)
         {
-            Vector2Int pos = FindRandomWalkablePosition(map, map.playerSpawnPos, 5f); // 플레이어에서 5칸 이상 떨어진 곳
+            Vector2Int pos = FindRandomWalkablePosition(map, map.playerSpawnPos, 5f);
             if (pos != Vector2Int.zero)
                 map.dungeonEntrances.Add(pos);
         }
     }
 
-    /// <summary>
-    /// 적 스폰 위치 찾기
-    /// </summary>
     private void FindEnemySpawnPositions(MapData map)
     {
-        for (int i = 0; i < config.enemySpawnCount; i++)
+        int totalCount;
+
+        if (fieldDefinition != null)
         {
-            Vector2Int pos = FindRandomWalkablePosition(map, map.playerSpawnPos, 3f); // 플레이어에서 3칸 이상 떨어진 곳
+            totalCount = fieldDefinition.TotalEnemyCount;
+        }
+        else if (config != null)
+        {
+            totalCount = config.enemySpawnCount;
+        }
+        else
+        {
+            totalCount = 5;
+        }
+
+        for (int i = 0; i < totalCount; i++)
+        {
+            Vector2Int pos = FindRandomWalkablePosition(map, map.playerSpawnPos, 3f);
             if (pos != Vector2Int.zero)
                 map.enemySpawns.Add(pos);
         }
     }
 
-    /// <summary>
-    /// 맵 연결 지점 찾기 (출구/입구)
-    /// </summary>
     private void FindMapConnectionPositions(MapData map)
     {
-        // 오른쪽 끝에 출구 (다음 맵으로)
         map.exitToNextMap = FindEdgeWalkablePosition(map, EdgeSide.Right);
-
-        // 왼쪽 끝에 입구 (이전 맵에서)
         map.entranceFromPrevMap = FindEdgeWalkablePosition(map, EdgeSide.Left);
 
-        // 출구/입구 주변을 Road 타일로 변경
         if (map.exitToNextMap != Vector2Int.zero)
             CreateRoadArea(map, map.exitToNextMap);
-
         if (map.entranceFromPrevMap != Vector2Int.zero)
             CreateRoadArea(map, map.entranceFromPrevMap);
     }
 
+    // ============================================
+    // 적 스폰 (FieldDefinition 카테고리별)
+    // ============================================
+
+    private void SpawnEnemiesFromDefinition()
+    {
+        if (fieldDefinition == null) return;
+        if (gridBoard == null) return;
+
+        int spawnIndex = 0;
+
+        // 1. 일반 적
+        spawnIndex = SpawnEnemyCategory(
+            fieldDefinition.normalEnemyPrefabs,
+            fieldDefinition.normalEnemyCount,
+            spawnIndex, "Normal");
+
+        // 2. 엘리트 적
+        spawnIndex = SpawnEnemyCategory(
+            fieldDefinition.eliteEnemyPrefabs,
+            fieldDefinition.eliteEnemyCount,
+            spawnIndex, "Elite");
+
+        // 3. 중립 적
+        spawnIndex = SpawnEnemyCategory(
+            fieldDefinition.neutralEnemyPrefabs,
+            fieldDefinition.neutralEnemyCount,
+            spawnIndex, "Neutral");
+
+        // 4. 초식 적
+        spawnIndex = SpawnEnemyCategory(
+            fieldDefinition.passiveEnemyPrefabs,
+            fieldDefinition.passiveEnemyCount,
+            spawnIndex, "Passive");
+
+        if (logGeneration)
+            Debug.Log($"[FieldMapGenerator] 적 스폰 완료: 총 {spawnIndex}마리");
+    }
+
     /// <summary>
-    /// 맵 가장자리에서 빈 공간 찾기
+    /// 카테고리별 적 스폰 (프리팹 배열에서 랜덤 선택)
     /// </summary>
+    private int SpawnEnemyCategory(GameObject[] prefabs, int count, int startIndex, string category)
+    {
+        if (prefabs == null || prefabs.Length == 0 || count <= 0)
+            return startIndex;
+
+        for (int i = 0; i < count; i++)
+        {
+            int spawnIdx = startIndex + i;
+            if (spawnIdx >= currentMap.enemySpawns.Count)
+            {
+                if (logGeneration)
+                    Debug.LogWarning($"[FieldMapGenerator] {category} 적 스폰 위치 부족! ({i}/{count})");
+                return spawnIdx;
+            }
+
+            Vector2Int pos = currentMap.enemySpawns[spawnIdx];
+            Vector3 worldPos = gridBoard.CellToWorld(pos);
+
+            // 프리팹 배열에서 랜덤 선택
+            GameObject prefab = prefabs[Random.Range(0, prefabs.Length)];
+            GameObject enemy = Instantiate(prefab, worldPos, Quaternion.identity);
+            enemy.name = $"{category}_{prefab.name}_{pos.x}_{pos.y}";
+
+            spawnedObjects.Add(enemy);
+
+            if (logGeneration)
+                Debug.Log($"[FieldMapGenerator] {category} 적 스폰: {prefab.name} at {pos}");
+        }
+
+        return startIndex + count;
+    }
+
+    // ============================================
+    // 자원 스폰
+    // ============================================
+
+    private void SpawnResources()
+    {
+        if (fieldDefinition == null) return;
+        if (gridBoard == null) return;
+
+        int totalResources = 0;
+
+        totalResources += SpawnResourceType(seaweedPrefab, fieldDefinition.seaweedCount, "Seaweed");
+        totalResources += SpawnResourceType(coralPrefab, fieldDefinition.coralCount, "Coral");
+        totalResources += SpawnResourceType(rockPrefab, fieldDefinition.rockCount, "Rock");
+        totalResources += SpawnResourceType(sandPrefab, fieldDefinition.sandCount, "Sand");
+        totalResources += SpawnResourceType(spongePrefab, fieldDefinition.spongeCount, "Sponge");
+
+        if (logGeneration)
+            Debug.Log($"[FieldMapGenerator] 자원 스폰 완료: 총 {totalResources}개");
+    }
+
+    /// <summary>
+    /// 자원 타입별 스폰
+    /// </summary>
+    private int SpawnResourceType(GameObject prefab, int count, string resourceName)
+    {
+        if (prefab == null || count <= 0) return 0;
+
+        int spawned = 0;
+        for (int i = 0; i < count; i++)
+        {
+            Vector2Int pos = FindRandomWalkablePosition(currentMap, currentMap.playerSpawnPos, 2f);
+            if (pos == Vector2Int.zero) continue;
+
+            Vector3 worldPos = gridBoard.CellToWorld(pos);
+            GameObject resource = Instantiate(prefab, worldPos, Quaternion.identity);
+            resource.name = $"{resourceName}_{pos.x}_{pos.y}";
+
+            spawnedObjects.Add(resource);
+            spawned++;
+        }
+
+        if (logGeneration && spawned > 0)
+            Debug.Log($"[FieldMapGenerator] {resourceName} 스폰: {spawned}개");
+
+        return spawned;
+    }
+
+    // ============================================
+    // 던전 입구 스폰
+    // ============================================
+
+    private void SpawnDungeonEntrances()
+    {
+        if (gridBoard == null) return;
+
+        // FieldDefinition 모드
+        if (fieldDefinition != null && fieldDefinition.dungeons != null)
+        {
+            SpawnDungeonEntrancesFromDefinition();
+            return;
+        }
+
+        // Config fallback 모드
+        if (config != null && config.dungeonEntrancePrefab != null)
+        {
+            SpawnDungeonEntrancesFromConfig();
+        }
+    }
+
+    /// <summary>
+    /// FieldDefinition 기반 던전 입구 생성
+    /// 각 던전마다 1개의 입구 생성, DungeonDefinition과 연결
+    /// </summary>
+    private void SpawnDungeonEntrancesFromDefinition()
+    {
+        GameObject entrancePrefab = dungeonEntrancePrefab;
+
+        // fallback: config의 프리팹 사용
+        if (entrancePrefab == null && config != null)
+            entrancePrefab = config.dungeonEntrancePrefab;
+
+        if (entrancePrefab == null)
+        {
+            Debug.LogWarning("[FieldMapGenerator] 던전 입구 프리팹이 없습니다!");
+            return;
+        }
+
+        for (int i = 0; i < fieldDefinition.dungeons.Length && i < currentMap.dungeonEntrances.Count; i++)
+        {
+            DungeonDefinition dungeon = fieldDefinition.dungeons[i];
+            if (dungeon == null) continue;
+
+            Vector2Int pos = currentMap.dungeonEntrances[i];
+            Vector3 worldPos = gridBoard.CellToWorld(pos);
+
+            GameObject entrance = Instantiate(entrancePrefab, worldPos, Quaternion.identity);
+            entrance.name = $"DungeonEntrance_{dungeon.dungeonID}";
+
+            // DungeonEntranceInteract 설정
+            var interact = entrance.GetComponent<DungeonEntranceInteract>();
+            if (interact == null)
+                interact = entrance.AddComponent<DungeonEntranceInteract>();
+
+            interact.dungeonId = dungeon.dungeonID;
+
+            spawnedObjects.Add(entrance);
+
+            if (logGeneration)
+                Debug.Log($"[FieldMapGenerator] 던전 입구 생성: {dungeon.dungeonName} ({dungeon.dungeonID}) at {pos}");
+        }
+    }
+
+    /// <summary>
+    /// Config 기반 던전 입구 생성 (기존 방식)
+    /// </summary>
+    private void SpawnDungeonEntrancesFromConfig()
+    {
+        foreach (var pos in currentMap.dungeonEntrances)
+        {
+            Vector3 worldPos = gridBoard.CellToWorld(pos);
+            GameObject entrance = Instantiate(config.dungeonEntrancePrefab, worldPos, Quaternion.identity);
+            entrance.name = $"DungeonEntrance_{pos.x}_{pos.y}";
+
+            var interact = entrance.GetComponent<DungeonEntranceInteract>();
+            if (interact == null)
+                interact = entrance.AddComponent<DungeonEntranceInteract>();
+
+            interact.dungeonId = $"Dungeon_C{GameManager.Instance?.currentChapter ?? 1}_M{GameManager.Instance?.currentMapIndex ?? 0}_{pos.x}_{pos.y}";
+
+            spawnedObjects.Add(entrance);
+        }
+    }
+
+    // ============================================
+    // 기존 적 스폰 (Config fallback)
+    // ============================================
+
+    private void SpawnEnemies()
+    {
+        if (config == null || config.enemyPrefab == null) return;
+        if (gridBoard == null) return;
+
+        foreach (var pos in currentMap.enemySpawns)
+        {
+            Vector3 worldPos = gridBoard.CellToWorld(pos);
+            GameObject enemy = Instantiate(config.enemyPrefab, worldPos, Quaternion.identity);
+            enemy.name = $"Enemy_{pos.x}_{pos.y}";
+            spawnedObjects.Add(enemy);
+        }
+    }
+
+    // ============================================
+    // 플레이어 스폰
+    // ============================================
+
+    private void SpawnPlayer()
+    {
+        if (player != null && gridBoard != null)
+        {
+            if (GameManager.Instance != null)
+            {
+                Vector2Int entrancePos = GameManager.Instance.playerData.dungeonEntrancePosition;
+
+                if (entrancePos != Vector2Int.zero)
+                {
+                    Vector3 entranceWorld = gridBoard.CellToWorld(entrancePos);
+                    player.position = entranceWorld;
+
+                    if (logGeneration)
+                        Debug.Log($"[FieldMapGenerator] 플레이어 던전 입구로 복귀: {entrancePos}");
+
+                    GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
+                    return;
+                }
+            }
+
+            Vector3 spawnWorld = gridBoard.CellToWorld(currentMap.playerSpawnPos);
+            player.position = spawnWorld;
+
+            if (logGeneration)
+                Debug.Log($"[FieldMapGenerator] 플레이어 스폰: {currentMap.playerSpawnPos}");
+        }
+    }
+
+    // ============================================
+    // 맵 연결 (출구/입구)
+    // ============================================
+
+    private void SpawnMapConnections()
+    {
+        if (gridBoard == null) return;
+
+        // FieldDefinition 모드
+        if (fieldDefinition != null)
+        {
+            SpawnMapConnectionsFromDefinition();
+            return;
+        }
+
+        // Config fallback
+        SpawnMapConnectionsFromConfig();
+    }
+
+    private void SpawnMapConnectionsFromDefinition()
+    {
+        // 다음 필드 출구
+        if (fieldDefinition.hasNextFieldExit && fieldDefinition.nextField != null && mapExitPrefab != null)
+        {
+            if (currentMap.exitToNextMap != Vector2Int.zero)
+            {
+                Vector3 exitWorld = gridBoard.CellToWorld(currentMap.exitToNextMap);
+                GameObject exitObj = Instantiate(mapExitPrefab, exitWorld, Quaternion.identity);
+                exitObj.name = "MapExit_ToNext";
+
+                var trigger = exitObj.GetComponent<MapExitTrigger>();
+                if (trigger == null)
+                    trigger = exitObj.AddComponent<MapExitTrigger>();
+                trigger.isNextMap = true;
+
+                spawnedObjects.Add(exitObj);
+
+                if (logGeneration)
+                    Debug.Log($"[FieldMapGenerator] 다음 필드 출구 생성: -> {fieldDefinition.nextField.fieldName}");
+            }
+        }
+
+        // 이전 필드 입구
+        if (fieldDefinition.previousField != null && mapEntrancePrefab != null)
+        {
+            if (currentMap.entranceFromPrevMap != Vector2Int.zero)
+            {
+                Vector3 entranceWorld = gridBoard.CellToWorld(currentMap.entranceFromPrevMap);
+                GameObject entranceObj = Instantiate(mapEntrancePrefab, entranceWorld, Quaternion.identity);
+                entranceObj.name = "MapEntrance_FromPrev";
+
+                var trigger = entranceObj.GetComponent<MapExitTrigger>();
+                if (trigger == null)
+                    trigger = entranceObj.AddComponent<MapExitTrigger>();
+                trigger.isNextMap = false;
+
+                spawnedObjects.Add(entranceObj);
+
+                if (logGeneration)
+                    Debug.Log($"[FieldMapGenerator] 이전 필드 입구 생성: <- {fieldDefinition.previousField.fieldName}");
+            }
+        }
+    }
+
+    private void SpawnMapConnectionsFromConfig()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null) return;
+
+        if (gm.currentMapIndex < gm.mapsPerChapter - 1 && mapExitPrefab != null)
+        {
+            if (currentMap.exitToNextMap != Vector2Int.zero)
+            {
+                Vector3 exitWorld = gridBoard.CellToWorld(currentMap.exitToNextMap);
+                GameObject exitObj = Instantiate(mapExitPrefab, exitWorld, Quaternion.identity);
+                exitObj.name = "MapExit_ToNext";
+
+                var trigger = exitObj.GetComponent<MapExitTrigger>();
+                if (trigger == null)
+                    trigger = exitObj.AddComponent<MapExitTrigger>();
+                trigger.isNextMap = true;
+
+                spawnedObjects.Add(exitObj);
+            }
+        }
+
+        if (gm.currentMapIndex > 0 && mapEntrancePrefab != null)
+        {
+            if (currentMap.entranceFromPrevMap != Vector2Int.zero)
+            {
+                Vector3 entranceWorld = gridBoard.CellToWorld(currentMap.entranceFromPrevMap);
+                GameObject entranceObj = Instantiate(mapEntrancePrefab, entranceWorld, Quaternion.identity);
+                entranceObj.name = "MapEntrance_FromPrev";
+
+                var trigger = entranceObj.GetComponent<MapExitTrigger>();
+                if (trigger == null)
+                    trigger = entranceObj.AddComponent<MapExitTrigger>();
+                trigger.isNextMap = false;
+
+                spawnedObjects.Add(entranceObj);
+            }
+        }
+    }
+
+    // ============================================
+    // 유틸리티
+    // ============================================
+
+    /// <summary>
+    /// 스폰된 오브젝트 정리
+    /// </summary>
+    private void ClearSpawnedObjects()
+    {
+        foreach (var obj in spawnedObjects)
+        {
+            if (obj != null)
+                Destroy(obj);
+        }
+        spawnedObjects.Clear();
+    }
+
     private Vector2Int FindEdgeWalkablePosition(MapData map, EdgeSide side)
     {
         int x = 0, y = 0;
@@ -242,7 +724,6 @@ public class FieldMapGenerator : MonoBehaviour
                 break;
         }
 
-        // 해당 위치 근처에서 빈 공간 찾기
         for (int radius = 0; radius < 5; radius++)
         {
             for (int dy = -radius; dy <= radius; dy++)
@@ -258,9 +739,6 @@ public class FieldMapGenerator : MonoBehaviour
         return Vector2Int.zero;
     }
 
-    /// <summary>
-    /// 출구/입구 주변을 Road 타일로 만들기
-    /// </summary>
     private void CreateRoadArea(MapData map, Vector2Int center)
     {
         for (int dx = -1; dx <= 1; dx++)
@@ -276,9 +754,6 @@ public class FieldMapGenerator : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 랜덤 빈 공간 찾기
-    /// </summary>
     private Vector2Int FindRandomWalkablePosition(MapData map, Vector2Int avoidPos, float minDistance)
     {
         int maxAttempts = 100;
@@ -291,12 +766,10 @@ public class FieldMapGenerator : MonoBehaviour
             if (!map.IsWalkable(x, y))
                 continue;
 
-            // 거리 체크
             float dist = Vector2Int.Distance(new Vector2Int(x, y), avoidPos);
             if (dist < minDistance)
                 continue;
 
-            // 주변도 비어있는지 체크 (프리팹 배치 공간 확보)
             bool hasSpace = true;
             for (int dx = -1; dx <= 1; dx++)
             {
@@ -316,132 +789,6 @@ public class FieldMapGenerator : MonoBehaviour
         }
 
         return Vector2Int.zero;
-    }
-
-    /// <summary>
-    /// 플레이어 스폰
-    /// </summary>
-    private void SpawnPlayer()
-    {
-        if (player != null && gridBoard != null)
-        {
-            // ✅ GameManager에서 복원할 위치가 있으면 그걸 사용
-            if (GameManager.Instance != null)
-            {
-                Vector2Int entrancePos = GameManager.Instance.playerData.dungeonEntrancePosition;
-                Debug.Log($"[FieldMapGenerator] SpawnPlayer - dungeonEntrancePosition: {entrancePos}");
-
-                if (entrancePos != Vector2Int.zero)
-                {
-                    // 던전에서 돌아온 경우 - 입구 위치 사용
-                    Vector3 entranceWorld = gridBoard.CellToWorld(entrancePos);
-                    player.position = entranceWorld;
-
-                    if (logGeneration)
-                        Debug.Log($"[FieldMapGenerator] 플레이어 던전 입구로 복귀: {entrancePos}");
-
-                    // ✅ 사용 후 초기화 (다음 스폰 때는 일반 스폰)
-                    GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
-                    return;
-                }
-            }
-
-            // 일반 스폰 (새 맵이거나 던전에서 안 돌아온 경우)
-            Vector3 spawnWorld = gridBoard.CellToWorld(currentMap.playerSpawnPos);
-            player.position = spawnWorld;
-
-            if (logGeneration)
-                Debug.Log($"[FieldMapGenerator] 플레이어 스폰: {currentMap.playerSpawnPos}");
-        }
-    }
-
-    /// <summary>
-    /// 던전 입구 프리팹 생성
-    /// </summary>
-    private void SpawnDungeonEntrances()
-    {
-        if (config.dungeonEntrancePrefab == null) return;
-        if (gridBoard == null) return;
-
-        foreach (var pos in currentMap.dungeonEntrances)
-        {
-            Vector3 worldPos = gridBoard.CellToWorld(pos);
-            GameObject entrance = Instantiate(config.dungeonEntrancePrefab, worldPos, Quaternion.identity);
-            entrance.name = $"DungeonEntrance_{pos.x}_{pos.y}";
-
-            // DungeonEntranceInteract 컴포넌트 확인
-            var interact = entrance.GetComponent<DungeonEntranceInteract>();
-            if (interact == null)
-            {
-                interact = entrance.AddComponent<DungeonEntranceInteract>();
-            }
-
-            // 던전 ID 설정
-            interact.dungeonId = $"Dungeon_C{GameManager.Instance?.currentChapter ?? 1}_M{GameManager.Instance?.currentMapIndex ?? 0}_{pos.x}_{pos.y}";
-        }
-    }
-
-    /// <summary>
-    /// 적 프리팹 생성
-    /// </summary>
-    private void SpawnEnemies()
-    {
-        if (config.enemyPrefab == null) return;
-        if (gridBoard == null) return;
-
-        foreach (var pos in currentMap.enemySpawns)
-        {
-            Vector3 worldPos = gridBoard.CellToWorld(pos);
-            GameObject enemy = Instantiate(config.enemyPrefab, worldPos, Quaternion.identity);
-            enemy.name = $"Enemy_{pos.x}_{pos.y}";
-        }
-    }
-
-    /// <summary>
-    /// 맵 출구/입구 프리팹 생성
-    /// </summary>
-    private void SpawnMapConnections()
-    {
-        if (gridBoard == null) return;
-
-        GameManager gm = GameManager.Instance;
-        if (gm == null) return;
-
-        // 다음 맵 출구 (마지막 맵이 아니면)
-        if (gm.currentMapIndex < gm.mapsPerChapter - 1 && mapExitPrefab != null)
-        {
-            if (currentMap.exitToNextMap != Vector2Int.zero)
-            {
-                Vector3 exitWorld = gridBoard.CellToWorld(currentMap.exitToNextMap);
-                GameObject exitObj = Instantiate(mapExitPrefab, exitWorld, Quaternion.identity);
-                exitObj.name = "MapExit_ToNext";
-
-                // MapExitTrigger 설정
-                var trigger = exitObj.GetComponent<MapExitTrigger>();
-                if (trigger == null)
-                    trigger = exitObj.AddComponent<MapExitTrigger>();
-
-                trigger.isNextMap = true;
-            }
-        }
-
-        // 이전 맵 입구 (첫 맵이 아니면)
-        if (gm.currentMapIndex > 0 && mapEntrancePrefab != null)
-        {
-            if (currentMap.entranceFromPrevMap != Vector2Int.zero)
-            {
-                Vector3 entranceWorld = gridBoard.CellToWorld(currentMap.entranceFromPrevMap);
-                GameObject entranceObj = Instantiate(mapEntrancePrefab, entranceWorld, Quaternion.identity);
-                entranceObj.name = "MapEntrance_FromPrev";
-
-                // MapExitTrigger 설정 (뒤로가기)
-                var trigger = entranceObj.GetComponent<MapExitTrigger>();
-                if (trigger == null)
-                    trigger = entranceObj.AddComponent<MapExitTrigger>();
-
-                trigger.isNextMap = false;
-            }
-        }
     }
 }
 

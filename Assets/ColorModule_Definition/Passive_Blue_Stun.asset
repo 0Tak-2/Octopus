@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Passive_Blue_Stun
   m_EditorClassIdentifier: 
   moduleName: "\uCD09\uC218\uAC15\uD654"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uAE30\uBCF8\uACF5\uACA9 25% \uD655\uB960 \uC2A4\uD134"
   icon: {fileID: 0}
   colorType: 1
   moduleType: 1

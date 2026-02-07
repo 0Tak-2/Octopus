@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81b364627e75ebd4a8a53fdaf54bcbf5, type: 3}
   m_Name: Enemy_Seahorse
   m_EditorClassIdentifier: 
-  displayName: Enemy
-  tokenPrefab: {fileID: 0}
-  maxHP: 10
+  displayName: "\uD574\uB9C8"
+  tokenPrefab: {fileID: 4667636831984045804, guid: 6a6ac89f6c3892743a3aa01a3f0545c6, type: 3}
+  maxHP: 30
   defense: 0
   moveRange: 2
-  attackRange: 1
-  attackDamage: 1
-  aiType: 1
+  attackRange: 2
+  attackDamage: 8
+  aiType: 2
   useDashAttackMotion: 1
   fieldDetectionRange: 6
   fieldRequireLoS: 1
@@ -61,11 +61,11 @@ MonoBehaviour:
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
   redModuleDropChance: 0
-  blueModuleDropChance: 0
-  blackModuleDropChance: 0
-  dropFood: {fileID: 0}
-  dropMaterial: {fileID: 0}
-  dropMaterial2: {fileID: 0}
+  blueModuleDropChance: 0.1
+  blackModuleDropChance: 0.03
+  dropFood: {fileID: 11400000, guid: 3e421fea7f86c7f4793d63d9fe134cd8, type: 2}
+  dropMaterial: {fileID: 11400000, guid: ac549b4921b0a394c90932a5282182d7, type: 2}
+  dropMaterial2: {fileID: 11400000, guid: 6e3915f5e3868944fb09a81505e467ef, type: 2}
   foodDropChance: 0.5
   materialDropChance: 0.7
   material2DropChance: 0.3

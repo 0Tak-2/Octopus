@@ -86,6 +86,41 @@ public class DungeonController : MonoBehaviour
         if (gridBoard == null)
             gridBoard = FindObjectOfType<GridBoard>();
 
+        // WorldProgressManager에서 현재 던전 자동 가져오기
+        if (dungeonDefinition == null && WorldProgressManager.Instance != null)
+        {
+            var currentDungeon = WorldProgressManager.Instance.GetCurrentDungeon();
+            if (currentDungeon != null)
+            {
+                dungeonDefinition = currentDungeon;
+                Debug.Log($"[DungeonController] WorldProgressManager에서 던전 가져옴: {dungeonDefinition.dungeonName}");
+            }
+        }
+
+        // GameManager에서 던전 ID로 찾기 (fallback)
+        if (dungeonDefinition == null && GameManager.Instance != null)
+        {
+            string dId = GameManager.Instance.playerData.currentDungeonId;
+            if (!string.IsNullOrEmpty(dId) && WorldProgressManager.Instance != null)
+            {
+                var dungeon = WorldProgressManager.Instance.GetDungeonByID(dId);
+                if (dungeon != null)
+                {
+                    dungeonDefinition = dungeon;
+                    Debug.Log($"[DungeonController] GameManager ID로 던전 찾음: {dungeonDefinition.dungeonName}");
+                }
+            }
+        }
+
+        // WorldProgressManager에도 현재 던전 동기화
+        if (dungeonDefinition != null && WorldProgressManager.Instance != null)
+        {
+            if (string.IsNullOrEmpty(WorldProgressManager.Instance.CurrentDungeonID))
+            {
+                WorldProgressManager.Instance.EnterDungeon(dungeonDefinition);
+            }
+        }
+
         if (dungeonDefinition == null)
         {
             Debug.LogError("[DungeonController] DungeonDefinition이 없습니다!");
@@ -142,8 +177,11 @@ public class DungeonController : MonoBehaviour
         if (logGeneration)
             Debug.Log($"[DungeonController] {dungeonDefinition.dungeonName} 시작 (총 {maxFloors}층)");
 
-        // 현재 층 생성 또는 복원
-        LoadOrGenerateFloor(currentFloor);
+        // 항상 1층부터 새로 생성 (로그라이크 특성: 던전 재입장 시 초기화)
+        currentFloor = 1;
+        allFloors.Clear();
+        floorSeeds.Clear();
+        GenerateFloor(1);
 
         // 플레이어 데이터 복원
         GameManager.Instance?.RestorePlayerStats();
@@ -254,8 +292,8 @@ public class DungeonController : MonoBehaviour
         // 맵 렌더링
         RenderFloor(currentFloorData);
 
-        // 플레이어 스폰 (계단 위치로)
-        SpawnPlayer(currentFloorData.stairsRoom ?? currentFloorData.startRoom);
+        // 플레이어 스폰 (시작 방으로)
+        SpawnPlayer(currentFloorData.startRoom);
 
         // 적 스폰 (저장된 상태로)
         SpawnEnemiesWithSavedState();
@@ -325,6 +363,7 @@ public class DungeonController : MonoBehaviour
                 Vector3 worldPos = gridBoard.CellToWorld(saved.gridPosition);
                 bossInstance = Instantiate(dungeonDefinition.bossPrefab, worldPos, Quaternion.identity);
                 bossInstance.name = saved.uniqueId;
+                MarkBossSpawned();
 
                 var boss = bossInstance.GetComponent<EnemyInstance>();
                 if (boss != null)
@@ -755,6 +794,11 @@ public class DungeonController : MonoBehaviour
 
     private Vector2Int FindWalkablePositionInRoom(DungeonRoom room)
     {
+        // 1. 방 중심이 걸어다닐 수 있으면 중심 사용
+        if (currentFloorData.IsWalkable(room.Center.x, room.Center.y))
+            return room.Center;
+
+        // 2. 방 내부에서 걸어다닐 수 있는 타일 찾기
         room.GetBounds(out int minX, out int minY, out int maxX, out int maxY);
 
         for (int x = minX + 1; x < maxX - 1; x++)
@@ -766,6 +810,27 @@ public class DungeonController : MonoBehaviour
             }
         }
 
+        // 3. 방 범위 확장해서 찾기 (복도 포함)
+        for (int x = minX - 2; x < maxX + 2; x++)
+        {
+            for (int y = minY - 2; y < maxY + 2; y++)
+            {
+                if (currentFloorData.IsWalkable(x, y))
+                    return new Vector2Int(x, y);
+            }
+        }
+
+        // 4. 전체 맵에서 아무 walkable 타일
+        for (int x = 1; x < currentFloorData.width - 1; x++)
+        {
+            for (int y = 1; y < currentFloorData.height - 1; y++)
+            {
+                if (currentFloorData.IsWalkable(x, y))
+                    return new Vector2Int(x, y);
+            }
+        }
+
+        Debug.LogError("[DungeonController] walkable 타일을 찾을 수 없습니다!");
         return room.Center;
     }
 
@@ -825,6 +890,7 @@ public class DungeonController : MonoBehaviour
         Vector3 worldPos = gridBoard.CellToWorld(room.Center);
         bossInstance = Instantiate(dungeonDefinition.bossPrefab, worldPos, Quaternion.identity);
         bossInstance.name = $"Boss_Floor{currentFloor}";
+        MarkBossSpawned();
     }
 
     private void SpawnStairsAndExit()
@@ -893,12 +959,25 @@ public class DungeonController : MonoBehaviour
         if (exitInstance != null) Destroy(exitInstance);
     }
 
+    // 보스 처치 확인용 (Update에서 매 프레임 체크)
+    private bool bossWasSpawned = false;
+
     private void Update()
     {
-        if (bossInstance == null && currentFloor == maxFloors && !IsDungeonCleared())
+        // 보스 던전에서만 자동 클리어 판정
+        // 보스가 스폰된 적 있고(bossWasSpawned), 지금은 null이면 보스를 처치한 것
+        if (bossWasSpawned && bossInstance == null && !IsDungeonCleared())
         {
             OnDungeonCleared();
         }
+    }
+
+    /// <summary>
+    /// 보스 스폰 시 호출 (SpawnBoss 내부에서)
+    /// </summary>
+    private void MarkBossSpawned()
+    {
+        bossWasSpawned = true;
     }
 
     private bool dungeonCleared = false;
@@ -920,10 +999,20 @@ public class DungeonController : MonoBehaviour
 
     public void ReturnToField()
     {
-        // ✅ 나가기 전 상태 저장
+        // 나가기 전 상태 저장
         SaveCurrentFloorToGameManager();
 
         string dId = GameManager.Instance?.playerData.currentDungeonId ?? dungeonId;
-        GameManager.Instance?.ExitDungeonSuccess(dId);
+
+        // 보스 던전이고 보스를 처치했을 때만 클리어 등록
+        if (dungeonDefinition != null && dungeonDefinition.isBossDungeon && bossWasSpawned)
+        {
+            GameManager.Instance?.ExitDungeonSuccess(dId);
+        }
+        else
+        {
+            // 일반 던전: 클리어 등록 없이 나가기 (재입장 가능)
+            GameManager.Instance?.ExitDungeon();
+        }
     }
 }

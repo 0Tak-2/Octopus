@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fa64873854e788409a35bb92d3406b3, type: 3}
+  m_Name: Dungeon_F1_A
+  m_EditorClassIdentifier: 
+  dungeonID: dungeon_f1_a
+  dungeonName: "\uC870\uAC1C \uB3D9\uAD74"
+  description: 
+  minFloors: 2
+  maxFloors: 2
+  floorWidth: 25
+  floorHeight: 25
+  normalEnemyPrefabs:
+  - {fileID: 9105843625278447542, guid: 8ccfbc201905d744d99ebd5084231304, type: 3}
+  - {fileID: 9105843625278447542, guid: c3b1c0fad2b525f47aa9dd5af9881849, type: 3}
+  eliteEnemyPrefab: {fileID: 0}
+  eliteSpawnChance: 0.2
+  bossPrefab: {fileID: 0}
+  isBossDungeon: 0
+  minEnemiesPerRoom: 1
+  maxEnemiesPerRoom: 3
+  scaleEnemiesPerFloor: 1
+  resourceMultiplier: 1
+  chestSpawnChance: 0.15
+  difficultyRating: 1
+  enemyDamageMultiplier: 1
+  enemyHPMultiplier: 1
+  dungeonTint: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.05, g: 0.05, b: 0.1, a: 1}
+  dungeonMusic: {fileID: 0}
+  bossMusic: {fileID: 0}

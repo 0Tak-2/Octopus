@@ -21,6 +21,6 @@ MonoBehaviour:
   bonusMaxHP: 0
   bonusEVA: 0
   bonusCRIT: 0
-  bonusCRIT_DMG: 0.01
+  bonusCRIT_DMG: 0.1
   stunChanceBonus: 0
   craftingMaterials: 

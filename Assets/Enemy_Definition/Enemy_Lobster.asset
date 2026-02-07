@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Enemy_Lobster
   m_EditorClassIdentifier: 
   displayName: "\uBC14\uB2F7\uAC00\uC7AC"
-  tokenPrefab: {fileID: 0}
+  tokenPrefab: {fileID: 4667636831984045804, guid: ed08c7e7a32d7fb4eb5cab19c50b3f95, type: 3}
   maxHP: 40
   defense: 0
   moveRange: 2
@@ -63,8 +63,8 @@ MonoBehaviour:
   redModuleDropChance: 0.1
   blueModuleDropChance: 0.05
   blackModuleDropChance: 0
-  dropFood: {fileID: 11400000, guid: 1ba40f9ed58264543a2d490b00cfdcf7, type: 2}
-  dropMaterial: {fileID: 11400000, guid: 31979cf5f85e30f42bda4b17af9b14d9, type: 2}
+  dropFood: {fileID: 11400000, guid: 31979cf5f85e30f42bda4b17af9b14d9, type: 2}
+  dropMaterial: {fileID: 11400000, guid: cf58bf8c68487d241bb580b948f8580b, type: 2}
   dropMaterial2: {fileID: 0}
   foodDropChance: 0.5
   materialDropChance: 0.7

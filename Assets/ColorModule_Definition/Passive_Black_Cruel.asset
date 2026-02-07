@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Passive_Black_Cruel
   m_EditorClassIdentifier: 
   moduleName: "\uC545\uB784\uD568"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uC801 HP \uB0AE\uC744\uC218\uB85D ATK \uC99D\uAC00 (0%\u2192+25%)"
   icon: {fileID: 0}
   colorType: 2
   moduleType: 1

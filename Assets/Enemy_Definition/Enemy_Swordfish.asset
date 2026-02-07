@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81b364627e75ebd4a8a53fdaf54bcbf5, type: 3}
   m_Name: Enemy_Swordfish
   m_EditorClassIdentifier: 
-  displayName: Enemy
-  tokenPrefab: {fileID: 0}
-  maxHP: 10
-  defense: 0
+  displayName: "\uCCAD\uC0C8\uCE58"
+  tokenPrefab: {fileID: 4667636831984045804, guid: 6c2915182d1ba8645838fb1e1f47015e, type: 3}
+  maxHP: 300
+  defense: 1
   moveRange: 2
-  attackRange: 1
-  attackDamage: 1
-  aiType: 1
+  attackRange: 2
+  attackDamage: 20
+  aiType: 4
   useDashAttackMotion: 1
   fieldDetectionRange: 6
   fieldRequireLoS: 1
@@ -38,11 +38,11 @@ MonoBehaviour:
   skill2_MeleeCritical: {fileID: 0}
   skill3_Range2: {fileID: 0}
   skill4_AttackBuff: {fileID: 0}
-  bossSkill1_Basic: {fileID: 0}
-  bossSkill2_Stun: {fileID: 0}
-  bossSkill3_Charge: {fileID: 0}
-  bossSkill4_Withdraw: {fileID: 0}
-  bossSkill5_Meditation: {fileID: 0}
+  bossSkill1_Basic: {fileID: 11400000, guid: 4024cbe30fcc2bc43a1f73d07c134ef8, type: 2}
+  bossSkill2_Stun: {fileID: 11400000, guid: bedd7a6cca1ac974ca61adbc7f1d5773, type: 2}
+  bossSkill3_Charge: {fileID: 11400000, guid: 8e731c462b788ee41ab2cd93e3d66203, type: 2}
+  bossSkill4_Withdraw: {fileID: 11400000, guid: 209b0dbd8d9b67648b15faf2d8068ad1, type: 2}
+  bossSkill5_Meditation: {fileID: 11400000, guid: 5dc249fd3b4e381489b4939da170a2c4, type: 2}
   bossMaxAP: 5
   bossBasicApCost: 1
   bossStunApCost: 1
@@ -60,14 +60,14 @@ MonoBehaviour:
   bossRageFullRatio: 0.4
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
-  redModuleDropChance: 0
-  blueModuleDropChance: 0
-  blackModuleDropChance: 0
-  dropFood: {fileID: 0}
-  dropMaterial: {fileID: 0}
-  dropMaterial2: {fileID: 0}
-  foodDropChance: 0.5
-  materialDropChance: 0.7
-  material2DropChance: 0.3
+  redModuleDropChance: 0.2
+  blueModuleDropChance: 0.15
+  blackModuleDropChance: 0.25
+  dropFood: {fileID: 11400000, guid: 3e421fea7f86c7f4793d63d9fe134cd8, type: 2}
+  dropMaterial: {fileID: 11400000, guid: f2b2d04d1c3e1b24e93c27c28cb02a7b, type: 2}
+  dropMaterial2: {fileID: 11400000, guid: 3bf8c9cb5f84ccd438da2856ae02bc80, type: 2}
+  foodDropChance: 1
+  materialDropChance: 1
+  material2DropChance: 1
   fleeDistance: 3
   fleeChance: 0.8

@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Skill_Red_Sharp
   m_EditorClassIdentifier: 
   moduleName: "\uB0A0\uCE74\uB85C\uC6B4\uCD09\uC218"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "\uCD9C\uD608 \uBD80\uC5EC. \uC774\uBBF8 \uCD9C\uD608\uC774\uBA74
+    ATK 40% \uCD94\uAC00 \uD53C\uD574"
   icon: {fileID: 0}
   colorType: 0
   moduleType: 0

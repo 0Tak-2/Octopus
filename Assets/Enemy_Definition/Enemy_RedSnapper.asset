@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81b364627e75ebd4a8a53fdaf54bcbf5, type: 3}
   m_Name: Enemy_RedSnapper
   m_EditorClassIdentifier: 
-  displayName: Enemy
-  tokenPrefab: {fileID: 0}
-  maxHP: 10
+  displayName: "\uCC38\uB3D4"
+  tokenPrefab: {fileID: 4667636831984045804, guid: 20ace11bbe6199b49beacdcb5a256257, type: 3}
+  maxHP: 90
   defense: 0
   moveRange: 2
   attackRange: 1
-  attackDamage: 1
-  aiType: 1
+  attackDamage: 15
+  aiType: 3
   useDashAttackMotion: 1
   fieldDetectionRange: 6
   fieldRequireLoS: 1
@@ -30,14 +30,14 @@ MonoBehaviour:
   projectilePrefab: {fileID: 0}
   projectileRotates: 1
   baseEvasion: 0
-  enableEliteAP: 0
+  enableEliteAP: 1
   eliteStartAP: 1
   eliteMaxAP: 5
   eliteRegenPerTurn: 1
-  skill1_MeleeNormal: {fileID: 0}
-  skill2_MeleeCritical: {fileID: 0}
-  skill3_Range2: {fileID: 0}
-  skill4_AttackBuff: {fileID: 0}
+  skill1_MeleeNormal: {fileID: 11400000, guid: 382422af0283703448927b07faebc864, type: 2}
+  skill2_MeleeCritical: {fileID: 11400000, guid: 78416fbeecc26734faef5abdf37975b9, type: 2}
+  skill3_Range2: {fileID: 11400000, guid: 5f17b6380b2a9eb4284426a1dafd5e05, type: 2}
+  skill4_AttackBuff: {fileID: 11400000, guid: 6a0c720fe98eae044853c93a4fe05eb7, type: 2}
   bossSkill1_Basic: {fileID: 0}
   bossSkill2_Stun: {fileID: 0}
   bossSkill3_Charge: {fileID: 0}
@@ -60,11 +60,11 @@ MonoBehaviour:
   bossRageFullRatio: 0.4
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
-  redModuleDropChance: 0
-  blueModuleDropChance: 0
-  blackModuleDropChance: 0
-  dropFood: {fileID: 0}
-  dropMaterial: {fileID: 0}
+  redModuleDropChance: 0.15
+  blueModuleDropChance: 0.05
+  blackModuleDropChance: 0.1
+  dropFood: {fileID: 11400000, guid: 3e421fea7f86c7f4793d63d9fe134cd8, type: 2}
+  dropMaterial: {fileID: 11400000, guid: 3bf8c9cb5f84ccd438da2856ae02bc80, type: 2}
   dropMaterial2: {fileID: 0}
   foodDropChance: 0.5
   materialDropChance: 0.7

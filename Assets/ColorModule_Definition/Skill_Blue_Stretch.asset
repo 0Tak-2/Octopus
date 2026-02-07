@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Skill_Blue_Stretch
   m_EditorClassIdentifier: 
   moduleName: "\uB298\uC5B4\uB098\uB294\uCD09\uC218"
-  description: "\uBAA8\uB4C8 \uC124\uBA85"
+  description: "3\uCE78 \uC774\uB0B4 \uC704\uCE58\uB85C \uC774\uB3D9"
   icon: {fileID: 0}
   colorType: 1
   moduleType: 0

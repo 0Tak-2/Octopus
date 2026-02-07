@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5db46b54d85e53b419ec6cfbeabcad79, type: 3}
+  m_Name: Relic_C_Shell
+  m_EditorClassIdentifier: 
+  relicID: relic_c_shell
+  relicName: "\uAE08 \uAC04 \uC870\uAC1C\uAECD\uC9C8"
+  description: 
+  icon: {fileID: 0}
+  rarity: 0
+  bonusMaxHP: 3
+  bonusATKPercent: 0
+  bonusDEF: 0
+  bonusEVA: 0
+  bonusCRIT: 0
+  bonusCRIT_DMG: 0
+  bonusMaxFatigue: 0
+  hungerReductionPercent: 0
+  damageReductionPercent: 0
+  conditionHPThreshold: 0
+  conditionFatigueThreshold: 0
+  conditionalDEFBonus: 0

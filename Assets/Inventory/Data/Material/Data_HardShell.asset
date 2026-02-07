@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3912992ade212044788e759f03e1ace1, type: 3}
   m_Name: Data_HardShell
   m_EditorClassIdentifier: 
-  itemID: 102
+  itemID: 151
   itemName: HardShell
   icon: {fileID: 0}
   description: 

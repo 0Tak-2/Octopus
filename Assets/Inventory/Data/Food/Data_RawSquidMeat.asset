@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3912992ade212044788e759f03e1ace1, type: 3}
-  m_Name: Data_SquidMeat
+  m_Name: Data_RawSquidMeat
   m_EditorClassIdentifier: 
   itemID: 103
-  itemName: SquidMeat
+  itemName: RawSquidMeat
   icon: {fileID: 0}
-  description: 
-  itemType: 6
+  description: Looks like Good
+  itemType: 1
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
-  hungerRestore: 0
+  hungerRestore: 12
   hpRestore: 0
   fatigueRestore: 0

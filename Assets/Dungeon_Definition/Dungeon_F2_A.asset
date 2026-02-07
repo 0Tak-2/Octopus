@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fa64873854e788409a35bb92d3406b3, type: 3}
+  m_Name: Dungeon_F2_A
+  m_EditorClassIdentifier: 
+  dungeonID: dungeon_f2_a
+  dungeonName: "\uC0B0\uD638 \uC2EC\uC5F0"
+  description: A dark cave beneath the sea
+  minFloors: 2
+  maxFloors: 3
+  floorWidth: 25
+  floorHeight: 25
+  normalEnemyPrefabs:
+  - {fileID: 9105843625278447542, guid: 6c443994287b7874c932be326cd26e51, type: 3}
+  - {fileID: 9105843625278447542, guid: e794bc53b4f5035468d7db8f45a8b15c, type: 3}
+  eliteEnemyPrefab: {fileID: 9105843625278447542, guid: f4d291f7b007cff419dd26a14e926220, type: 3}
+  eliteSpawnChance: 1
+  bossPrefab: {fileID: 0}
+  isBossDungeon: 0
+  minEnemiesPerRoom: 1
+  maxEnemiesPerRoom: 3
+  scaleEnemiesPerFloor: 1
+  resourceMultiplier: 1
+  chestSpawnChance: 0.15
+  difficultyRating: 1
+  enemyDamageMultiplier: 1
+  enemyHPMultiplier: 1
+  dungeonTint: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.05, g: 0.05, b: 0.1, a: 1}
+  dungeonMusic: {fileID: 0}
+  bossMusic: {fileID: 0}
