@@ -56,6 +56,7 @@ public class DungeonController : MonoBehaviour
 
     // 현재 던전 상태
     private int currentFloor = 1;
+    private bool _cameFromBelow = true; // true=아래에서 올라옴, false=위에서 내려옴
     private int maxFloors;
     private DungeonFloorData currentFloorData;
 
@@ -259,8 +260,9 @@ public class DungeonController : MonoBehaviour
         // 맵 렌더링
         RenderFloor(currentFloorData);
 
-        // 플레이어 스폰
-        SpawnPlayer(currentFloorData.startRoom);
+        // 플레이어 스폰 (이동 방향에 따라 스폰 위치 결정)
+        DungeonRoom spawnRoom = _cameFromBelow ? currentFloorData.startRoom : (currentFloorData.stairsRoom ?? currentFloorData.startRoom);
+        SpawnPlayer(spawnRoom);
 
         // 적 스폰 (저장된 상태가 있으면 그걸로)
         SpawnEnemiesWithSavedState();
@@ -292,8 +294,9 @@ public class DungeonController : MonoBehaviour
         // 맵 렌더링
         RenderFloor(currentFloorData);
 
-        // 플레이어 스폰 (시작 방으로)
-        SpawnPlayer(currentFloorData.startRoom);
+        // 플레이어 스폰 (이동 방향에 따라 스폰 위치 결정)
+        DungeonRoom restoreSpawnRoom = _cameFromBelow ? currentFloorData.startRoom : (currentFloorData.stairsRoom ?? currentFloorData.startRoom);
+        SpawnPlayer(restoreSpawnRoom);
 
         // 적 스폰 (저장된 상태로)
         SpawnEnemiesWithSavedState();
@@ -687,6 +690,7 @@ public class DungeonController : MonoBehaviour
         SaveCurrentFloorToGameManager();
 
         // 다음 층으로
+        _cameFromBelow = true;
         LoadOrGenerateFloor(currentFloor + 1);
     }
 
@@ -705,6 +709,7 @@ public class DungeonController : MonoBehaviour
         SaveCurrentFloorToGameManager();
 
         // 이전 층으로
+        _cameFromBelow = false;
         LoadOrGenerateFloor(currentFloor - 1);
     }
 
@@ -788,8 +793,27 @@ public class DungeonController : MonoBehaviour
         Vector3 spawnWorld = gridBoard.CellToWorld(spawnPos);
         player.position = spawnWorld;
 
+        // PlayerGridMover 동기화 (이게 없으면 이동 불가!)
+        var mover = player.GetComponent<PlayerGridMover>();
+        if (mover != null)
+        {
+            mover.SetCurrentCell(spawnPos);
+
+            // GridBoard 참조도 갱신 (층 전환 시 필수)
+            if (mover.grid != gridBoard)
+                mover.grid = gridBoard;
+        }
+
+        // GridOccupancyRegistry 초기화 (층 전환 시 이전 점유 정보 정리)
+        var occupancy = GridOccupancyRegistry.Instance;
+        if (occupancy != null)
+        {
+            occupancy.Release(player);
+            occupancy.TryOccupy(player, spawnPos);
+        }
+
         if (logGeneration)
-            Debug.Log($"[DungeonController] 플레이어 스폰: {spawnPos}");
+            Debug.Log($"[DungeonController] 플레이어 스폰: {spawnPos} (CurrentCell 동기화 완료)");
     }
 
     private Vector2Int FindWalkablePositionInRoom(DungeonRoom room)
@@ -893,22 +917,13 @@ public class DungeonController : MonoBehaviour
         MarkBossSpawned();
     }
 
+    // 위층 계단 오브젝트 추적
+    private GameObject upStairsInstance;
+
     private void SpawnStairsAndExit()
     {
-        // 계단 (다음 층으로)
-        if (currentFloor < maxFloors && currentFloorData.stairsRoom != null && stairsPrefab != null)
-        {
-            Vector3 stairsPos = gridBoard.CellToWorld(currentFloorData.stairsRoom.Center);
-            stairsInstance = Instantiate(stairsPrefab, stairsPos, Quaternion.identity);
-
-            var stairsInteract = stairsInstance.GetComponent<DungeonStairsInteract>();
-            if (stairsInteract == null)
-                stairsInteract = stairsInstance.AddComponent<DungeonStairsInteract>();
-            stairsInteract.dungeonController = this;
-        }
-
-        // ✅ Exit Portal은 시작 방(Start Room)에 생성 - 들어온 곳에서 나가기!
-        if (currentFloorData.startRoom != null && exitPortalPrefab != null)
+        // === 1층에만 Exit Portal (필드 탈출) ===
+        if (currentFloor == 1 && currentFloorData.startRoom != null && exitPortalPrefab != null)
         {
             Vector3 exitPos = gridBoard.CellToWorld(currentFloorData.startRoom.Center);
             exitInstance = Instantiate(exitPortalPrefab, exitPos, Quaternion.identity);
@@ -918,7 +933,42 @@ public class DungeonController : MonoBehaviour
                 exitInteract = exitInstance.AddComponent<DungeonExitPortal>();
 
             if (logGeneration)
-                Debug.Log($"[DungeonController] Exit Portal 생성: Start Room {currentFloorData.startRoom.Center}");
+                Debug.Log($"[DungeonController] Exit Portal 생성 (1층): Start Room {currentFloorData.startRoom.Center}");
+        }
+
+        // === 2층 이상: 위층 계단 (이전 층으로) ===
+        if (currentFloor > 1 && currentFloorData.startRoom != null && stairsPrefab != null)
+        {
+            Vector3 upPos = gridBoard.CellToWorld(currentFloorData.startRoom.Center);
+            upStairsInstance = Instantiate(stairsPrefab, upPos, Quaternion.identity);
+            upStairsInstance.name = "Stairs_Up";
+
+            // DungeonStairsInteract 대신 전용 컴포넌트 사용
+            var upInteract = upStairsInstance.GetComponent<DungeonStairsInteract>();
+            if (upInteract == null)
+                upInteract = upStairsInstance.AddComponent<DungeonStairsInteract>();
+            upInteract.dungeonController = this;
+            upInteract.goUp = true; // 위층으로
+
+            if (logGeneration)
+                Debug.Log($"[DungeonController] 위층 계단 생성 ({currentFloor}층): Start Room {currentFloorData.startRoom.Center}");
+        }
+
+        // === 다음 층 계단 (마지막 층 아닐 때만) ===
+        if (currentFloor < maxFloors && currentFloorData.stairsRoom != null && stairsPrefab != null)
+        {
+            Vector3 stairsPos = gridBoard.CellToWorld(currentFloorData.stairsRoom.Center);
+            stairsInstance = Instantiate(stairsPrefab, stairsPos, Quaternion.identity);
+            stairsInstance.name = "Stairs_Down";
+
+            var stairsInteract = stairsInstance.GetComponent<DungeonStairsInteract>();
+            if (stairsInteract == null)
+                stairsInteract = stairsInstance.AddComponent<DungeonStairsInteract>();
+            stairsInteract.dungeonController = this;
+            stairsInteract.goUp = false; // 아래층으로
+
+            if (logGeneration)
+                Debug.Log($"[DungeonController] 다음 층 계단 생성 ({currentFloor}층): Stairs Room {currentFloorData.stairsRoom.Center}");
         }
     }
 
@@ -956,6 +1006,7 @@ public class DungeonController : MonoBehaviour
 
         if (bossInstance != null) Destroy(bossInstance);
         if (stairsInstance != null) Destroy(stairsInstance);
+        if (upStairsInstance != null) Destroy(upStairsInstance);
         if (exitInstance != null) Destroy(exitInstance);
     }
 

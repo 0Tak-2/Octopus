@@ -257,6 +257,8 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     /// </summary>
     private IEnumerator DashAttack(Transform enemyTransform, Vector2Int fromCell, Vector2Int toCell)
     {
+        if (enemyTransform == null) yield break;
+
         Vector3 startPos = gridBoard.CellToWorld(fromCell);
         Vector3 targetPos = gridBoard.CellToWorld(toCell);
 
@@ -264,6 +266,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         float t = 0f;
         while (t < 1f)
         {
+            if (enemyTransform == null) yield break;
             t += Time.deltaTime / dashDuration;
             enemyTransform.position = Vector3.Lerp(startPos, targetPos, t);
             yield return null;
@@ -273,12 +276,14 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         t = 0f;
         while (t < 1f)
         {
+            if (enemyTransform == null) yield break;
             t += Time.deltaTime / dashDuration;
             enemyTransform.position = Vector3.Lerp(targetPos, startPos, t);
             yield return null;
         }
 
-        enemyTransform.position = startPos;
+        if (enemyTransform != null)
+            enemyTransform.position = startPos;
     }
 
     /// <summary>
@@ -286,6 +291,8 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     /// </summary>
     private IEnumerator RangedAttackEffect(Transform enemyTransform)
     {
+        if (enemyTransform == null) yield break;
+
         // SpriteRenderer 찾기
         SpriteRenderer sprite = enemyTransform.GetComponentInChildren<SpriteRenderer>();
         if (sprite == null)

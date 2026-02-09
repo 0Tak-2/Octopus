@@ -98,11 +98,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f689be65233723c4e8995dd6eda06212, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  interactKey: 101
+  interactKey: 102
   triggerRadius: 1.5
   promptUI: {fileID: 7365387684738227690}
   promptText: {fileID: 5033328480875674613}
-  promptMessage: "\uD544\uB4DC\uB85C \uBCF5\uADC0 (E)"
+  promptMessage: "\uD544\uB4DC\uB85C \uBCF5\uADC0 (F)"
   logInteraction: 1
 --- !u!1 &4688066514593950705
 GameObject:

@@ -14,6 +14,10 @@ public class DungeonStairsInteract : MonoBehaviour
     [Header("References")]
     public DungeonController dungeonController;
 
+    [Header("Direction")]
+    [Tooltip("위층으로 가는 계단인지 (true=위층, false=아래층)")]
+    public bool goUp = false;
+
     [Header("UI")]
     public GameObject promptUI;
     public TextMeshProUGUI promptText;
@@ -31,6 +35,12 @@ public class DungeonStairsInteract : MonoBehaviour
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
             player = playerObj.transform;
+
+        // 방향에 따라 프롬프트 메시지 설정
+        if (goUp)
+            promptMessage = "위층으로 (F)";
+        else
+            promptMessage = "다음 층으로 (F)";
 
         // 프롬프트 초기화
         if (promptUI != null)
@@ -65,11 +75,18 @@ public class DungeonStairsInteract : MonoBehaviour
 
     private void OnPlayerInteract()
     {
-        if (logInteraction)
-            Debug.Log("[DungeonStairs] 다음 층으로 이동");
+        if (dungeonController == null) return;
 
-        if (dungeonController != null)
+        if (goUp)
         {
+            if (logInteraction)
+                Debug.Log("[DungeonStairs] 위층으로 이동");
+            dungeonController.GoToPreviousFloor();
+        }
+        else
+        {
+            if (logInteraction)
+                Debug.Log("[DungeonStairs] 아래층으로 이동");
             dungeonController.GoToNextFloor();
         }
     }

@@ -2807,7 +2807,7 @@ TilemapRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.5, y: 0.5, z: 0}
+  m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -7411,7 +7411,7 @@ TilemapRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.5, y: 0.5, z: 0}
+  m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -9569,11 +9569,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 24bf99a069d4a0f45b2a423a80f36cb4, type: 2}
+  fieldDefinition: {fileID: 0}
   gridBoard: {fileID: 1867473543}
   mapRenderer: {fileID: 444427614}
   player: {fileID: 931578457}
   mapExitPrefab: {fileID: 0}
   mapEntrancePrefab: {fileID: 0}
+  dungeonEntrancePrefab: {fileID: 0}
+  seaweedPrefab: {fileID: 0}
+  coralPrefab: {fileID: 0}
+  rockPrefab: {fileID: 0}
+  sandPrefab: {fileID: 0}
+  spongePrefab: {fileID: 0}
   currentMap:
     width: 23
     height: 23
@@ -11410,12 +11417,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50144f570b19c6e40ad061d8aa1a5aad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHP: 100
+  baseMaxHP: 100
   maxFatigue: 100
   maxHunger: 100
+  equipmentMaxHPBonus: 0
+  relicMaxHPBonus: 0
   hp: 100
   fatigue: 100
   hunger: 100
+  baseATK: 10
+  baseDEF: 0
+  baseEVA: 0.05
+  baseCRIT: 0.05
+  baseCRIT_DMG: 1.5
+  bonusATK: 0
+  bonusDEF: 0
+  bonusEVA: 0
+  bonusCRIT: 0
+  bonusCRIT_DMG: 0
+  colorModuleATKPercent: 0
+  colorModuleEVAPercent: 0
+  colorModuleCRIT_DMGPercent: 0
+  colorModuleEVAPenalty: 0
+  colorModuleHealPenalty: 0
   drainIntervalTime: 5
   fatigueDrainPerInterval: 1
   hungerDrainPerInterval: 2
@@ -12635,64 +12659,6 @@ RectTransform:
   m_AnchoredPosition: {x: -129, y: 77}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &1177859468
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1177859470}
-  - component: {fileID: 1177859469}
-  m_Layer: 0
-  m_Name: FieldCombatSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1177859469
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1177859468}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 141c8bed19cadb148a1d126a5e25ba67, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 931578457}
-  gridBoard: {fileID: 0}
-  fieldTimeManager: {fileID: 1768082966}
-  playerStats: {fileID: 931578460}
-  enemy: {fileID: 0}
-  enemyTag: Enemy
-  disableEnemyOnDeath: 1
-  destroyEnemyOnDeath: 0
-  enemyStartsFirstOnDetect: 1
-  enemyTurnStartDelaySeconds: 0.3
-  stepMoveDuration: 0.12
-  dashDuration: 0.08
-  dashReturnDuration: 0.06
-  logTransitions: 1
---- !u!4 &1177859470
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1177859468}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17.83673, y: 23.266483, z: 0.80383575}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1202317276
 GameObject:
   m_ObjectHideFlags: 0
@@ -12768,7 +12734,7 @@ TilemapRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.5, y: 0.5, z: 0}
+  m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -17378,6 +17344,7 @@ MonoBehaviour:
   playerData:
     hp: 80
     maxHP: 100
+    baseMaxHP: 100
     fatigue: 60
     maxFatigue: 100
     hunger: 70
@@ -19573,7 +19540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 23
   height: 23
-  cellSize: 2
+  cellSize: 1
   origin: {x: 0, y: 0, z: 0}
   blockedMoveCells:
   - {x: 0, y: 0}
@@ -19851,7 +19818,7 @@ Grid:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1867473541}
   m_Enabled: 1
-  m_CellSize: {x: 2, y: 2, z: 0}
+  m_CellSize: {x: 1, y: 1, z: 1}
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
@@ -21708,7 +21675,6 @@ SceneRoots:
   - {fileID: 1202764715}
   - {fileID: 396861420}
   - {fileID: 344818797}
-  - {fileID: 1177859470}
   - {fileID: 1582121051}
   - {fileID: 444427615}
   - {fileID: 762836646}

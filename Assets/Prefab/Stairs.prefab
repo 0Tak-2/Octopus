@@ -46,12 +46,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e9fc1b6daa91c34690f8aced78975c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  interactKey: 101
+  interactKey: 102
   triggerRadius: 1.5
   dungeonController: {fileID: 0}
+  goUp: 0
   promptUI: {fileID: 7907326108528019660}
   promptText: {fileID: 327582887975803009}
-  promptMessage: "\uB2E4\uC74C \uCE35\uC73C\uB85C (E)"
+  promptMessage: "\uB2E4\uC74C \uCE35\uC73C\uB85C (F)"
   logInteraction: 1
 --- !u!212 &2956570057065649968
 SpriteRenderer:
