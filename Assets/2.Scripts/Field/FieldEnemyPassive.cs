@@ -33,13 +33,13 @@ public class FieldEnemyPassive : MonoBehaviour
     [Header("Flee Settings")]
     [Tooltip("Start fleeing when player is within this range")]
     public int fleeStartRange = 3;
-    
+
     [Tooltip("How far to flee when triggered")]
     public int fleeDistance = 4;
-    
+
     [Tooltip("Chance to move each turn while fleeing")]
     [Range(0f, 1f)] public float fleeMoveChance = 0.9f;
-    
+
     [Tooltip("How many turns to keep fleeing after trigger")]
     public int fleeDuration = 3;
 
@@ -136,7 +136,7 @@ public class FieldEnemyPassive : MonoBehaviour
     private void OnHit()
     {
         StartFleeing();
-        
+
         if (showDebugLogs)
             Debug.Log($"[Passive] {_enemy?.definition?.displayName ?? name} hit! Fleeing!");
     }
@@ -147,9 +147,25 @@ public class FieldEnemyPassive : MonoBehaviour
         {
             ShowAlertIcon("!");
         }
-        
+
         state = State.Fleeing;
         _fleeTimer = fleeDuration;
+    }
+
+
+    // LateUpdate: Animator position override fix
+    private void LateUpdate()
+    {
+        if (_enemy != null && _enemy.currentHP <= 0) return;
+        if (_moving) return;
+        if (occupancy == null || gridBoard == null) return;
+
+        if (occupancy.TryGetCurrentCell(transform, out var cell))
+        {
+            Vector3 correctPos = gridBoard.CellToWorld(cell);
+            if (Vector3.SqrMagnitude(transform.position - correctPos) > 0.01f)
+                transform.position = correctPos;
+        }
     }
 
     private void OnTimeAdvanced(int delta, int newTotalTime)
@@ -167,15 +183,22 @@ public class FieldEnemyPassive : MonoBehaviour
 
         Vector2Int myCell = GetMyCell();
 
-        // Check player proximity - start fleeing if too close
+        // Check player proximity - start fleeing if too close AND visible
         if (player != null && state != State.Fleeing)
         {
             Vector2Int pCell = gridBoard.WorldToCell(player.position);
             int dist = FieldCombatUtils.Chebyshev(myCell, pCell);
-            
+
             if (dist <= fleeStartRange)
             {
-                StartFleeing();
+                // LoS check - only flee if can see player
+                var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+                bool canSee = true;
+                if (visionSys != null)
+                    canSee = visionSys.CanSeePlayer(myCell, pCell);
+
+                if (canSee)
+                    StartFleeing();
             }
         }
 
@@ -238,17 +261,17 @@ public class FieldEnemyPassive : MonoBehaviour
             return;
 
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
-        
+
         // Find direction away from player
         Vector2Int fleeDir = myCell - pCell;
-        
+
         // Normalize to unit direction
         int dx = fleeDir.x == 0 ? 0 : (fleeDir.x > 0 ? 1 : -1);
         int dy = fleeDir.y == 0 ? 0 : (fleeDir.y > 0 ? 1 : -1);
 
         // Try to move away
         Vector2Int[] candidates = GetFleeCandidates(myCell, dx, dy);
-        
+
         foreach (var candidate in candidates)
         {
             if (IsWalkable(candidate) && !IsOccupiedByOther(candidate))
@@ -358,23 +381,23 @@ public class FieldEnemyPassive : MonoBehaviour
         int bestDist = FieldCombatUtils.Chebyshev(from, goal);
 
         for (int dx = -1; dx <= 1; dx++)
-        for (int dy = -1; dy <= 1; dy++)
-        {
-            if (dx == 0 && dy == 0) continue;
-            if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
-
-            Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
-
-            if (!IsWalkable(n)) continue;
-            if (IsOccupiedByOther(n)) continue;
-
-            int d = FieldCombatUtils.Chebyshev(n, goal);
-            if (d < bestDist)
+            for (int dy = -1; dy <= 1; dy++)
             {
-                bestDist = d;
-                best = n;
+                if (dx == 0 && dy == 0) continue;
+                if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
+
+                Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
+
+                if (!IsWalkable(n)) continue;
+                if (IsOccupiedByOther(n)) continue;
+
+                int d = FieldCombatUtils.Chebyshev(n, goal);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = n;
+                }
             }
-        }
 
         return best;
     }

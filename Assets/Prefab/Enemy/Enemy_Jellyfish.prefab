@@ -169,7 +169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerMover: {fileID: 0}
   grid: {fileID: 0}
-  definition: {fileID: 0}
+  definition: {fileID: 11400000, guid: b326ce450269e6e448694f83eb46a117, type: 2}
   enemyInstance: {fileID: 0}
   playerStats: {fileID: 0}
   promptText: {fileID: 0}

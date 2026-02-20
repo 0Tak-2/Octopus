@@ -158,6 +158,15 @@ public class FieldMapGenerator : MonoBehaviour
         // 10. 자원 생성
         SpawnResources();
 
+        // 10-1. 시야 시스템에 엄폐물(산호/해초) 등록
+        var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+        if (visionSys != null)
+        {
+            visionSys.RefreshCoverCells();
+            if (logGeneration)
+                Debug.Log("[FieldMapGenerator] 시야 시스템 엄폐물 등록 완료");
+        }
+
         // 11. 맵 출구/입구 생성
         SpawnMapConnections();
 
@@ -216,6 +225,11 @@ public class FieldMapGenerator : MonoBehaviour
         SpawnDungeonEntrances();
         SpawnEnemies();
         SpawnMapConnections();
+
+        // 시야 시스템에 엄폐물 등록 (씬에 이미 배치된 해초/산호 포함)
+        var visionSys2 = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+        if (visionSys2 != null)
+            visionSys2.RefreshCoverCells();
 
         if (logGeneration)
         {

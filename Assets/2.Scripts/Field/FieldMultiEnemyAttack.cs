@@ -56,6 +56,12 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     {
         _isProcessing = true;
 
+        // ✅ 적 이동 완료 대기 (StepMove 코루틴 완료)
+        yield return new WaitForSeconds(0.1f);
+
+        // ✅ 모든 적의 transform.position을 occupancy 기준으로 동기화
+        SyncAllEnemyPositions();
+
         // 1. 주변 적들 찾기
         List<EnemyInstance> nearbyEnemies = FindNearbyEnemies();
 
@@ -133,7 +139,17 @@ public class FieldMultiEnemyAttack : MonoBehaviour
             yield break;
         }
 
-        Vector2Int enemyCell = gridBoard.WorldToCell(enemy.transform.position);
+        // ✅ Occupancy 기준 셀 사용 (transform.position과 불일치 방지)
+        Vector2Int enemyCell;
+        var occ = GridOccupancyRegistry.Instance;
+        if (occ != null && occ.TryGetCurrentCell(enemy.transform, out var occCell))
+            enemyCell = occCell;
+        else
+            enemyCell = gridBoard.WorldToCell(enemy.transform.position);
+
+        // ✅ 공격 전에 transform.position을 occupancy 셀로 동기화
+        enemy.transform.position = gridBoard.CellToWorld(enemyCell);
+
         Vector2Int playerCell = gridBoard.WorldToCell(player.position);
 
         int distance = Chebyshev(enemyCell, playerCell);
@@ -255,6 +271,26 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     /// <summary>
     /// 대시 공격 애니메이션
     /// </summary>
+    /// <summary>
+    /// 모든 적의 transform.position을 GridOccupancyRegistry 기준으로 동기화
+    /// (StepMove 코루틴과 DashAttack 사이의 위치 불일치 방지)
+    /// </summary>
+    private void SyncAllEnemyPositions()
+    {
+        var occ = GridOccupancyRegistry.Instance;
+        if (occ == null || gridBoard == null) return;
+
+        EnemyInstance[] allEnemies = FindObjectsOfType<EnemyInstance>();
+        foreach (var enemy in allEnemies)
+        {
+            if (enemy == null || enemy.currentHP <= 0) continue;
+            if (occ.TryGetCurrentCell(enemy.transform, out var cell))
+            {
+                enemy.transform.position = gridBoard.CellToWorld(cell);
+            }
+        }
+    }
+
     private IEnumerator DashAttack(Transform enemyTransform, Vector2Int fromCell, Vector2Int toCell)
     {
         if (enemyTransform == null) yield break;

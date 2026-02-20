@@ -124,13 +124,29 @@ public class FieldEnemyNeutral : MonoBehaviour
         {
             state = State.Hostile;
             ShowAlertIcon("!");
-            
+
             if (showDebugLogs)
                 Debug.Log($"[Neutral] {_enemy?.definition?.displayName ?? name} became hostile!");
         }
-        
+
         // Reset/extend hostile timer
         _hostileTimer = hostileDuration;
+    }
+
+
+    // LateUpdate: Animator position override fix
+    private void LateUpdate()
+    {
+        if (_enemy != null && _enemy.currentHP <= 0) return;
+        if (_moving) return;
+        if (occupancy == null || gridBoard == null) return;
+
+        if (occupancy.TryGetCurrentCell(transform, out var cell))
+        {
+            Vector3 correctPos = gridBoard.CellToWorld(cell);
+            if (Vector3.SqrMagnitude(transform.position - correctPos) > 0.01f)
+                transform.position = correctPos;
+        }
     }
 
     private void OnTimeAdvanced(int delta, int newTotalTime)
@@ -217,6 +233,14 @@ public class FieldEnemyNeutral : MonoBehaviour
             return;
         }
 
+        // LoS check - can't chase through walls
+        var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+        if (visionSys != null && !visionSys.CanSeePlayer(myCell, pCell))
+        {
+            // Can't see player - stop chasing
+            return;
+        }
+
         // Adjacent = attack handled by FieldMultiEnemyAttack
         if (dist <= 1)
             return;
@@ -273,23 +297,23 @@ public class FieldEnemyNeutral : MonoBehaviour
         int bestDist = FieldCombatUtils.Chebyshev(from, goal);
 
         for (int dx = -1; dx <= 1; dx++)
-        for (int dy = -1; dy <= 1; dy++)
-        {
-            if (dx == 0 && dy == 0) continue;
-            if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
-
-            Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
-
-            if (!IsWalkable(n)) continue;
-            if (IsOccupiedByOther(n)) continue;
-
-            int d = FieldCombatUtils.Chebyshev(n, goal);
-            if (d < bestDist)
+            for (int dy = -1; dy <= 1; dy++)
             {
-                bestDist = d;
-                best = n;
+                if (dx == 0 && dy == 0) continue;
+                if (!allowDiagonal && Mathf.Abs(dx) + Mathf.Abs(dy) == 2) continue;
+
+                Vector2Int n = new Vector2Int(from.x + dx, from.y + dy);
+
+                if (!IsWalkable(n)) continue;
+                if (IsOccupiedByOther(n)) continue;
+
+                int d = FieldCombatUtils.Chebyshev(n, goal);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = n;
+                }
             }
-        }
 
         return best;
     }
