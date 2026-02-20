@@ -1,8 +1,8 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// ÇÃ·¹ÀÌ¾î »óÈ£ÀÛ¿ë - FÅ°·Î Ã¤Áý/½Àµæ
+/// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ - FÅ°ï¿½ï¿½ Ã¤ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½
 /// </summary>
 public class PlayerInteraction : MonoBehaviour
 {
@@ -24,11 +24,8 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
-        // UI Å¬¸¯ ÁßÀÌ¸é ÀÔ·Â ¹«½Ã
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            return;
-
-        // FÅ° ÀÔ·Â
+        // UI Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // FÅ° ï¿½Ô·ï¿½
         if (Input.GetKeyDown(KeyCode.F))
         {
             TryInteract();
@@ -36,11 +33,11 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// »óÈ£ÀÛ¿ë ½Ãµµ
+    /// ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½Ãµï¿½
     /// </summary>
     private void TryInteract()
     {
-        // 1. ¶³¾îÁø ¾ÆÀÌÅÛ Ã¼Å©
+        // 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
         DroppedItem nearestItem = FindNearestDroppedItem();
         if (nearestItem != null)
         {
@@ -48,7 +45,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 2. Ã¤Áý °¡´ÉÇÑ ¿ÀºêÁ§Æ® Ã¼Å© (ÇØÃÊ, »êÈ£, Á¶°³ µî)
+        // 2. Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ã¼Å© (ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½È£, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
         Harvestable nearestHarvestable = FindNearestHarvestable();
         if (nearestHarvestable != null)
         {
@@ -61,7 +58,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// °¡Àå °¡±î¿î ¶³¾îÁø ¾ÆÀÌÅÛ Ã£±â
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½
     /// </summary>
     private DroppedItem FindNearestDroppedItem()
     {
@@ -69,18 +66,18 @@ public class PlayerInteraction : MonoBehaviour
         DroppedItem nearest = null;
         float nearestDist = float.MaxValue;
 
-        // ÇÃ·¹ÀÌ¾î ¼¿ À§Ä¡
+        // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡
         Vector2Int playerCell = gridBoard != null ? gridBoard.WorldToCell(transform.position) : Vector2Int.zero;
 
         foreach (var item in items)
         {
-            // ±×¸®µå ±â¹Ý °Å¸® Ã¼Å©
+            // ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½ Ã¼Å©
             Vector2Int itemCell = gridBoard != null ? gridBoard.WorldToCell(item.transform.position) : Vector2Int.zero;
             int gridDistance = Mathf.Abs(playerCell.x - itemCell.x) + Mathf.Abs(playerCell.y - itemCell.y);
 
             float worldDist = Vector3.Distance(transform.position, item.transform.position);
 
-            // °°Àº Ä­(0)¸¸ Çã¿ë
+            // ï¿½ï¿½ï¿½ï¿½ Ä­(0)ï¿½ï¿½ ï¿½ï¿½ï¿½
             if (gridDistance == 0 && worldDist < nearestDist)
             {
                 nearest = item;
@@ -92,7 +89,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// °¡Àå °¡±î¿î Ã¤Áý °¡´É ¿ÀºêÁ§Æ® Ã£±â
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ã£ï¿½ï¿½
     /// </summary>
     private Harvestable FindNearestHarvestable()
     {
@@ -103,21 +100,21 @@ public class PlayerInteraction : MonoBehaviour
         Harvestable nearest = null;
         float nearestDist = float.MaxValue;
 
-        // ÇÃ·¹ÀÌ¾î ¼¿ À§Ä¡
+        // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡
         Vector2Int playerCell = gridBoard != null ? gridBoard.WorldToCell(transform.position) : Vector2Int.zero;
 
         foreach (var harvestable in harvestables)
         {
             if (harvestable.isHarvested) continue;
 
-            // ±×¸®µå ±â¹Ý °Å¸® Ã¼Å©
+            // ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½ Ã¼Å©
             Vector2Int harvestableCell = gridBoard != null ? gridBoard.WorldToCell(harvestable.transform.position) : Vector2Int.zero;
             int gridDistance = Mathf.Abs(playerCell.x - harvestableCell.x) + Mathf.Abs(playerCell.y - harvestableCell.y);
 
             float worldDist = Vector3.Distance(transform.position, harvestable.transform.position);
             Debug.Log($"[Interaction] {harvestable.itemName} at grid distance {gridDistance} (world: {worldDist:F2})");
 
-            // °°Àº Ä­(0)¸¸ Çã¿ë
+            // ï¿½ï¿½ï¿½ï¿½ Ä­(0)ï¿½ï¿½ ï¿½ï¿½ï¿½
             if (gridDistance == 0 && worldDist < nearestDist)
             {
                 nearest = harvestable;
@@ -138,7 +135,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛ ÁÝ±â (1ÅÏ ¼Ò¸ð)
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½ (1ï¿½ï¿½ ï¿½Ò¸ï¿½)
     /// </summary>
     private void PickupItem(DroppedItem item)
     {
@@ -147,53 +144,53 @@ public class PlayerInteraction : MonoBehaviour
         if (showDebugLogs)
             Debug.Log($"[Interaction] Picking up {item.itemName}");
 
-        // ¾ÆÀÌÅÛ ÁÝ±â (ÇÃ·¹ÀÌ¾î À§Ä¡ Àü´Þ)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½ (ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½)
         item.Pickup(transform.position);
 
-        // 1ÅÏ ¼Ò¸ð
+        // 1ï¿½ï¿½ ï¿½Ò¸ï¿½
         if (fieldTimeManager != null)
         {
             fieldTimeManager.Advance(1);
         }
 
-        // Àûµé ¹Ý°Ý
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ý°ï¿½
         TriggerEnemyTurn();
     }
 
     /// <summary>
-    /// Ã¤Áý °¡´É ¿ÀºêÁ§Æ® Ã¤Áý (1ÅÏ ¼Ò¸ð)
+    /// Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ã¤ï¿½ï¿½ (1ï¿½ï¿½ ï¿½Ò¸ï¿½)
     /// </summary>
     private void HarvestObject(Harvestable harvestable)
     {
         if (harvestable == null) return;
 
-        // Ã¤Áý °¡´ÉÇÑÁö È®ÀÎ (µµ±¸ Ã¼Å©)
+        // Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ Ã¼Å©)
         string reason;
         if (!harvestable.CanHarvest(out reason))
         {
             Debug.Log($"[Interaction] Cannot harvest: {reason}");
-            // °æ°í ¸Þ½ÃÁö´Â Console¿¡¸¸ Ç¥½Ã
+            // ï¿½ï¿½ï¿½ ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ Consoleï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
             return;
         }
 
         if (showDebugLogs)
             Debug.Log($"[Interaction] Harvesting {harvestable.itemName}");
 
-        // Ã¤Áý
+        // Ã¤ï¿½ï¿½
         harvestable.Harvest();
 
-        // 1ÅÏ ¼Ò¸ð
+        // 1ï¿½ï¿½ ï¿½Ò¸ï¿½
         if (fieldTimeManager != null)
         {
             fieldTimeManager.Advance(1);
         }
 
-        // Àûµé ¹Ý°Ý
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ý°ï¿½
         TriggerEnemyTurn();
     }
 
     /// <summary>
-    /// Àû ÅÏ ¹ßµ¿
+    /// ï¿½ï¿½ ï¿½ï¿½ ï¿½ßµï¿½
     /// </summary>
     private void TriggerEnemyTurn()
     {

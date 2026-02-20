@@ -10,11 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8a020d914c04e841ad37e57f03d57a3, type: 3}
-  m_Name: Throw
+  m_Name: Slash
   m_EditorClassIdentifier: 
-  displayName: Throw
+  displayName: Slash
+  description: "\uC124\uBA85"
+  icon: {fileID: 0}
+  kind: 0
   apCost: 1
-  damage: 1
-  range: 2
+  damage: 30
+  range: 1
   pattern: 0
   requireEnemyOnTarget: 1
+  buffTurns: 6
+  damageMultiplier: 2
+  buffStatusIcon: {fileID: 0}
+  enableFieldTrigger: 0
+  fieldTrigger:
+    triggerType: 0
+    chance: 0
+    cooldownTurns: 0
+    param: 0
+  fieldResolutionType: 0
+  fieldDamageOverride: 0
+  fieldStatusTag: 

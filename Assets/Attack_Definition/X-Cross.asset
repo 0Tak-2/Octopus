@@ -17,7 +17,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   kind: 0
   apCost: 2
-  damage: 1
+  damage: 10
   range: 2
   pattern: 2
   requireEnemyOnTarget: 0
