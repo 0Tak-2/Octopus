@@ -21176,6 +21176,10 @@ PrefabInstance:
       propertyPath: fieldTimeManager
       value: 
       objectReference: {fileID: 1768082966}
+    - target: {fileID: 2472577130339570172, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
+      propertyPath: playerStats
+      value: 
+      objectReference: {fileID: 931578460}
     - target: {fileID: 3519355663358756076, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: fieldTime
       value: 

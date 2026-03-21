@@ -70,6 +70,7 @@ public class FieldEnemyNeutral : MonoBehaviour
         if (occupancy != null && gridBoard != null)
         {
             Vector2Int myCell = gridBoard.WorldToCell(transform.position);
+            transform.position = gridBoard.CellToWorld(myCell);  // ← 이 줄 추가
             occupancy.TryOccupy(transform, myCell);
         }
 
@@ -416,7 +417,7 @@ public class FieldEnemyNeutral : MonoBehaviour
         textMesh.characterSize = 0.1f;
 
         alert.AddComponent<Billboard>();
-
+        
         return alert;
     }
 

@@ -68,6 +68,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (occupancy != null && gridBoard != null)
         {
             Vector2Int myCell = gridBoard.WorldToCell(transform.position);
+            transform.position = gridBoard.CellToWorld(myCell);  // ← 이 줄 추가
             occupancy.TryOccupy(transform, myCell);
         }
 
