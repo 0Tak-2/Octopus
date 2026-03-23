@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 701
   itemName: BoneOrnament
-  icon: {fileID: 0}
+  icon: {fileID: 1513426749, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
   itemType: 5
   maxStackSize: 99

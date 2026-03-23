@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 603
   itemName: FlexibleArmor
-  icon: {fileID: 0}
+  icon: {fileID: -1402710781, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
   itemType: 4
   maxStackSize: 99

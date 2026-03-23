@@ -15,7 +15,7 @@ MonoBehaviour:
   moduleName: "\uD3EC\uC2DD"
   description: "\uC801 HP 20% \uC774\uD558 \uC2DC \uCC98\uD615 + \uD53C\uD574 100%
     \uD68C\uBCF5"
-  icon: {fileID: 0}
+  icon: {fileID: 1975994686, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   colorType: 0
   moduleType: 1
   apCost: 0

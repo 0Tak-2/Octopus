@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 503
   itemName: HeavyTentacleWeight
-  icon: {fileID: 0}
+  icon: {fileID: -1653300936, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
   itemType: 3
   maxStackSize: 99

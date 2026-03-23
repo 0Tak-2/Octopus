@@ -15,7 +15,7 @@ MonoBehaviour:
   moduleName: "\uB0A0\uCE74\uB85C\uC6B4\uCD09\uC218"
   description: "\uCD9C\uD608 \uBD80\uC5EC. \uC774\uBBF8 \uCD9C\uD608\uC774\uBA74
     ATK 40% \uCD94\uAC00 \uD53C\uD574"
-  icon: {fileID: 0}
+  icon: {fileID: 955771971, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   colorType: 0
   moduleType: 0
   apCost: 1

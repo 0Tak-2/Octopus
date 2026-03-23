@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 601
   itemName: ShellArmor
-  icon: {fileID: 0}
+  icon: {fileID: 1352887425, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
   itemType: 4
   maxStackSize: 99

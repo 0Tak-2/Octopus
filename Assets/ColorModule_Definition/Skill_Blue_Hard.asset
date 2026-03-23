@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moduleName: "\uB2E8\uB2E8\uD55C\uCD09\uC218"
   description: "\uBD88\uC644\uC804 \uBD80\uC5EC (\uCD5C\uB300 4\uC911\uCCA9)"
-  icon: {fileID: 0}
+  icon: {fileID: -1640590729, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   colorType: 1
   moduleType: 0
   apCost: 1

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   equipmentName: "\uBB34\uAC70\uC6B4 \uCD09\uC218 \uCD94"
   description: "\uC7A5\uBE44 \uC124\uBA85"
-  icon: {fileID: 0}
+  icon: {fileID: -1653300936, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 0
   bonusATK: 2
   bonusDEF: 0

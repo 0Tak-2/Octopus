@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 502
   itemName: BladedTentacle
-  icon: {fileID: 0}
+  icon: {fileID: 1277363584, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
   itemType: 3
   maxStackSize: 99

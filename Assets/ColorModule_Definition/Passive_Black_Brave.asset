@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moduleName: "\uC6A9\uB9F9\uD568"
   description: "\uC801 HP \uB192\uC744\uC218\uB85D ATK \uC99D\uAC00 (100%\u2192+25%)"
-  icon: {fileID: 0}
+  icon: {fileID: 346236799, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   colorType: 2
   moduleType: 1
   apCost: 0
