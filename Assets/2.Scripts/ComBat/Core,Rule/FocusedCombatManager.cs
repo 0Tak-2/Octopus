@@ -721,6 +721,14 @@ public class FocusedCombatManager : MonoBehaviour
     // ==========================
     private void HandleTileClicked(int x, int y)
     {
+        // 색 모듈 스킬 타일 선택 (늘어나는촉수 등)
+        var skillBar = FindObjectOfType<CombatSkillBarUI>();
+        if (skillBar != null && skillBar.IsSkillSelected)
+        {
+            skillBar.OnTileClicked(x, y);
+            return;  // ← 스킬 선택 중이면 이동 안 함
+        }
+
         if (actionController != null && actionController.IsInActionMode)
         {
             actionController.OnTileClicked(x, y);
@@ -1045,6 +1053,8 @@ public class FocusedCombatManager : MonoBehaviour
             hpText.text = $"HP: {State.playerHP}/{_effectivePlayerMaxHP}";
 
         if (hud != null) hud.RefreshAll();
+        var skillBar = FindObjectOfType<CombatSkillBarUI>();
+        if (skillBar != null) skillBar.RefreshButtonStates();
     }
 
     private void RefreshMoveHighlights()

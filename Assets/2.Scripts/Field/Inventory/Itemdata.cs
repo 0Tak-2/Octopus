@@ -18,26 +18,35 @@ public class ItemData : ScriptableObject
     [Header("속성")]
     public ItemType itemType;
     public int maxStackSize = 99;
-    
+
     [Header("장비 연결 (ItemType이 Weapon/Armor/Accessory일 때)")]
     [Tooltip("이 아이템이 장비라면 EquipmentDefinition 연결")]
     public EquipmentDefinition equipmentDefinition;
-    
+
+    [Header("색 모듈 연결 (ItemType이 ColorModule일 때)")]
+    [Tooltip("이 아이템이 색 모듈이라면 ColorModuleDefinition 연결")]
+    public ColorModuleDefinition colorModuleDefinition;
+
     [Header("소비 효과 (Food/Consumable)")]
     [Tooltip("배고픔 회복량")]
     public int hungerRestore = 0;
-    
+
     [Tooltip("HP 회복량")]
     public int hpRestore = 0;
-    
+
     [Tooltip("피로 회복량")]
     public int fatigueRestore = 0;
-    
+
     /// <summary>
     /// 장비 가능한 아이템인지
     /// </summary>
     public bool IsEquipable => equipmentDefinition != null;
-    
+
+    /// <summary>
+    /// 색 모듈 아이템인지
+    /// </summary>
+    public bool IsColorModule => colorModuleDefinition != null;
+
     /// <summary>
     /// 소비 가능한 아이템인지
     /// </summary>
@@ -49,12 +58,13 @@ public class ItemData : ScriptableObject
 /// </summary>
 public enum ItemType
 {
-    Resource,    // 자원 (해초, 산호)
-    Food,        // 음식
-    Tool,        // 도구
-    Weapon,      // 무기
-    Armor,       // 갑옷
-    Accessory,   // 장신구
-    Material,    // 제작 재료
-    Consumable   // 소비 아이템 (회복 등)
+    Resource,      // 자원 (해초, 산호)
+    Food,          // 음식
+    Tool,          // 도구
+    Weapon,        // 무기
+    Armor,         // 갑옷
+    Accessory,     // 장신구
+    Material,      // 제작 재료
+    Consumable,    // 소비 아이템 (회복 등)
+    ColorModule    // 색 모듈
 }

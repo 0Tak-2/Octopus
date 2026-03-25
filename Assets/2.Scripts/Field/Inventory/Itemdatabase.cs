@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 아이템 데이터베이스 - 모든 아이템 정보 관리
+/// 아이템 데이터베이스 - 모든 아이템 정보
 /// </summary>
 public class ItemDatabase : MonoBehaviour
 {
     public static ItemDatabase Instance { get; private set; }
 
-    [Header("아이템 데이터")]
+    [Header("아이템 목록")]
     public List<ItemData> itemDataList = new List<ItemData>();
 
     private Dictionary<int, ItemData> itemDataDict = new Dictionary<int, ItemData>();
@@ -22,12 +22,11 @@ public class ItemDatabase : MonoBehaviour
         }
         Instance = this;
 
-        // Dictionary 구성
         BuildDatabase();
     }
 
     /// <summary>
-    /// 데이터베이스 구성
+    /// 데이터베이스 구축
     /// </summary>
     private void BuildDatabase()
     {
@@ -45,7 +44,7 @@ public class ItemDatabase : MonoBehaviour
     }
 
     /// <summary>
-    /// 아이템 데이터 가져오기
+    /// ID로 아이템 검색
     /// </summary>
     public ItemData GetItemData(int itemID)
     {
@@ -55,6 +54,38 @@ public class ItemDatabase : MonoBehaviour
         }
 
         Debug.LogWarning($"[ItemDatabase] Item ID {itemID} not found!");
+        return null;
+    }
+
+    /// <summary>
+    /// EquipmentDefinition으로 ItemData 역검색
+    /// </summary>
+    public ItemData GetItemByEquipment(EquipmentDefinition equipDef)
+    {
+        if (equipDef == null) return null;
+
+        foreach (var data in itemDataList)
+        {
+            if (data != null && data.equipmentDefinition == equipDef)
+                return data;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ColorModuleDefinition으로 ItemData 역검색
+    /// </summary>
+    public ItemData GetItemByColorModule(ColorModuleDefinition moduleDef)
+    {
+        if (moduleDef == null) return null;
+
+        foreach (var data in itemDataList)
+        {
+            if (data != null && data.colorModuleDefinition == moduleDef)
+                return data;
+        }
+
         return null;
     }
 }

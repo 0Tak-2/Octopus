@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3912992ade212044788e759f03e1ace1, type: 3}
+  m_Name: Skill_Black_Rage
+  m_EditorClassIdentifier: 
+  itemID: 810
+  itemName: "\uC751\uC9D5\uD558\uB294\uCD09\uC218"
+  icon: {fileID: 992063852, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  description: 
+  itemType: 8
+  maxStackSize: 99
+  equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 11400000, guid: 516ca7f7b83b5b8458622c6ec1b63b93, type: 2}
+  hungerRestore: 0
+  hpRestore: 0
+  fatigueRestore: 0
