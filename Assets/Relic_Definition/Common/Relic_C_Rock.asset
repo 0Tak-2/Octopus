@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uB9E4\uB048\uD55C \uC554\uC11D \uD30C\uD3B8"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_C__ROCK
+  descKey: RELIC_DESC_C__ROCK
   rarity: 0
   bonusMaxHP: 0
   bonusATKPercent: 0

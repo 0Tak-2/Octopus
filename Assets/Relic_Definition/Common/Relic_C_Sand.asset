@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uBBF8\uC138\uD55C \uBAA8\uB798\uC8FC\uBA38\uB2C8"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_C__SAND
+  descKey: RELIC_DESC_C__SAND
   rarity: 0
   bonusMaxHP: 0
   bonusATKPercent: 0

@@ -16,6 +16,8 @@ MonoBehaviour:
   description: "\uC801 \uC0C1\uD0DC\uC774\uC0C1 1\uAC1C\uB2F9 ATK +6% (\uCD5C\uB300
     30%)"
   icon: {fileID: -127904726, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  nameKey: PASSIVE_NAME_SENSE
+  descKey: PASSIVE_DESC_SENSE
   colorType: 0
   moduleType: 1
   apCost: 0

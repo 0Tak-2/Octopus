@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uC555\uCD95\uB41C \uD574\uCD08 \uC12C\uC720"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_R__SEAWEED
+  descKey: RELIC_DESC_R__SEAWEED
   rarity: 1
   bonusMaxHP: 0
   bonusATKPercent: 0

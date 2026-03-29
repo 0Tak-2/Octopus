@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/1.Scene/GameScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
   - enabled: 1
@@ -14,4 +14,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/1.Scene/DungeonScene.unity
     guid: 4647bdb28d4cc4847ae11354ea404304
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 6cb7a76690f063a42843c38c1e58873b, type: 2}
+    com.unity.localization.settings: {fileID: 11400000, guid: 728a3294e79fe8e4594ac9504a1f234d, type: 2}

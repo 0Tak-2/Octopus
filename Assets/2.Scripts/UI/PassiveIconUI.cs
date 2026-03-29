@@ -98,7 +98,9 @@ public class PassiveIconUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         
         if (tooltipText != null)
         {
-            string text = $"<b>{def.moduleName}</b>\n";
+            string localName = !string.IsNullOrEmpty(def.nameKey)
+    ? LocalizationManager.T(def.nameKey) : def.moduleName;
+            string text = $"<b>{localName}</b>\n";
             text += $"<color=#{ColorUtility.ToHtmlStringRGB(GetColorTypeColor(def.colorType))}>{def.colorType} Passive</color>\n\n";
             text += def.description;
             

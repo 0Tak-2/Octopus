@@ -15,6 +15,8 @@ MonoBehaviour:
   moduleName: "\uCE58\uBA85\uC801\uC778\uCD09\uC218"
   description: "\uD574\uB2F9 \uC801 \uCCAB \uACF5\uACA9 \uC2DC \uD655\uC815 \uCE58\uBA85\uD0C0"
   icon: {fileID: -427409950, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  nameKey: SKILL_NAME_CRIT
+  descKey: SKILL_DESC_CRIT
   colorType: 2
   moduleType: 0
   apCost: 1

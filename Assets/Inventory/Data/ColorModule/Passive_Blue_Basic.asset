@@ -16,6 +16,8 @@ MonoBehaviour:
   itemName: "\uAE30\uBCF8\uAE30"
   icon: {fileID: 1491509113, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   description: 
+  nameKey: PASSIVE_NAME_BASIC
+  descKey: PASSIVE_DESC_BASIC
   itemType: 8
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}

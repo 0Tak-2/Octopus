@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Weapon_Bladed
   m_EditorClassIdentifier: 
   equipmentName: "\uB0A0\uBD99\uC774 \uCD09\uC218"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uC544\uC8FC \uB0A0\uCE74\uB85C\uC6CC\uBCF4\uC774\uB294 \uCD09\uC218"
+  nameKey: EQUIP_NAME_BLADED
+  descKey: EQUIP_DESC_BLADED
   icon: {fileID: 1277363584, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 0
   bonusATK: 3

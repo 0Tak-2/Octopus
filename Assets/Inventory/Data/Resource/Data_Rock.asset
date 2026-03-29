@@ -16,5 +16,12 @@ MonoBehaviour:
   itemName: Rock
   icon: {fileID: 21300000, guid: fa29a65a57fbe2f40b3f18125ecfcc2c, type: 3}
   description: Winpaper. need pickaxe
+  nameKey: ITEM_NAME_ROCK
+  descKey: ITEM_DESC_ROCK
   itemType: 0
   maxStackSize: 99
+  equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
+  hungerRestore: 0
+  hpRestore: 0
+  fatigueRestore: 0

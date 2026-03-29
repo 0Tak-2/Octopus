@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uD3EC\uC2DD\uC790\uC758 \uCD09\uC218 \uACE0\uB9AC"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_E__PREDATOR
+  descKey: RELIC_DESC_E__PREDATOR
   rarity: 2
   bonusMaxHP: 0
   bonusATKPercent: 0.05

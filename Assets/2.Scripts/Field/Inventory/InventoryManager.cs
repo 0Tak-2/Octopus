@@ -180,7 +180,11 @@ public class InventoryManager : MonoBehaviour
         // 플로팅 텍스트 표시 (선택적)
         if (showFloatingText)
         {
-            ShowPickupText(itemName, count, playerPosition);
+            var data = ItemDatabase.Instance?.GetItemData(itemID);
+            string localizedName = (data != null && !string.IsNullOrEmpty(data.nameKey))
+                ? LocalizationManager.T(data.nameKey)
+                : itemName;
+            ShowPickupText(localizedName, count, playerPosition);
         }
 
         // 인벤토리가 열려있으면 UI 갱신

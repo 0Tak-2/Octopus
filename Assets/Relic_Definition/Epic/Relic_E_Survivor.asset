@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uC2EC\uD574 \uC0DD\uC874\uC790\uC758 \uD754\uC801"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_E__SURVIVOR
+  descKey: RELIC_DESC_E__SURVIVOR
   rarity: 2
   bonusMaxHP: 5
   bonusATKPercent: 0

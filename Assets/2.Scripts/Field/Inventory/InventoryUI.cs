@@ -124,11 +124,17 @@ public class InventoryUI : MonoBehaviour
 
         detailPanel.SetActive(true);
 
-        if (detailItemName != null)
-            detailItemName.text = item.itemName;
-
-        if (detailDescription != null)
-            detailDescription.text = item.description;
+        var itemData = ItemDatabase.Instance?.GetItemData(item.itemID);
+        if (itemData != null && !string.IsNullOrEmpty(itemData.nameKey))
+        {
+            detailItemName.text = LocalizationManager.T(itemData.nameKey);
+            detailDescription.text = LocalizationManager.T(itemData.descKey);
+        }
+        else
+        {
+            detailItemName.text = item.itemName;       // 폴백
+            detailDescription.text = item.description; // 폴백
+        }
 
         if (detailIcon != null && item.icon != null)
         {

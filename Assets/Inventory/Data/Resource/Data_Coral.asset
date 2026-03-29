@@ -16,5 +16,12 @@ MonoBehaviour:
   itemName: Coral
   icon: {fileID: 21300000, guid: 0c41539e974862d4596cb99941469e95, type: 3}
   description: "\uC0B0\uD638\uB2E4. \uC774\uC820 \uAEBE\uC778."
+  nameKey: ITEM_NAME_CORAL
+  descKey: ITEM_DESC_CORAL
   itemType: 0
   maxStackSize: 99
+  equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
+  hungerRestore: 0
+  hpRestore: 0
+  fatigueRestore: 0

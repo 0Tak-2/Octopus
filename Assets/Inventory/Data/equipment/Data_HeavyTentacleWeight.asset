@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: HeavyTentacleWeight
   icon: {fileID: -1653300936, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_HEAVY
+  descKey: EQUIP_DESC_HEAVY
   itemType: 3
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: d421369232ce06846984886bea597b0c, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

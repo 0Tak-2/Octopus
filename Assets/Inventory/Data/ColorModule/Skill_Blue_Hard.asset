@@ -16,6 +16,8 @@ MonoBehaviour:
   itemName: "\uB2E8\uB2E8\uD55C\uCD09\uC218"
   icon: {fileID: -1640590729, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   description: 
+  nameKey: SKILL_NAME_HARD
+  descKey: SKILL_DESC_HARD
   itemType: 8
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}

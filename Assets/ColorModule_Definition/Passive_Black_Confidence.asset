@@ -15,6 +15,8 @@ MonoBehaviour:
   moduleName: "\uC790\uC2E0\uAC10"
   description: "\uB0B4 HP \uBE44\uB840 ATK \uC99D\uAC00 (100%\u2192+20%)"
   icon: {fileID: 675016359, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  nameKey: PASSIVE_NAME_CONFIDENCE
+  descKey: PASSIVE_DESC_CONFIDENCE
   colorType: 2
   moduleType: 1
   apCost: 0

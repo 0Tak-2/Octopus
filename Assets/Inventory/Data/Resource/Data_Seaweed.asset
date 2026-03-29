@@ -16,5 +16,12 @@ MonoBehaviour:
   itemName: Seaweed
   icon: {fileID: 21300000, guid: 6c6c7b90a2d4bac42abe4d1c7e38c205, type: 3}
   description: "\uD574\uCD08\uB2E4. \uADF8\uB0E5 \uD574\uCD08."
+  nameKey: ITEM_NAME_SEAWEED
+  descKey: ITEM_DESC_SEAWEED
   itemType: 0
   maxStackSize: 99
+  equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
+  hungerRestore: 0
+  hpRestore: 0
+  fatigueRestore: 0

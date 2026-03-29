@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Armor_Flexible
   m_EditorClassIdentifier: 
   equipmentName: "\uC5F0\uC131 \uBCF4\uD638\uBCF5"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uBB3C\uD750\uB974\uB4EF \uC790\uC5F0\uACFC \uD558\uB098\uAC00\uB418\uB294
+    \uAC11\uC637"
+  nameKey: EQUIP_NAME_FLEXIBLE
+  descKey: EQUIP_DESC_FLEXIBLE
   icon: {fileID: -1402710781, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 1
   bonusATK: 0

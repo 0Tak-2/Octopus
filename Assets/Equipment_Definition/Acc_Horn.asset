@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Acc_Horn
   m_EditorClassIdentifier: 
   equipmentName: "\uBFD4 \uBD80\uC801"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uD589\uC6B4\uC774 \uCEE4\uC9C8 \uAC83 \uAC19\uC740 \uBD80\uC801"
+  nameKey: EQUIP_NAME_HORN
+  descKey: EQUIP_DESC_HORN
   icon: {fileID: 1822951677, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 2
   bonusATK: 0

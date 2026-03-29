@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uC2EC\uD574 \uCD95\uC801\uCCB4"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_L__CORE
+  descKey: RELIC_DESC_L__CORE
   rarity: 3
   bonusMaxHP: 10
   bonusATKPercent: 0.05

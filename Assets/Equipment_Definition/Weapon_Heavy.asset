@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Weapon_Heavy
   m_EditorClassIdentifier: 
   equipmentName: "\uBB34\uAC70\uC6B4 \uCD09\uC218 \uCD94"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uC5C4\uCCAD \uBB34\uAC70\uC6CC\uBCF4\uC774\uB294 \uCD09\uC218"
+  nameKey: EQUIP_NAME_HEAVY
+  descKey: EQUIP_DESC_HEAVY
   icon: {fileID: -1653300936, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 0
   bonusATK: 2

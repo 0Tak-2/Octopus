@@ -1,0 +1,671 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Items_en
+  m_EditorClassIdentifier: 
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: a778aa398eab3574e83fe2b6ba0aea0e, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 47284076544
+    m_Localized: 'Ink Coagulant
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 166632996864
+    m_Localized: 'Paralysis Ointment
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 478424973312
+    m_Localized: 'Sponge Bandage
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9831085359104
+    m_Localized: 'Grilled Crustacean
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9832784052224
+    m_Localized: 'Grilled Fish
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9834457579520
+    m_Localized: 'Grilled Squid
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9836324044800
+    m_Localized: 'Jellyfish Jelly
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9837984989184
+    m_Localized: 'Raw Clam Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9839717236736
+    m_Localized: 'Raw Crustacean Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9841487233024
+    m_Localized: 'Raw Fish Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9843596967936
+    m_Localized: 'Raw Jellyfish Jelly
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9844280639488
+    m_Localized: 'Raw Squid Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9844968505344
+    m_Localized: 'Steamed Clam
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9845580873728
+    m_Localized: 'Flexible Bone
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9846226796544
+    m_Localized: 'Hard Scale
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9846826582016
+    m_Localized: 'Hard Shell
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9848005181440
+    m_Localized: 'Ink Sac
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13960444755968
+    m_Localized: 'Jellyfish Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13961992454144
+    m_Localized: 'Paralyzing Mucus
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13962621599744
+    m_Localized: 'Seahorse Scale
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13963250745344
+    m_Localized: 'Sharp Tail
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13963871502336
+    m_Localized: 'Shell Piece
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13964370624512
+    m_Localized: 'Small Bone
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14018498117632
+    m_Localized: 'Swordfish Horn
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14019748020224
+    m_Localized: 'Coral
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14020448468992
+    m_Localized: 'Rock
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14021165694976
+    m_Localized: 'Sand
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14021752897536
+    m_Localized: 'Seaweed
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14022390431744
+    m_Localized: 'Seaweed Fiber
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14022956662784
+    m_Localized: 'Sponge
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14023493533696
+    m_Localized: 'Coral Pickaxe
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14104825282560
+    m_Localized: 'Crafting Table
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14106075185152
+    m_Localized: 'Shelter
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14107329282048
+    m_Localized: 'Stone Pickaxe
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14108491104256
+    m_Localized: 'Stone Shovel
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14110185603072
+    m_Localized: 'Sword
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15799324098560
+    m_Localized: 'Sword
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15777866039296
+    m_Localized: 'Stone Shovel
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15777194950656
+    m_Localized: 'Stone Pickaxe
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15776473530368
+    m_Localized: 'Shelter
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15772849651712
+    m_Localized: 'Crafting Table
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15636111147008
+    m_Localized: 'Coral Pickaxe
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15635477807104
+    m_Localized: 'Sponge
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15634936741888
+    m_Localized: 'Seaweed Fiber
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15634341150720
+    m_Localized: 'Seaweed
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15633707810816
+    m_Localized: 'Sand
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15633007362048
+    m_Localized: 'Rock
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15632264970240
+    m_Localized: 'Coral
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15503743107072
+    m_Localized: 'Ink Sac
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15505370497024
+    m_Localized: 'Jellyfish Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15622144114688
+    m_Localized: 'Paralyzing Mucus
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15623914110976
+    m_Localized: 'Seahorse Scale
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15625507946496
+    m_Localized: 'Sharp Tail
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15627210833920
+    m_Localized: 'Shell Piece
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15628896944128
+    m_Localized: 'Small Bone
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15630922792960
+    m_Localized: 'Swordfish Horn
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15502023442432
+    m_Localized: 'Hard Shell
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15499951456256
+    m_Localized: 'Hard Scale
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15273761030144
+    m_Localized: 'Ink Coagulant
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15275187093504
+    m_Localized: 'Paralysis Ointment
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15276596379648
+    m_Localized: 'Sponge Bandage
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15277665927168
+    m_Localized: 'Grilled Crustacean
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15278718697472
+    m_Localized: 'Grilled Fish
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15279595307008
+    m_Localized: 'Grilled Squid
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15280601939968
+    m_Localized: 'Jellyfish Jelly
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15281503715328
+    m_Localized: 'Raw Clam Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15282304827392
+    m_Localized: 'Raw Crustacean Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15485938286592
+    m_Localized: 'Flexible Bone
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15286708846592
+    m_Localized: 'Steamed Clam
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15285257617408
+    m_Localized: 'Raw Squid Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15284519419904
+    m_Localized: 'Raw Jellyfish Jelly
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15283026247680
+    m_Localized: 'Raw Fish Meat
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16635420852224
+    m_Localized: 'A remedy that stops bleeding right away when applied
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16636528148480
+    m_Localized: 'A soothing ointment that loosens up a stiffened body
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16637379592192
+    m_Localized: 'A soft, squishy bandage that feels nice when wrapped
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16638189092864
+    m_Localized: 'A nicely grilled crustacean. Very filling!
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16638965039104
+    m_Localized: 'A grilled fish with a lovely savory aroma
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18161346396160
+    m_Localized: 'A finely sharpened sword. Feels reassuring
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18159551234048
+    m_Localized: 'A stone shovel. Can dig through sand
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18157546356736
+    m_Localized: 'A sturdy pickaxe made of stone
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18155453399040
+    m_Localized: 'A cozy spot where you can rest for a while
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18152399945728
+    m_Localized: 'A workbench where you can craft all sorts of things
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16664458018816
+    m_Localized: 'A pickaxe made of coral. Surprisingly sturdy
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16662708994048
+    m_Localized: 'A squishy sponge soaked full of water
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16661077409792
+    m_Localized: 'Tough fiber pulled from seaweed. Great for tying and weaving
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16639657099264
+    m_Localized: 'Chewy grilled squid. Looks delicious!
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16640365936640
+    m_Localized: 'A soft, translucent jelly. Slightly tingly
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16640999276544
+    m_Localized: 'Fresh clam meat. Probably tastier if cooked
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16641628422144
+    m_Localized: 'Raw crustacean meat. Would be great grilled
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16642312093696
+    m_Localized: 'Fresh fish meat. Let''s cook it up
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16642924462080
+    m_Localized: 'Unprocessed jellyfish jelly. Looks a bit risky
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16643524247552
+    m_Localized: 'Slimy squid meat. Best when grilled!
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16644182753280
+    m_Localized: 'A freshly steamed clam. Your tentacles reach for it on their own
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16644807704576
+    m_Localized: 'A curious bone that bends easily. Could craft something with this
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16645445238784
+    m_Localized: 'A very tough scale. Perfect for armor crafting
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16646053412864
+    m_Localized: 'A thick, sturdy shell. Would make great armor material
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16646682558464
+    m_Localized: 'A pouch full of dark ink. Useful in many ways
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16647320092672
+    m_Localized: 'A jellyfish tentacle that tingles when you touch it
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16647970209792
+    m_Localized: 'Sticky mucus. Your body goes stiff if it touches you
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16648599355392
+    m_Localized: 'A small, shimmering seahorse scale. Pretty
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16649228500992
+    m_Localized: 'A pointy-tipped tail. Can be used for weapon crafting
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16649849257984
+    m_Localized: 'A broken shell fragment. Collect enough and it''ll come in handy
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16650482597888
+    m_Localized: 'A tiny bone. Can be used to make simple tools
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16651174658048
+    m_Localized: 'A long, sharp swordfish horn. Could become a powerful weapon
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16651845746688
+    m_Localized: 'Colorful, pretty coral. Hard enough to craft tools with
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16652533612544
+    m_Localized: 'A plain old rock. Still useful, though
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16653242449920
+    m_Localized: 'Fine, soft sand. Can be used as building material
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16653909344256
+    m_Localized: 'Seaweed that sways gently in the ocean current
+
+'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

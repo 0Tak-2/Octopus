@@ -76,8 +76,9 @@ public class RelicSlotUI : MonoBehaviour
         
         // Name
         if (nameText != null)
-            nameText.text = relic.relicName;
-        
+            nameText.text = !string.IsNullOrEmpty(relic.nameKey)
+    ? LocalizationManager.T(relic.nameKey) : relic.relicName;
+
         // Stack count
         if (countText != null)
         {
@@ -189,11 +190,14 @@ public class RelicSlotUI : MonoBehaviour
     public string GetTooltipText()
     {
         if (_relic == null) return "";
-        
-        string text = $"<b>{_relic.relicName}</b>\n";
-        text += $"<color=#{ColorUtility.ToHtmlStringRGB(GetRarityColor(_relic.rarity))}>{_relic.rarity}</color>\n\n";
-        text += _relic.description + "\n\n";
-        
+
+        string rName = !string.IsNullOrEmpty(_relic.nameKey)
+    ? LocalizationManager.T(_relic.nameKey) : _relic.relicName;
+        string rDesc = !string.IsNullOrEmpty(_relic.descKey)
+            ? LocalizationManager.T(_relic.descKey) : _relic.description;
+        string text = $"<b>{rName}</b>\n";
+        text += rDesc + "\n\n";
+
         // Show stat bonuses
         text += "<b>Bonuses (per stack):</b>\n";
         

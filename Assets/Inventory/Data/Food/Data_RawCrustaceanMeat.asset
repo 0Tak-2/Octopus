@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: "\uB0A0 \uAC11\uAC01\uB958\uC0B4"
   icon: {fileID: 0}
   description: Looks like Good
+  nameKey: ITEM_NAME_RAW_CRUSTACEAN
+  descKey: ITEM_DESC_RAW_CRUSTACEAN
   itemType: 1
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 15
   hpRestore: 0
   fatigueRestore: 0

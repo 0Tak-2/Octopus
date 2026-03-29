@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uAE08 \uAC04 \uC870\uAC1C\uAECD\uC9C8"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_C__SHELL
+  descKey: RELIC_DESC_C__SHELL
   rarity: 0
   bonusMaxHP: 3
   bonusATKPercent: 0

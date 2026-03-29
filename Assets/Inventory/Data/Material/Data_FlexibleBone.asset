@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: FlexibleBone
   icon: {fileID: 0}
   description: 
+  nameKey: ITEM_NAME_FLEXIBLE_BONE
+  descKey: ITEM_DESC_FLEXIBLE_BONE
   itemType: 6
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

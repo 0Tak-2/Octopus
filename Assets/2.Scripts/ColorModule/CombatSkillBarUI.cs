@@ -325,7 +325,9 @@ public class CombatSkillBarUI : MonoBehaviour
             string hint = _selectedSkill.Skill == SkillID.Blue_StretchTentacle
                 ? "이동할 위치를 클릭 (우클릭/ESC 취소)"
                 : "적을 클릭하여 공격 (우클릭/ESC 취소)";
-            selectedSkillText.text = $"{_selectedSkill.Name} - {hint}";
+            string skillName = !string.IsNullOrEmpty(_selectedSkill.definition?.nameKey)
+    ? LocalizationManager.T(_selectedSkill.definition.nameKey) : _selectedSkill.Name;
+            selectedSkillText.text = $"{skillName} - {hint}";
         }
         else
         {

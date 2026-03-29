@@ -173,25 +173,25 @@ public class EquipmentUI : MonoBehaviour
     {
         if (equipment == null) return;
 
-        if (equipNameText != null)
-            equipNameText.text = equipment.equipmentName;
+        equipNameText.text = !string.IsNullOrEmpty(equipment.nameKey)
+    ? LocalizationManager.T(equipment.nameKey) : equipment.equipmentName;
 
-        if (equipDescText != null)
-            equipDescText.text = equipment.description;
+        equipDescText.text = !string.IsNullOrEmpty(equipment.descKey)
+    ? LocalizationManager.T(equipment.descKey) : equipment.description;
 
         if (equipStatsText != null)
         {
             var stats = new List<string>();
 
-            if (equipment.bonusATK != 0) stats.Add($"공격력 +{equipment.bonusATK}");
-            if (equipment.bonusDEF != 0) stats.Add($"방어력 +{equipment.bonusDEF}");
-            if (equipment.bonusMaxHP != 0) stats.Add($"최대HP +{equipment.bonusMaxHP}");
-            if (equipment.bonusEVA > 0) stats.Add($"회피율 +{equipment.bonusEVA * 100:F0}%");
-            if (equipment.bonusCRIT > 0) stats.Add($"치명타 +{equipment.bonusCRIT * 100:F0}%");
-            if (equipment.bonusCRIT_DMG > 0) stats.Add($"치명타 피해 +{equipment.bonusCRIT_DMG * 100:F0}%");
-            if (equipment.stunChanceBonus > 0) stats.Add($"스턴 확률 +{equipment.stunChanceBonus * 100:F0}%");
+            if (equipment.bonusATK != 0) stats.Add($"{LocalizationManager.T("STAT_ATK")} +{equipment.bonusATK}");
+            if (equipment.bonusDEF != 0) stats.Add($"{LocalizationManager.T("STAT_DEF")} +{equipment.bonusDEF}");
+            if (equipment.bonusMaxHP != 0) stats.Add($"{LocalizationManager.T("STAT_HP")} +{equipment.bonusMaxHP}");
+            if (equipment.bonusEVA > 0) stats.Add($"{LocalizationManager.T("STAT_EVA")} +{equipment.bonusEVA * 100:F0}%");
+            if (equipment.bonusCRIT > 0) stats.Add($"{LocalizationManager.T("STAT_CRIT")} +{equipment.bonusCRIT * 100:F0}%");
+            if (equipment.bonusCRIT_DMG > 0) stats.Add($"{LocalizationManager.T("STAT_CRIT_DMG")} +{equipment.bonusCRIT_DMG * 100:F0}%");
+            if (equipment.stunChanceBonus > 0) stats.Add($"{LocalizationManager.T("STAT_STUN_CHANCE")} +{equipment.stunChanceBonus * 100:F0}%");
 
-            equipStatsText.text = stats.Count > 0 ? string.Join("\n", stats) : "(스탯 없음)";
+            equipStatsText.text = stats.Count > 0 ? string.Join("\n", stats) : $"({LocalizationManager.T("UI_NO_STATS")})";
         }
 
         if (equipIconImage != null)
@@ -232,22 +232,22 @@ public class EquipmentUI : MonoBehaviour
         if (totalStatsText == null || equipmentManager == null) return;
 
         var lines = new List<string>();
-        lines.Add("<b>장비 보너스</b>");
+        lines.Add($"<b>{LocalizationManager.T("UI_EQUIP_BONUS")}</b>");
 
         if (equipmentManager.TotalBonusATK != 0)
-            lines.Add($"공격력 +{equipmentManager.TotalBonusATK}");
+            lines.Add($"{LocalizationManager.T("STAT_ATK")} +{equipmentManager.TotalBonusATK}");
         if (equipmentManager.TotalBonusDEF != 0)
-            lines.Add($"방어력 +{equipmentManager.TotalBonusDEF}");
+            lines.Add($"{LocalizationManager.T("STAT_DEF")} +{equipmentManager.TotalBonusDEF}");
         if (equipmentManager.TotalBonusMaxHP != 0)
-            lines.Add($"최대HP +{equipmentManager.TotalBonusMaxHP}");
+            lines.Add($"{LocalizationManager.T("STAT_HP")} +{equipmentManager.TotalBonusMaxHP}");
         if (equipmentManager.TotalBonusEVA > 0)
-            lines.Add($"회피율 +{equipmentManager.TotalBonusEVA * 100:F0}%");
+            lines.Add($"{LocalizationManager.T("STAT_EVA")} +{equipmentManager.TotalBonusEVA * 100:F0}%");
         if (equipmentManager.TotalBonusCRIT > 0)
-            lines.Add($"치명타 +{equipmentManager.TotalBonusCRIT * 100:F0}%");
+            lines.Add($"{LocalizationManager.T("STAT_CRIT")} +{equipmentManager.TotalBonusCRIT * 100:F0}%");
         if (equipmentManager.TotalBonusCRIT_DMG > 0)
-            lines.Add($"치명타 피해 +{equipmentManager.TotalBonusCRIT_DMG * 100:F0}%");
+            lines.Add($"{LocalizationManager.T("STAT_CRIT_DMG")} +{equipmentManager.TotalBonusCRIT_DMG * 100:F0}%");
         if (equipmentManager.TotalStunChance > 0)
-            lines.Add($"스턴 확률 +{equipmentManager.TotalStunChance * 100:F0}%");
+            lines.Add($"{LocalizationManager.T("STAT_STUN_CHANCE")} +{equipmentManager.TotalStunChance * 100:F0}%");
 
         totalStatsText.text = string.Join("\n", lines);
     }

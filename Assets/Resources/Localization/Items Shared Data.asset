@@ -1,0 +1,604 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Items Shared Data
+  m_EditorClassIdentifier: 
+  m_TableCollectionName: Items
+  m_TableCollectionNameGuidString: a778aa398eab3574e83fe2b6ba0aea0e
+  m_Entries:
+  - m_Id: 47284076544
+    m_Key: 'ITEM_NAME_INK_COAGULANT
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 166632996864
+    m_Key: 'ITEM_NAME_PARALYSIS_OINTMENT
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 478424973312
+    m_Key: 'ITEM_NAME_SPONGE_BANDAGE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9831085359104
+    m_Key: 'ITEM_NAME_GRILLED_CRUSTACEAN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9832784052224
+    m_Key: 'ITEM_NAME_GRILLED_FISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9834457579520
+    m_Key: 'ITEM_NAME_GRILLED_SQUID
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9836324044800
+    m_Key: 'ITEM_NAME_JELLYFISH_JELLY
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9837984989184
+    m_Key: 'ITEM_NAME_RAW_CLAM
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9839717236736
+    m_Key: 'ITEM_NAME_RAW_CRUSTACEAN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9841487233024
+    m_Key: 'ITEM_NAME_RAW_FISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9843596967936
+    m_Key: 'ITEM_NAME_RAW_JELLYFISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9844280639488
+    m_Key: 'ITEM_NAME_RAW_SQUID
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9844968505344
+    m_Key: 'ITEM_NAME_STEAMED_CLAM
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9845580873728
+    m_Key: 'ITEM_NAME_FLEXIBLE_BONE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9846226796544
+    m_Key: 'ITEM_NAME_HARD_SCALE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9846826582016
+    m_Key: 'ITEM_NAME_HARD_SHELL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9848005181440
+    m_Key: 'ITEM_NAME_INK_SAC
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13960444755968
+    m_Key: 'ITEM_NAME_JELLYFISH_TENTACLE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13961992454144
+    m_Key: 'ITEM_NAME_PARALYZING_MUCUS
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13962621599744
+    m_Key: 'ITEM_NAME_SEAHORSE_SCALE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13963250745344
+    m_Key: 'ITEM_NAME_SHARP_TAIL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13963871502336
+    m_Key: 'ITEM_NAME_SHELL_PIECE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13964370624512
+    m_Key: 'ITEM_NAME_SMALL_BONE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14018498117632
+    m_Key: 'ITEM_NAME_SWORDFISH_HORN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14019748020224
+    m_Key: 'ITEM_NAME_CORAL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14020448468992
+    m_Key: 'ITEM_NAME_ROCK
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14021165694976
+    m_Key: 'ITEM_NAME_SAND
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14021752897536
+    m_Key: 'ITEM_NAME_SEAWEED
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14022390431744
+    m_Key: 'ITEM_NAME_SEAWEED_FIBER
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14022956662784
+    m_Key: 'ITEM_NAME_SPONGE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14023493533696
+    m_Key: 'ITEM_NAME_CORAL_PICKAXE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14104825282560
+    m_Key: 'ITEM_NAME_CRAFTING_TABLE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14106075185152
+    m_Key: 'ITEM_NAME_SHELTER
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14107329282048
+    m_Key: 'ITEM_NAME_STONE_PICKAXE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14108491104256
+    m_Key: 'ITEM_NAME_STONE_SHOVEL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14110185603072
+    m_Key: 'ITEM_NAME_SWORD
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15273761030144
+    m_Key: 'ITEM_DESC_INK_COAGULANT
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15275187093504
+    m_Key: 'ITEM_DESC_PARALYSIS_OINTMENT
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15276596379648
+    m_Key: 'ITEM_DESC_SPONGE_BANDAGE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15277665927168
+    m_Key: 'ITEM_DESC_GRILLED_CRUSTACEAN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15278718697472
+    m_Key: 'ITEM_DESC_GRILLED_FISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15279595307008
+    m_Key: 'ITEM_DESC_GRILLED_SQUID
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15280601939968
+    m_Key: 'ITEM_DESC_JELLYFISH_JELLY
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15281503715328
+    m_Key: 'ITEM_DESC_RAW_CLAM
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15282304827392
+    m_Key: 'ITEM_DESC_RAW_CRUSTACEAN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15283026247680
+    m_Key: 'ITEM_DESC_RAW_FISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15284519419904
+    m_Key: 'ITEM_DESC_RAW_JELLYFISH
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15285257617408
+    m_Key: 'ITEM_DESC_RAW_SQUID
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15286708846592
+    m_Key: 'ITEM_DESC_STEAMED_CLAM
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15485938286592
+    m_Key: 'ITEM_DESC_FLEXIBLE_BONE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15499951456256
+    m_Key: 'ITEM_DESC_HARD_SCALE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15502023442432
+    m_Key: 'ITEM_DESC_HARD_SHELL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15503743107072
+    m_Key: 'ITEM_DESC_INK_SAC
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15505370497024
+    m_Key: 'ITEM_DESC_JELLYFISH_TENTACLE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15622144114688
+    m_Key: 'ITEM_DESC_PARALYZING_MUCUS
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15623914110976
+    m_Key: 'ITEM_DESC_SEAHORSE_SCALE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15625507946496
+    m_Key: 'ITEM_DESC_SHARP_TAIL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15627210833920
+    m_Key: 'ITEM_DESC_SHELL_PIECE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15628896944128
+    m_Key: 'ITEM_DESC_SMALL_BONE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15630922792960
+    m_Key: 'ITEM_DESC_SWORDFISH_HORN
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15632264970240
+    m_Key: 'ITEM_DESC_CORAL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15633007362048
+    m_Key: 'ITEM_DESC_ROCK
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15633707810816
+    m_Key: 'ITEM_DESC_SAND
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15634341150720
+    m_Key: 'ITEM_DESC_SEAWEED
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15634936741888
+    m_Key: 'ITEM_DESC_SEAWEED_FIBER
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15635477807104
+    m_Key: 'ITEM_DESC_SPONGE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15636111147008
+    m_Key: 'ITEM_DESC_CORAL_PICKAXE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15772849651712
+    m_Key: 'ITEM_DESC_CRAFTING_TABLE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15776473530368
+    m_Key: 'ITEM_DESC_SHELTER
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15777194950656
+    m_Key: 'ITEM_DESC_STONE_PICKAXE
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15777866039296
+    m_Key: 'ITEM_DESC_STONE_SHOVEL
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15799324098560
+    m_Key: 'ITEM_DESC_SWORD
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16635420852224
+    m_Key: "ITEM_DESC_INK_COAGULANT\r"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16636528148480
+    m_Key: "ITEM_DESC_PARALYSIS_OINTMENT\r"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16637379592192
+    m_Key: "ITEM_DESC_SPONGE_BANDAGE\r"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16638189092864
+    m_Key: "ITEM_DESC_GRILLED_CRUSTACEAN\r"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16638965039104
+    m_Key: ITEM_DESC_GRILLED_FISH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16639657099264
+    m_Key: ITEM_DESC_GRILLED_SQUID
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16640365936640
+    m_Key: ITEM_DESC_JELLYFISH_JELLY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16640999276544
+    m_Key: ITEM_DESC_RAW_CLAM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16641628422144
+    m_Key: ITEM_DESC_RAW_CRUSTACEAN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16642312093696
+    m_Key: ITEM_DESC_RAW_FISH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16642924462080
+    m_Key: ITEM_DESC_RAW_JELLYFISH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16643524247552
+    m_Key: ITEM_DESC_RAW_SQUID
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16644182753280
+    m_Key: ITEM_DESC_STEAMED_CLAM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16644807704576
+    m_Key: ITEM_DESC_FLEXIBLE_BONE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16645445238784
+    m_Key: ITEM_DESC_HARD_SCALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16646053412864
+    m_Key: ITEM_DESC_HARD_SHELL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16646682558464
+    m_Key: ITEM_DESC_INK_SAC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16647320092672
+    m_Key: ITEM_DESC_JELLYFISH_TENTACLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16647970209792
+    m_Key: ITEM_DESC_PARALYZING_MUCUS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16648599355392
+    m_Key: ITEM_DESC_SEAHORSE_SCALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16649228500992
+    m_Key: ITEM_DESC_SHARP_TAIL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16649849257984
+    m_Key: ITEM_DESC_SHELL_PIECE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16650482597888
+    m_Key: ITEM_DESC_SMALL_BONE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16651174658048
+    m_Key: ITEM_DESC_SWORDFISH_HORN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16651845746688
+    m_Key: ITEM_DESC_CORAL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16652533612544
+    m_Key: ITEM_DESC_ROCK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16653242449920
+    m_Key: ITEM_DESC_SAND
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16653909344256
+    m_Key: ITEM_DESC_SEAWEED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16661077409792
+    m_Key: ITEM_DESC_SEAWEED_FIBER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16662708994048
+    m_Key: ITEM_DESC_SPONGE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16664458018816
+    m_Key: ITEM_DESC_CORAL_PICKAXE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18152399945728
+    m_Key: ITEM_DESC_CRAFTING_TABLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18155453399040
+    m_Key: ITEM_DESC_SHELTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18157546356736
+    m_Key: ITEM_DESC_STONE_PICKAXE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18159551234048
+    m_Key: ITEM_DESC_STONE_SHOVEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 18161346396160
+    m_Key: ITEM_DESC_SWORD
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 5980675423094702105
+  references:
+    version: 2
+    RefIds:
+    - rid: 5980675423094702105
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1774797171720

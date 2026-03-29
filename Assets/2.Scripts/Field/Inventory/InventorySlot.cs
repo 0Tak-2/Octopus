@@ -83,8 +83,11 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (background != null)
             background.color = hoverColor;
 
-        if (inventoryUI != null)
-            inventoryUI.ShowTooltip(item.itemName, transform.position);
+        var itemData = ItemDatabase.Instance?.GetItemData(item.itemID);
+        string displayName = (itemData != null && !string.IsNullOrEmpty(itemData.nameKey))
+            ? LocalizationManager.T(itemData.nameKey)
+            : item.itemName;
+        inventoryUI.ShowTooltip(displayName, transform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)

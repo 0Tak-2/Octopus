@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uC18C\uAE08\uAE30 \uBA38\uAE08\uC740 \uD574\uBA74"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_C__SPONGE
+  descKey: RELIC_DESC_C__SPONGE
   rarity: 0
   bonusMaxHP: 0
   bonusATKPercent: 0

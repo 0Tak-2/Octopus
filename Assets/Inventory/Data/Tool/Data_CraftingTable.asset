@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: CraftingTable
   icon: {fileID: 21300000, guid: 6c6c7b90a2d4bac42abe4d1c7e38c205, type: 3}
   description: 
+  nameKey: ITEM_NAME_CRAFTING_TABLE
+  descKey: ITEM_DESC_CRAFTING_TABLE
   itemType: 2
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

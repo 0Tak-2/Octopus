@@ -218,8 +218,12 @@ public class ColorModuleUI : MonoBehaviour
                 ColorType.Black => "<color=black>●</color>",
                 _ => "●"
             };
-            string typeTag = module.Type == ModuleType.Skill ? "[스킬]" : "[패시브]";
-            nameText.text = $"{colorTag} {module.Name} {typeTag}";
+            string typeTag = module.Type == ModuleType.Skill
+    ? $"[{LocalizationManager.T("UI_SKILL")}]"
+    : $"[{LocalizationManager.T("UI_PASSIVE")}]";
+            string moduleName = !string.IsNullOrEmpty(module.definition?.nameKey)
+                ? LocalizationManager.T(module.definition.nameKey) : module.Name;
+            nameText.text = $"{colorTag} {moduleName} {typeTag}";
         }
 
         // 아이콘
@@ -256,24 +260,24 @@ public class ColorModuleUI : MonoBehaviour
     {
         if (module == null) return;
 
-        if (moduleNameText != null)
-            moduleNameText.text = module.Name;
-
-        if (moduleDescText != null)
-            moduleDescText.text = module.definition?.description ?? "";
+        moduleNameText.text = !string.IsNullOrEmpty(module.definition?.nameKey)
+    ? LocalizationManager.T(module.definition.nameKey) : module.Name;
+        moduleDescText.text = !string.IsNullOrEmpty(module.definition?.descKey)
+            ? LocalizationManager.T(module.definition.descKey)
+            : (module.definition?.description ?? "");
 
         if (moduleTypeText != null)
         {
             string colorName = module.Color switch
             {
-                ColorType.Red => "빨강",
-                ColorType.Blue => "파랑",
-                ColorType.Black => "검정",
-                _ => "???"
+                ColorType.Red => LocalizationManager.T("UI_COLOR_RED"),
+                ColorType.Blue => LocalizationManager.T("UI_COLOR_BLUE"),
+                ColorType.Black => LocalizationManager.T("UI_COLOR_BLACK"),
+                _ => "?"
             };
             string typeName = module.Type == ModuleType.Skill
-                ? $"스킬 (AP {module.APCost})"
-                : "패시브";
+                ? $"{LocalizationManager.T("UI_SKILL")} (AP {module.APCost})"
+                : LocalizationManager.T("UI_PASSIVE");
             moduleTypeText.text = $"{colorName} {typeName}";
         }
 
@@ -349,10 +353,12 @@ public class ColorModuleUI : MonoBehaviour
         int black = slots.GetColorCount(ColorType.Black);
 
         if (redCountText != null)
-            redCountText.text = $"빨강: {red}";
+            redCountText.text = $"{LocalizationManager.T("UI_COLOR_RED")}: {red}";
+
         if (blueCountText != null)
-            blueCountText.text = $"파랑: {blue}";
+            blueCountText.text = $"{LocalizationManager.T("UI_COLOR_BLUE")}: {blue}";
+
         if (blackCountText != null)
-            blackCountText.text = $"검정: {black}";
+            blackCountText.text = $"{LocalizationManager.T("UI_COLOR_BLACK")}: {black}";
     }
 }

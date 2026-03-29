@@ -16,6 +16,8 @@ MonoBehaviour:
   description: "\uCD9C\uD608 \uBD80\uC5EC. \uC774\uBBF8 \uCD9C\uD608\uC774\uBA74
     \uD53C\uD574\uC758 50% \uD68C\uBCF5"
   icon: {fileID: -970305351, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  nameKey: SKILL_NAME_DIG
+  descKey: SKILL_DESC_DIG
   colorType: 0
   moduleType: 0
   apCost: 1

@@ -66,8 +66,9 @@ public class EquipmentSlotUI : MonoBehaviour, IPointerClickHandler
             }
             
             if (nameText != null)
-                nameText.text = _equipment.equipmentName;
-            
+                nameText.text = !string.IsNullOrEmpty(_equipment.nameKey)
+    ? LocalizationManager.T(_equipment.nameKey) : _equipment.equipmentName;
+
             if (emptyIndicator != null)
                 emptyIndicator.SetActive(false);
             

@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: ShellArmor
   icon: {fileID: 1352887425, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_SHELL
+  descKey: EQUIP_DESC_SHELL
   itemType: 4
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: 48d9729fb817ae64f89e7049f9264364, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

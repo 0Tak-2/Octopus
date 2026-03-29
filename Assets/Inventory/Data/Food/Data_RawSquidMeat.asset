@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: RawSquidMeat
   icon: {fileID: 0}
   description: Looks like Good
+  nameKey: ITEM_NAME_RAW_SQUID
+  descKey: ITEM_DESC_RAW_SQUID
   itemType: 1
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 12
   hpRestore: 0
   fatigueRestore: 0

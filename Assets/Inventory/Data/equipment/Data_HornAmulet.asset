@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: HornAmulet
   icon: {fileID: 1822951677, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_HORN
+  descKey: EQUIP_DESC_HORN
   itemType: 5
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: db24a1961df726641972c67cdbf30ca2, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

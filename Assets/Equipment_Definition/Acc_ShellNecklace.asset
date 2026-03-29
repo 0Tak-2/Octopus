@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Acc_ShellNecklace
   m_EditorClassIdentifier: 
   equipmentName: "\uC870\uAC1C \uBAA9\uAC78\uC774"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uAC16\uACE0\uB9CC\uC788\uC5B4\uB3C4 \uB4E0\uB4E0\uD574\uC9C0\uB294
+    \uBAA9\uAC78\uC774"
+  nameKey: EQUIP_NAME_SHELLNECKLACE
+  descKey: EQUIP_DESC_SHELLNECKLACE
   icon: {fileID: 280100788, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 2
   bonusATK: 0

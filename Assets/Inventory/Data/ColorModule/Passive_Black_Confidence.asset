@@ -16,6 +16,8 @@ MonoBehaviour:
   itemName: "\uC790\uC2E0\uAC10"
   icon: {fileID: 675016359, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   description: 
+  nameKey: PASSIVE_NAME_CONFIDENCE
+  descKey: PASSIVE_DESC_CONFIDENCE
   itemType: 8
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}

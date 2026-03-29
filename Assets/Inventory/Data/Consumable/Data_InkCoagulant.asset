@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: InkCoagulant
   icon: {fileID: 0}
   description: 
+  nameKey: ITEM_NAME_INK_COAGULANT
+  descKey: ITEM_DESC_INK_COAGULANT
   itemType: 7
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 60
   fatigueRestore: 0

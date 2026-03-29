@@ -11,7 +11,11 @@ public class ColorModuleDefinition : ScriptableObject
     public string moduleName = "새 모듈";
     public string description = "모듈 설명";
     public Sprite icon;
-    
+    // ── 기존 moduleName, description 아래에 추가 ──
+    [Header("Localization Keys")]
+    public string nameKey;   // 예: "SKILL_NAME_CRIT"
+    public string descKey;   // 예: "SKILL_DESC_CRIT"
+
     [Header("분류")]
     public ColorType colorType = ColorType.Red;
     public ModuleType moduleType = ModuleType.Skill;

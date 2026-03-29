@@ -55,7 +55,8 @@ public class RecipeSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         // 이름
         if (nameText != null)
         {
-            nameText.text = resultData.itemName;
+            nameText.text = !string.IsNullOrEmpty(resultData.nameKey)
+    ? LocalizationManager.T(resultData.nameKey) : resultData.itemName;
         }
 
         // 재료 텍스트 숨기기
@@ -127,9 +128,13 @@ public class RecipeSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         ItemData resultData = ItemDatabase.Instance?.GetItemData(recipe.resultItemID);
         if (resultData == null) return "";
 
-        string text = $"<b>{resultData.itemName}</b>\n";
-        text += $"{resultData.description}\n\n";
-        text += "<b>필요 재료:</b>\n";
+        string rName = !string.IsNullOrEmpty(resultData.nameKey)
+    ? LocalizationManager.T(resultData.nameKey) : resultData.itemName;
+        string rDesc = !string.IsNullOrEmpty(resultData.descKey)
+            ? LocalizationManager.T(resultData.descKey) : resultData.description;
+        string text = $"<b>{rName}</b>\n";
+        text += $"{rDesc}\n\n";
+        text += $"<b>{LocalizationManager.T("UI_REQUIRED_MATERIALS")}</b>\n";
 
         foreach (var ingredient in recipe.ingredients)
         {
@@ -138,7 +143,9 @@ public class RecipeSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             {
                 int currentCount = InventoryManager.Instance.GetItemCount(ingredient.itemID);
                 string colorTag = (currentCount >= ingredient.count) ? "<color=green>" : "<color=red>";
-                text += $"{colorTag}• {ingData.itemName}: {currentCount}/{ingredient.count}</color>\n";
+                string iName = !string.IsNullOrEmpty(ingData.nameKey)
+    ? LocalizationManager.T(ingData.nameKey) : ingData.itemName;
+                text += $"{colorTag}• {iName}: {currentCount}/{ingredient.count}</color>\n";
             }
         }
 

@@ -16,6 +16,8 @@ MonoBehaviour:
   relicName: "\uB2E8\uB2E8\uD55C \uC0B0\uD638 \uB9C8\uB514"
   description: 
   icon: {fileID: 0}
+  nameKey: RELIC_NAME_R__CORAL
+  descKey: RELIC_DESC_R__CORAL
   rarity: 1
   bonusMaxHP: 0
   bonusATKPercent: 0.03

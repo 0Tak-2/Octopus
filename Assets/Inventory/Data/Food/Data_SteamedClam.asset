@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: SteamedClam
   icon: {fileID: 0}
   description: Looks like Good
+  nameKey: ITEM_NAME_STEAMED_CLAM
+  descKey: ITEM_DESC_STEAMED_CLAM
   itemType: 1
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 35
   hpRestore: 10
   fatigueRestore: 0

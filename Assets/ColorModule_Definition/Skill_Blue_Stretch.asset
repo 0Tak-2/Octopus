@@ -15,6 +15,8 @@ MonoBehaviour:
   moduleName: "\uB298\uC5B4\uB098\uB294\uCD09\uC218"
   description: "3\uCE78 \uC774\uB0B4 \uC704\uCE58\uB85C \uC774\uB3D9"
   icon: {fileID: -1567175855, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
+  nameKey: SKILL_NAME_STRETCH
+  descKey: SKILL_DESC_STRETCH
   colorType: 1
   moduleType: 0
   apCost: 2

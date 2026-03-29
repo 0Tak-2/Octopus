@@ -26,7 +26,11 @@ public class RelicDefinition : ScriptableObject
     public string description;
     
     public Sprite icon;
-    
+    // ── 기존 relicName, description 아래에 추가 ──
+    [Header("Localization Keys")]
+    public string nameKey;   // 예: "RELIC_NAME_CRACKED_SHELL"
+    public string descKey;   // 예: "RELIC_DESC_CRACKED_SHELL"
+
     [Header("Rarity")]
     public RelicRarity rarity = RelicRarity.Common;
     

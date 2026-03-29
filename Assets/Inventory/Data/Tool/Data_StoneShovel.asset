@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: Shovel
   icon: {fileID: 21300000, guid: 5afdad13a2d88a64da55d95929328fa8, type: 3}
   description: 
+  nameKey: ITEM_NAME_STONE_SHOVEL
+  descKey: ITEM_DESC_STONE_SHOVEL
   itemType: 2
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

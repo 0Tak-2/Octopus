@@ -1,0 +1,173 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Skills_en
+  m_EditorClassIdentifier: 
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 3845294f96e770248b400ea447720eef, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 8373304672256
+    m_Localized: 'Bravery
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8375045308416
+    m_Localized: 'Confidence
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8376735612928
+    m_Localized: 'Cruelty
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8378685964288
+    m_Localized: 'Fundamentals
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8380472737792
+    m_Localized: 'Tentacle Boost
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8382355980288
+    m_Localized: 'Predation
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8385866612736
+    m_Localized: 'Weakness Sense
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8387812769792
+    m_Localized: 'Lethal Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8389943476224
+    m_Localized: 'Punishing Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8391788969984
+    m_Localized: 'Hardened Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8394028728320
+    m_Localized: 'Stretching Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8395568037888
+    m_Localized: 'Piercing Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8397249953792
+    m_Localized: 'Sharp Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9225243312128
+    m_Localized: "ATK increases the higher the enemy's HP (100%\u2192+25%)\r\n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9226845536256
+    m_Localized: "ATK increases proportional to your HP (100%\u2192+20%)\r\n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9228233850880
+    m_Localized: "ATK increases the lower the enemy's HP (0%\u2192+25%)\r\n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9229429227520
+    m_Localized: '25% chance to strike twice with basic attacks
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9230809153536
+    m_Localized: '25% chance to stun with basic attacks
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9232105193472
+    m_Localized: 'Execute enemies below 20% HP and heal for 100% of damage dealt
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9233363484672
+    m_Localized: 'ATK +6% per debuff on enemy (max 30%)
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9234584027136
+    m_Localized: 'Guaranteed critical hit on first attack against the target
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9235930398720
+    m_Localized: 'ATK x1.75 for 1 turn
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9236999946240
+    m_Localized: 'Inflicts Imperfect (stacks up to 4)
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9238455369728
+    m_Localized: 'Move to a tile within 3 spaces
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9239600414720
+    m_Localized: 'Inflicts Bleed. If already bleeding, heal for 50% of damage dealt
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9240720293888
+    m_Localized: 'Inflicts Bleed. If already bleeding, deal 40% ATK as bonus damage
+
+'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

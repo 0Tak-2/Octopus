@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: FlexibleArmor
   icon: {fileID: -1402710781, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_FLEXIBLE
+  descKey: EQUIP_DESC_FLEXIBLE
   itemType: 4
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: 8d0f3890f0684e74faaf3d5e51c32491, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

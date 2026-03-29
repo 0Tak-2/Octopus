@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: ShellNecklace
   icon: {fileID: 280100788, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_SHELLNECKLACE
+  descKey: EQUIP_DESC_SHELLNECKLACE
   itemType: 5
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: ffa5c3a19c67d4d4aac623cc8e8ee55f, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

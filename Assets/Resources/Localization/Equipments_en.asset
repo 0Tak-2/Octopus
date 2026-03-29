@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Equipments_en
+  m_EditorClassIdentifier: 
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 07a93ea94d46f854b8246d6c04a369d7, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 101369626624
+    m_Localized: 'Heavy Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99301834752
+    m_Localized: 'Crude Tentacle Knife
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 97724776448
+    m_Localized: 'Bladed Tentacle
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 96051249152
+    m_Localized: 'Shell Armor
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 94428053504
+    m_Localized: 'Scale Armor
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 92834217984
+    m_Localized: 'Flexible Armor
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 91097776128
+    m_Localized: 'Shell Necklace
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 89449414656
+    m_Localized: 'Horn Charm
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4162437120
+    m_Localized: 'Bone Ornament
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 683891343360
+    m_Localized: 'A little ornament that invites good fortune
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686357594112
+    m_Localized: 'A charm that seems to make your luck grow
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 687544582144
+    m_Localized: 'A necklace that feels reassuring just by having it
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 688656072704
+    m_Localized: 'Armor that flows with the current like part of the sea
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 689763368960
+    m_Localized: 'Tough armor crafted from sturdy scales
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 690937774080
+    m_Localized: 'Armor that makes you feel really, really safe
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 692082819072
+    m_Localized: 'A tentacle that looks really, really sharp
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 693227864064
+    m_Localized: 'A tentacle knife with a sharp pointy tip
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 694368714752
+    m_Localized: 'A tentacle that looks incredibly heavy
+
+'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

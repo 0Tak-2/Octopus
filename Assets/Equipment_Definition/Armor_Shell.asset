@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Armor_Shell
   m_EditorClassIdentifier: 
   equipmentName: "\uAC11\uAC01 \uBCF4\uD638\uAD6C"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uC5C4\uCCAD \uB4E0\uB4E0\uD574\uC9C0\uB294 \uAC11\uC637"
+  nameKey: EQUIP_NAME_SHELL
+  descKey: EQUIP_DESC_SHELL
   icon: {fileID: 1352887425, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 1
   bonusATK: 0

@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Armor_Scale
   m_EditorClassIdentifier: 
   equipmentName: "\uBE44\uB298 \uBCF4\uD638\uB9C9"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uBE44\uB298\uB85C \uB9CC\uB4E4\uC5B4 \uB2E8\uB2E8\uD55C \uAC11\uC637"
+  nameKey: EQUIP_NAME_SCALE
+  descKey: EQUIP_DESC_SCALE
   icon: {fileID: -1386288188, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 1
   bonusATK: 0

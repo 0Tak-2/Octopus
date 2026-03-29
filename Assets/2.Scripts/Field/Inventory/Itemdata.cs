@@ -15,6 +15,10 @@ public class ItemData : ScriptableObject
     [TextArea(3, 5)]
     public string description;
 
+    [Header("Localization Keys")]
+    public string nameKey;   // 예: "ITEM_NAME_SEAWEED"
+    public string descKey;
+
     [Header("속성")]
     public ItemType itemType;
     public int maxStackSize = 99;

@@ -75,8 +75,9 @@ public class CombatSkillButtonUI : MonoBehaviour
         
         // Name
         if (nameText != null)
-            nameText.text = def.moduleName;
-        
+            nameText.text = !string.IsNullOrEmpty(def.nameKey)
+    ? LocalizationManager.T(def.nameKey) : def.moduleName;
+
         // AP Cost
         _apCost = def.apCost;
         if (apCostText != null)
@@ -165,8 +166,10 @@ public class CombatSkillButtonUI : MonoBehaviour
             return "";
         
         var def = _module.definition;
-        
-        string text = $"<b>{def.moduleName}</b>\n";
+
+        string localName = !string.IsNullOrEmpty(def.nameKey)
+    ? LocalizationManager.T(def.nameKey) : def.moduleName;
+        string text = $"<b>{localName}</b>\n";
         text += $"<color=yellow>AP Cost: {def.apCost}</color>\n";
         text += $"<color=#{ColorUtility.ToHtmlStringRGB(GetColorTypeColor(def.colorType))}>{def.colorType}</color>\n\n";
         text += def.description;

@@ -16,9 +16,12 @@ MonoBehaviour:
   itemName: BladedTentacle
   icon: {fileID: 1277363584, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   description: 
+  nameKey: EQUIP_NAME_BLADED
+  descKey: EQUIP_DESC_BLADED
   itemType: 3
   maxStackSize: 99
   equipmentDefinition: {fileID: 11400000, guid: 74561544e79669d4cb3b3121ccbd92eb, type: 2}
+  colorModuleDefinition: {fileID: 0}
   hungerRestore: 0
   hpRestore: 0
   fatigueRestore: 0

@@ -1,0 +1,318 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 785681ec8d59ce545a595c3f47a58c95, type: 3}
+  m_Name: LocalizationTable_EN
+  m_EditorClassIdentifier: 
+  language: 10
+  entries:
+  - key: PASSIVE_NAME_BRAVE
+    value: Bravery
+  - key: PASSIVE_DESC_BRAVE
+    value: "ATK increases the higher the enemy's HP (100%\u2192+25%)"
+  - key: PASSIVE_NAME_CONFIDENCE
+    value: Confidence
+  - key: PASSIVE_DESC_CONFIDENCE
+    value: "ATK increases proportional to your HP (100%\u2192+20%)"
+  - key: PASSIVE_NAME_CRUEL
+    value: Cruelty
+  - key: PASSIVE_DESC_CRUEL
+    value: "ATK increases the lower the enemy's HP (0%\u2192+25%)"
+  - key: PASSIVE_NAME_BASIC
+    value: Fundamentals
+  - key: PASSIVE_DESC_BASIC
+    value: 25% chance to strike twice with basic attacks
+  - key: PASSIVE_NAME_STUN
+    value: Tentacle Boost
+  - key: PASSIVE_DESC_STUN
+    value: 25% chance to stun with basic attacks
+  - key: PASSIVE_NAME_PREDATOR
+    value: Predation
+  - key: PASSIVE_DESC_PREDATOR
+    value: Execute enemies below 20% HP and heal for 100% of damage dealt
+  - key: PASSIVE_NAME_SENSE
+    value: Weakness Sense
+  - key: PASSIVE_DESC_SENSE
+    value: ATK +6% per debuff on enemy (max 30%)
+  - key: SKILL_NAME_CRIT
+    value: Lethal Tentacle
+  - key: SKILL_DESC_CRIT
+    value: Guaranteed critical hit on first attack against the target
+  - key: SKILL_NAME_RAGE
+    value: Punishing Tentacle
+  - key: SKILL_DESC_RAGE
+    value: ATK x1.75 for 1 turn
+  - key: SKILL_NAME_HARD
+    value: Hardened Tentacle
+  - key: SKILL_DESC_HARD
+    value: Inflicts Imperfect (stacks up to 4)
+  - key: SKILL_NAME_STRETCH
+    value: Stretching Tentacle
+  - key: SKILL_DESC_STRETCH
+    value: Move to a tile within 3 spaces
+  - key: SKILL_NAME_DIG
+    value: Piercing Tentacle
+  - key: SKILL_DESC_DIG
+    value: Inflicts Bleed. If already bleeding, heal for 50% of damage dealt
+  - key: SKILL_NAME_SHARP
+    value: Sharp Tentacle
+  - key: SKILL_DESC_SHARP
+    value: Inflicts Bleed. If already bleeding, deal 40% ATK as bonus damage
+  - key: EQUIP_NAME_BONE
+    value: Bone Ornament
+  - key: EQUIP_DESC_BONE
+    value: A little ornament that invites good fortune
+  - key: EQUIP_NAME_HORN
+    value: Horn Charm
+  - key: EQUIP_DESC_HORN
+    value: A charm that seems to make your luck grow
+  - key: EQUIP_NAME_SHELLNECKLACE
+    value: Shell Necklace
+  - key: EQUIP_DESC_SHELLNECKLACE
+    value: A necklace that feels reassuring just by having it
+  - key: EQUIP_NAME_FLEXIBLE
+    value: Flexible Armor
+  - key: EQUIP_DESC_FLEXIBLE
+    value: Armor that flows with the current like part of the sea
+  - key: EQUIP_NAME_SCALE
+    value: Scale Armor
+  - key: EQUIP_DESC_SCALE
+    value: Tough armor crafted from sturdy scales
+  - key: EQUIP_NAME_SHELL
+    value: Shell Armor
+  - key: EQUIP_DESC_SHELL
+    value: Armor that makes you feel really, really safe
+  - key: EQUIP_NAME_BLADED
+    value: Bladed Tentacle
+  - key: EQUIP_DESC_BLADED
+    value: A tentacle that looks really, really sharp
+  - key: EQUIP_NAME_CRUDEKNIFE
+    value: Crude Tentacle Knife
+  - key: EQUIP_DESC_CRUDEKNIFE
+    value: A tentacle knife with a sharp pointy tip
+  - key: EQUIP_NAME_HEAVY
+    value: Heavy Tentacle
+  - key: EQUIP_DESC_HEAVY
+    value: A tentacle that looks incredibly heavy
+  - key: ENEMY_NAME_ANCHOVY
+    value: Anchovy
+  - key: ENEMY_NAME_CLAM
+    value: Clam
+  - key: ENEMY_NAME_FLOWERCRAB
+    value: Flower Crab
+  - key: ENEMY_NAME_JELLYFISH
+    value: Jellyfish
+  - key: ENEMY_NAME_LOBSTER
+    value: Lobster
+  - key: ENEMY_NAME_PENSHELL
+    value: Pen Shell
+  - key: ENEMY_NAME_REDSNAPPER
+    value: Red Snapper
+  - key: ENEMY_NAME_SARDINE
+    value: Sardine
+  - key: ENEMY_NAME_SEAHORSE
+    value: Seahorse
+  - key: ENEMY_NAME_SQUID
+    value: Squid
+  - key: ENEMY_NAME_SWORDFISH
+    value: Swordfish
+  - key: ENEMY_NAME_YELLOWRAY
+    value: Yellow Ray
+  - key: ITEM_NAME_INK_COAGULANT
+    value: Ink Coagulant
+  - key: ITEM_DESC_INK_COAGULANT
+    value: A remedy that stops bleeding right away when applied
+  - key: ITEM_NAME_PARALYSIS_OINTMENT
+    value: Paralysis Ointment
+  - key: ITEM_DESC_PARALYSIS_OINTMENT
+    value: A soothing ointment that loosens up a stiffened body
+  - key: ITEM_NAME_SPONGE_BANDAGE
+    value: Sponge Bandage
+  - key: ITEM_DESC_SPONGE_BANDAGE
+    value: A soft, squishy bandage that feels nice when wrapped
+  - key: ITEM_NAME_GRILLED_CRUSTACEAN
+    value: Grilled Crustacean
+  - key: ITEM_DESC_GRILLED_CRUSTACEAN
+    value: A nicely grilled crustacean. Very filling!
+  - key: ITEM_NAME_GRILLED_FISH
+    value: Grilled Fish
+  - key: ITEM_DESC_GRILLED_FISH
+    value: A grilled fish with a lovely savory aroma
+  - key: ITEM_NAME_GRILLED_SQUID
+    value: Grilled Squid
+  - key: ITEM_DESC_GRILLED_SQUID
+    value: Chewy grilled squid. Looks delicious!
+  - key: ITEM_NAME_JELLYFISH_JELLY
+    value: Jellyfish Jelly
+  - key: ITEM_DESC_JELLYFISH_JELLY
+    value: A soft, translucent jelly. Slightly tingly
+  - key: ITEM_NAME_RAW_CLAM
+    value: Raw Clam Meat
+  - key: ITEM_DESC_RAW_CLAM
+    value: Fresh clam meat. Probably tastier if cooked
+  - key: ITEM_NAME_RAW_CRUSTACEAN
+    value: Raw Crustacean Meat
+  - key: ITEM_DESC_RAW_CRUSTACEAN
+    value: Raw crustacean meat. Would be great grilled
+  - key: ITEM_NAME_RAW_FISH
+    value: Raw Fish Meat
+  - key: ITEM_DESC_RAW_FISH
+    value: Fresh fish meat. Let's cook it up
+  - key: ITEM_NAME_RAW_JELLYFISH
+    value: Raw Jellyfish Jelly
+  - key: ITEM_DESC_RAW_JELLYFISH
+    value: Unprocessed jellyfish jelly. Looks a bit risky
+  - key: ITEM_NAME_RAW_SQUID
+    value: Raw Squid Meat
+  - key: ITEM_DESC_RAW_SQUID
+    value: Slimy squid meat. Best when grilled!
+  - key: ITEM_NAME_STEAMED_CLAM
+    value: Steamed Clam
+  - key: ITEM_DESC_STEAMED_CLAM
+    value: A freshly steamed clam. Your tentacles reach for it on their own
+  - key: ITEM_NAME_FLEXIBLE_BONE
+    value: Flexible Bone
+  - key: ITEM_DESC_FLEXIBLE_BONE
+    value: A curious bone that bends easily. Could craft something with this
+  - key: ITEM_NAME_HARD_SCALE
+    value: Hard Scale
+  - key: ITEM_DESC_HARD_SCALE
+    value: A very tough scale. Perfect for armor crafting
+  - key: ITEM_NAME_HARD_SHELL
+    value: Hard Shell
+  - key: ITEM_DESC_HARD_SHELL
+    value: A thick, sturdy shell. Would make great armor material
+  - key: ITEM_NAME_INK_SAC
+    value: Ink Sac
+  - key: ITEM_DESC_INK_SAC
+    value: A pouch full of dark ink. Useful in many ways
+  - key: ITEM_NAME_JELLYFISH_TENTACLE
+    value: Jellyfish Tentacle
+  - key: ITEM_DESC_JELLYFISH_TENTACLE
+    value: A jellyfish tentacle that tingles when you touch it
+  - key: ITEM_NAME_PARALYZING_MUCUS
+    value: Paralyzing Mucus
+  - key: ITEM_DESC_PARALYZING_MUCUS
+    value: Sticky mucus. Your body goes stiff if it touches you
+  - key: ITEM_NAME_SEAHORSE_SCALE
+    value: Seahorse Scale
+  - key: ITEM_DESC_SEAHORSE_SCALE
+    value: A small, shimmering seahorse scale. Pretty
+  - key: ITEM_NAME_SHARP_TAIL
+    value: Sharp Tail
+  - key: ITEM_DESC_SHARP_TAIL
+    value: A pointy-tipped tail. Can be used for weapon crafting
+  - key: ITEM_NAME_SHELL_PIECE
+    value: Shell Piece
+  - key: ITEM_DESC_SHELL_PIECE
+    value: A broken shell fragment. Collect enough and it'll come in handy
+  - key: ITEM_NAME_SMALL_BONE
+    value: Small Bone
+  - key: ITEM_DESC_SMALL_BONE
+    value: A tiny bone. Can be used to make simple tools
+  - key: ITEM_NAME_SWORDFISH_HORN
+    value: Swordfish Horn
+  - key: ITEM_DESC_SWORDFISH_HORN
+    value: A long, sharp swordfish horn. Could become a powerful weapon
+  - key: ITEM_NAME_CORAL
+    value: Coral
+  - key: ITEM_DESC_CORAL
+    value: Colorful, pretty coral. Hard enough to craft tools with
+  - key: ITEM_NAME_ROCK
+    value: Rock
+  - key: ITEM_DESC_ROCK
+    value: A plain old rock. Still useful, though
+  - key: ITEM_NAME_SAND
+    value: Sand
+  - key: ITEM_DESC_SAND
+    value: Fine, soft sand. Can be used as building material
+  - key: ITEM_NAME_SEAWEED
+    value: Seaweed
+  - key: ITEM_DESC_SEAWEED
+    value: Seaweed that sways gently in the ocean current
+  - key: ITEM_NAME_SEAWEED_FIBER
+    value: Seaweed Fiber
+  - key: ITEM_DESC_SEAWEED_FIBER
+    value: Tough fiber pulled from seaweed. Great for tying and weaving
+  - key: ITEM_NAME_SPONGE
+    value: Sponge
+  - key: ITEM_DESC_SPONGE
+    value: A squishy sponge soaked full of water
+  - key: ITEM_NAME_CORAL_PICKAXE
+    value: Coral Pickaxe
+  - key: ITEM_DESC_CORAL_PICKAXE
+    value: A pickaxe made of coral. Surprisingly sturdy
+  - key: ITEM_NAME_CRAFTING_TABLE
+    value: Crafting Table
+  - key: ITEM_DESC_CRAFTING_TABLE
+    value: A workbench where you can craft all sorts of things
+  - key: ITEM_NAME_SHELTER
+    value: Shelter
+  - key: ITEM_DESC_SHELTER
+    value: A cozy spot where you can rest for a while
+  - key: ITEM_NAME_STONE_PICKAXE
+    value: Stone Pickaxe
+  - key: ITEM_DESC_STONE_PICKAXE
+    value: A sturdy pickaxe made of stone
+  - key: ITEM_NAME_STONE_SHOVEL
+    value: Stone Shovel
+  - key: ITEM_DESC_STONE_SHOVEL
+    value: A stone shovel. Can dig through sand
+  - key: ITEM_NAME_SWORD
+    value: Sword
+  - key: ITEM_DESC_SWORD
+    value: A finely sharpened sword. Feels reassuring
+  - key: STAT_ATK
+    value: ATK
+  - key: STAT_DEF
+    value: DEF
+  - key: STAT_EVA
+    value: EVA
+  - key: STAT_CRIT
+    value: CRIT
+  - key: STAT_HP
+    value: HP
+  - key: STATUS_BLEED
+    value: Bleed
+  - key: STATUS_STUN
+    value: Stun
+  - key: STATUS_IMPERFECT
+    value: Imperfect
+  - key: UI_SKILL
+    value: Skill
+  - key: UI_PASSIVE
+    value: Passive
+  - key: UI_COLOR_RED
+    value: Red
+  - key: UI_COLOR_BLUE
+    value: Blue
+  - key: UI_COLOR_BLACK
+    value: Black
+  - key: UI_NO_STATS
+    value: No stats
+  - key: UI_EQUIP_BONUS
+    value: Equipment bonus
+  - key: UI_REQUIRED_MATERIALS
+    value: Required materials
+  - key: UI_YOU_DIED
+    value: You Died
+  - key: UI_CHARACTER_OCTOPUS
+    value: Octopus
+  - key: UI_CHARACTER_OCTOPUS_DESC
+    value: 'A lonely octopus swimming against the current.
+
+
+      Gathering the
+      sea''s memories, pressing forward.'
+  - key: STAT_CRIT_DMG
+    value: CRIT DMG
+  - key: STAT_STUN_CHANCE
+    value: Stun chance

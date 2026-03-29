@@ -12,7 +12,12 @@ public class EquipmentDefinition : ScriptableObject
     
     [TextArea(2, 4)]
     public string description = "장비 설명";
-    
+
+    // ── 기존 equipmentName, description 아래에 추가 ──
+    [Header("Localization Keys")]
+    public string nameKey;   // 예: "EQUIP_NAME_BONE"
+    public string descKey;   // 예: "EQUIP_DESC_BONE"
+
     public Sprite icon;
     
     [Header("분류")]

@@ -16,5 +16,12 @@ MonoBehaviour:
   itemName: Sand
   icon: {fileID: 590385666, guid: 48dbf5a262180814eb062e0b3c6cb592, type: 3}
   description: SANDYSANDY. need shovel
+  nameKey: ITEM_NAME_SAND
+  descKey: ITEM_DESC_SAND
   itemType: 0
   maxStackSize: 99
+  equipmentDefinition: {fileID: 0}
+  colorModuleDefinition: {fileID: 0}
+  hungerRestore: 0
+  hpRestore: 0
+  fatigueRestore: 0

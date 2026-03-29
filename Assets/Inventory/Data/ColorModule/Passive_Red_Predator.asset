@@ -16,6 +16,8 @@ MonoBehaviour:
   itemName: "\uD3EC\uC2DD"
   icon: {fileID: 1975994686, guid: 9f6386271e76fcf4cbeb0d6b326af6e2, type: 3}
   description: 
+  nameKey: PASSIVE_NAME_PREDATOR
+  descKey: PASSIVE_DESC_PREDATOR
   itemType: 8
   maxStackSize: 99
   equipmentDefinition: {fileID: 0}

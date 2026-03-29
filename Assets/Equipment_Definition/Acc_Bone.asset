@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Acc_Bone
   m_EditorClassIdentifier: 
   equipmentName: "\uBF08 \uC7A5\uC2DD"
-  description: "\uC7A5\uBE44 \uC124\uBA85"
+  description: "\uD589\uC6B4\uC744 \uBD80\uB974\uB294 \uC7A5\uC2DD"
+  nameKey: EQUIP_NAME_BONE
+  descKey: EQUIP_DESC_BONE
   icon: {fileID: 1513426749, guid: ab712884d40277b4aa3fb08b935c9177, type: 3}
   equipmentType: 2
   bonusATK: 0
