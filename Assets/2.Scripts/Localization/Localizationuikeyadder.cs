@@ -74,6 +74,8 @@ public class LocalizationUIKeyAdder
             { "UI_EQUIP_BONUS", "장비 보너스" },
             { "UI_REQUIRED_MATERIALS", "필요 재료" },
             { "UI_YOU_DIED", "사망" },
+            { "UI_HINT_MOVE", "이동할 위치를 클릭 (우클릭/ESC 취소)" },
+            { "UI_HINT_ATTACK", "적을 클릭하여 공격 (우클릭/ESC 취소)" },
             { "UI_CHARACTER_OCTOPUS", "문어" },
             { "UI_CHARACTER_OCTOPUS_DESC", "조류를 거슬러 헤엄치는 외로운 문어.\n\n바다의 기억을 모아, 앞으로 나아간다." },
 
@@ -107,6 +109,8 @@ public class LocalizationUIKeyAdder
             { "UI_EQUIP_BONUS", "Equipment bonus" },
             { "UI_REQUIRED_MATERIALS", "Required materials" },
             { "UI_YOU_DIED", "You Died" },
+            { "UI_HINT_MOVE", "Click a tile to move (Right-click/ESC to cancel)" },
+            { "UI_HINT_ATTACK", "Click an enemy to attack (Right-click/ESC to cancel)" },
             { "UI_CHARACTER_OCTOPUS", "Octopus" },
             { "UI_CHARACTER_OCTOPUS_DESC", "A lonely octopus swimming against the current.\n\nGathering the sea's memories, pressing forward." },
 

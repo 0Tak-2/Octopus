@@ -4,6 +4,12 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
+/// 媛쒕퀎 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
+
+/// <summary>
 /// 개별 색 모듈 슬롯 UI
 /// </summary>
 public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
@@ -14,30 +20,30 @@ public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
     public TMP_Text nameText;
     public TMP_Text apCostText;
     public GameObject emptyIndicator;
-    
+
     [Header("Colors")]
     public Color emptyColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
     public Color redColor = new Color(1f, 0.3f, 0.3f, 0.8f);
     public Color blueColor = new Color(0.3f, 0.3f, 1f, 0.8f);
     public Color blackColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-    
+
     private ColorModuleInstance _module;
     private int _slotIndex = -1;
-    
+
     public ColorModuleInstance Module => _module;
     public int SlotIndex => _slotIndex;
-    
+
     public void SetSlotIndex(int index)
     {
         _slotIndex = index;
     }
-    
+
     public void SetModule(ColorModuleInstance module)
     {
         _module = module;
         Refresh();
     }
-    
+
     public void Refresh()
     {
         if (_module == null || _module.definition == null)
@@ -64,21 +70,22 @@ public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
                     iconImage.enabled = false;
                 }
             }
-            
+
             if (nameText != null)
-                nameText.text = _module.Name;
-            
+                nameText.text = !string.IsNullOrEmpty(_module.definition?.nameKey)
+                    ? LocalizationManager.T(_module.definition.nameKey) : _module.Name;
+
             if (apCostText != null)
             {
                 if (_module.Type == ModuleType.Skill)
                     apCostText.text = $"AP {_module.APCost}";
                 else
-                    apCostText.text = "패시브";
+                    apCostText.text = LocalizationManager.T("UI_PASSIVE");
             }
-            
+
             if (emptyIndicator != null)
                 emptyIndicator.SetActive(false);
-            
+
             if (backgroundImage != null)
             {
                 backgroundImage.color = _module.Color switch
@@ -91,11 +98,11 @@ public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
             }
         }
     }
-    
-    public void OnPointerClick(PointerEventData eventData)
+
+    public void OnPointerClick(PointerEventData eventData)  
     {
         if (ColorModuleUI.Instance == null) return;
-        
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             ColorModuleUI.Instance.OnSlotClicked(_slotIndex);

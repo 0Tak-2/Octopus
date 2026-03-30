@@ -16,33 +16,33 @@ public class CombatSkillButtonUI : MonoBehaviour
     public TMP_Text nameText;
     public TMP_Text apCostText;
     public TMP_Text hotkeyText;
-    
+
     [Header("Colors")]
     public Color normalColor = Color.white;
     public Color disabledColor = Color.gray;
     public Color notEnoughAPColor = new Color(0.5f, 0.3f, 0.3f);
-    
+
     [Header("Color Module Colors")]
     public Color redColor = new Color(0.9f, 0.3f, 0.3f);
     public Color blueColor = new Color(0.3f, 0.5f, 0.9f);
     public Color blackColor = new Color(0.3f, 0.3f, 0.3f);
-    
+
     private ColorModuleInstance _module;
     private System.Action<ColorModuleInstance> _onClickCallback;
     private int _apCost = 1;
-    
+
     public ColorModuleInstance Module => _module;
     public int APCost => _apCost;
-    
+
     private void Awake()
     {
         if (button == null)
             button = GetComponent<Button>();
-        
+
         if (button != null)
             button.onClick.AddListener(OnClicked);
     }
-    
+
     /// <summary>
     /// Setup button with skill data
     /// </summary>
@@ -50,15 +50,15 @@ public class CombatSkillButtonUI : MonoBehaviour
     {
         _module = module;
         _onClickCallback = onClick;
-        
+
         if (module == null || module.definition == null)
         {
             gameObject.SetActive(false);
             return;
         }
-        
+
         var def = module.definition;
-        
+
         // Icon
         if (iconImage != null)
         {
@@ -72,7 +72,7 @@ public class CombatSkillButtonUI : MonoBehaviour
                 iconImage.enabled = false;
             }
         }
-        
+
         // Name
         if (nameText != null)
             nameText.text = !string.IsNullOrEmpty(def.nameKey)
@@ -82,11 +82,11 @@ public class CombatSkillButtonUI : MonoBehaviour
         _apCost = def.apCost;
         if (apCostText != null)
             apCostText.text = $"{_apCost} AP";
-        
+
         // Border color based on color type
         if (borderImage != null)
             borderImage.color = GetColorTypeColor(def.colorType);
-        
+
         // Background tint
         if (backgroundImage != null)
         {
@@ -94,20 +94,20 @@ public class CombatSkillButtonUI : MonoBehaviour
             bgColor.a = 0.3f;
             backgroundImage.color = bgColor;
         }
-        
+
         gameObject.SetActive(true);
     }
-    
+
     /// <summary>
     /// Update button state based on available AP
     /// </summary>
     public void UpdateState(int currentAP)
     {
         bool canAfford = currentAP >= _apCost;
-        
+
         if (button != null)
             button.interactable = canAfford;
-        
+
         // Visual feedback
         if (backgroundImage != null)
         {
@@ -115,17 +115,17 @@ public class CombatSkillButtonUI : MonoBehaviour
             color.a = backgroundImage.color.a;
             backgroundImage.color = color;
         }
-        
+
         if (iconImage != null)
             iconImage.color = canAfford ? Color.white : disabledColor;
-        
+
         if (nameText != null)
             nameText.color = canAfford ? Color.white : disabledColor;
-        
+
         if (apCostText != null)
             apCostText.color = canAfford ? Color.yellow : Color.red;
     }
-    
+
     /// <summary>
     /// Set hotkey display
     /// </summary>
@@ -137,7 +137,7 @@ public class CombatSkillButtonUI : MonoBehaviour
             hotkeyText.gameObject.SetActive(!string.IsNullOrEmpty(hotkey));
         }
     }
-    
+
     private Color GetColorTypeColor(ColorType colorType)
     {
         switch (colorType)
@@ -148,7 +148,7 @@ public class CombatSkillButtonUI : MonoBehaviour
             default: return normalColor;
         }
     }
-    
+
     private void OnClicked()
     {
         if (_module != null && _onClickCallback != null)
@@ -156,7 +156,7 @@ public class CombatSkillButtonUI : MonoBehaviour
             _onClickCallback.Invoke(_module);
         }
     }
-    
+
     /// <summary>
     /// Get tooltip text for this skill
     /// </summary>
@@ -164,7 +164,7 @@ public class CombatSkillButtonUI : MonoBehaviour
     {
         if (_module == null || _module.definition == null)
             return "";
-        
+
         var def = _module.definition;
 
         string localName = !string.IsNullOrEmpty(def.nameKey)
@@ -172,8 +172,9 @@ public class CombatSkillButtonUI : MonoBehaviour
         string text = $"<b>{localName}</b>\n";
         text += $"<color=yellow>AP Cost: {def.apCost}</color>\n";
         text += $"<color=#{ColorUtility.ToHtmlStringRGB(GetColorTypeColor(def.colorType))}>{def.colorType}</color>\n\n";
-        text += def.description;
-        
+        text += !string.IsNullOrEmpty(def.descKey)
+            ? LocalizationManager.T(def.descKey) : def.description;
+
         return text;
     }
 }

@@ -5,6 +5,13 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
+/// 吏묒쨷using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System.Collections;
+using System.Collections.Generic;
+
+/// <summary>
 /// 집중전투 중 스킬 버튼 바
 /// 스킬 선택 → 타일/적 클릭으로 대상 지정 방식
 /// </summary>
@@ -323,8 +330,8 @@ public class CombatSkillBarUI : MonoBehaviour
         if (_selectedSkill != null)
         {
             string hint = _selectedSkill.Skill == SkillID.Blue_StretchTentacle
-                ? "이동할 위치를 클릭 (우클릭/ESC 취소)"
-                : "적을 클릭하여 공격 (우클릭/ESC 취소)";
+                ? LocalizationManager.T("UI_HINT_MOVE")
+                : LocalizationManager.T("UI_HINT_ATTACK");
             string skillName = !string.IsNullOrEmpty(_selectedSkill.definition?.nameKey)
     ? LocalizationManager.T(_selectedSkill.definition.nameKey) : _selectedSkill.Name;
             selectedSkillText.text = $"{skillName} - {hint}";
