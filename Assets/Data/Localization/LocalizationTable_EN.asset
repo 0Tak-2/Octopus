@@ -316,3 +316,7 @@ MonoBehaviour:
     value: CRIT DMG
   - key: STAT_STUN_CHANCE
     value: Stun chance
+  - key: UI_HINT_MOVE
+    value: Click a tile to move (Right-click/ESC to cancel)
+  - key: UI_HINT_ATTACK
+    value: Click an enemy to attack (Right-click/ESC to cancel)

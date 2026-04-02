@@ -290,7 +290,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0857b103495298045be3c6895baebfd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventoryManager: {fileID: 0}
+  droppedItemPrefab: {fileID: 3138420596523669153, guid: a98cb37e7eb99794abd8899ea70f101d, type: 3}
+  dropSpreadRange: 0.3
   showDebugLogs: 1
 --- !u!114 &4570938997504627133
 MonoBehaviour:

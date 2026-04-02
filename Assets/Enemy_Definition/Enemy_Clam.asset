@@ -60,9 +60,8 @@ MonoBehaviour:
   bossRageFullRatio: 0.4
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
-  redModuleDropChance: 0
-  blueModuleDropChance: 0.05
-  blackModuleDropChance: 0
+  dropColorModule: {fileID: 0}
+  colorModuleDropChance: 0.15
   dropFood: {fileID: 11400000, guid: 8b63cb655be218a4abf4b061932a7270, type: 2}
   dropMaterial: {fileID: 11400000, guid: cf58bf8c68487d241bb580b948f8580b, type: 2}
   dropMaterial2: {fileID: 0}

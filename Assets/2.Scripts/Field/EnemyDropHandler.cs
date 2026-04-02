@@ -2,13 +2,18 @@ using UnityEngine;
 
 /// <summary>
 /// Handles item drops when enemy dies
-/// Attach to enemy prefab alongside EnemyInstance
+/// Items drop on the floor as DroppedItem, player picks up with F key
 /// </summary>
 [RequireComponent(typeof(EnemyInstance))]
 public class EnemyDropHandler : MonoBehaviour
 {
-    [Header("References")]
-    public InventoryManager inventoryManager;
+    [Header("Drop Item Prefab")]
+    [Tooltip("바닥에 떨어지는 아이템 프리팹 (DroppedItem 컴포넌트 필요)")]
+    public GameObject droppedItemPrefab;
+
+    [Header("Drop Spread")]
+    [Tooltip("아이템이 떨어지는 범위 (적 위치 기준)")]
+    public float dropSpreadRange = 0.3f;
 
     [Header("Debug")]
     public bool showDebugLogs = true;
@@ -19,12 +24,6 @@ public class EnemyDropHandler : MonoBehaviour
     private void Awake()
     {
         _enemy = GetComponent<EnemyInstance>();
-    }
-
-    private void Start()
-    {
-        if (inventoryManager == null)
-            inventoryManager = InventoryManager.Instance ?? FindObjectOfType<InventoryManager>();
     }
 
     private void OnDisable()
@@ -59,50 +58,76 @@ public class EnemyDropHandler : MonoBehaviour
         // 1. Food drop
         if (def.dropFood != null && Random.value <= def.foodDropChance)
         {
-            AddToInventory(def.dropFood, 1);
-            if (showDebugLogs)
-                Debug.Log($"  - Dropped food: {def.dropFood.itemName}");
+            SpawnDroppedItem(def.dropFood);
         }
 
         // 2. Material drop
         if (def.dropMaterial != null && Random.value <= def.materialDropChance)
         {
-            AddToInventory(def.dropMaterial, 1);
-            if (showDebugLogs)
-                Debug.Log($"  - Dropped material: {def.dropMaterial.itemName}");
+            SpawnDroppedItem(def.dropMaterial);
         }
 
         // 3. Secondary material drop
         if (def.dropMaterial2 != null && Random.value <= def.material2DropChance)
         {
-            AddToInventory(def.dropMaterial2, 1);
-            if (showDebugLogs)
-                Debug.Log($"  - Dropped material2: {def.dropMaterial2.itemName}");
+            SpawnDroppedItem(def.dropMaterial2);
         }
 
-        // 4. Color module drop (handled by ColorModuleDropper if present)
-        // ColorModuleDropper handles this separately
+        // 4. Color module drop
+        if (def.dropColorModule != null && Random.value <= def.colorModuleDropChance)
+        {
+            SpawnDroppedItem(def.dropColorModule);
+        }
     }
 
-    private void AddToInventory(ItemData item, int amount)
+    /// <summary>
+    /// 바닥에 아이템 스폰
+    /// </summary>
+    private void SpawnDroppedItem(ItemData itemData)
     {
-        if (item == null) return;
+        if (itemData == null) return;
 
-        if (inventoryManager == null)
+        // 프리팹이 없으면 인벤토리에 직접 추가 (fallback)
+        if (droppedItemPrefab == null)
         {
-            inventoryManager = InventoryManager.Instance ?? FindObjectOfType<InventoryManager>();
+            var inv = InventoryManager.Instance;
+            if (inv != null)
+            {
+                inv.AddItem(itemData.itemID, itemData.itemName, 1, transform.position);
+                if (showDebugLogs)
+                    Debug.Log($"[EnemyDropHandler] No prefab, added directly: {itemData.itemName}");
+            }
+            return;
         }
 
-        if (inventoryManager != null)
-        {
-            // InventoryManager.AddItem(int itemID, string itemName, int count, Vector3 playerPosition)
-            Vector3 dropPos = transform.position;
-            inventoryManager.AddItem(item.itemID, item.itemName, amount, dropPos);
-        }
-        else
-        {
-            Debug.LogWarning("[EnemyDropHandler] InventoryManager not found!");
-        }
+        // 약간 랜덤 위치에 스폰
+        Vector3 dropPos = transform.position + new Vector3(
+            Random.Range(-dropSpreadRange, dropSpreadRange),
+            Random.Range(-dropSpreadRange, dropSpreadRange),
+            0f
+        );
+
+        GameObject dropObj = Instantiate(droppedItemPrefab, dropPos, Quaternion.identity);
+
+        // DroppedItem 컴포넌트 설정
+        DroppedItem dropped = dropObj.GetComponent<DroppedItem>();
+        if (dropped == null)
+            dropped = dropObj.AddComponent<DroppedItem>();
+
+        dropped.itemID = itemData.itemID;
+        dropped.itemName = itemData.itemName;
+        dropped.count = 1;
+
+        // 아이콘 스프라이트 설정 (있으면)
+        SpriteRenderer sr = dropObj.GetComponent<SpriteRenderer>();
+        if (sr == null)
+            sr = dropObj.GetComponentInChildren<SpriteRenderer>();
+
+        if (sr != null && itemData.icon != null)
+            sr.sprite = itemData.icon;
+
+        if (showDebugLogs)
+            Debug.Log($"[EnemyDropHandler] Spawned drop: {itemData.itemName} at {dropPos}");
     }
 
     /// <summary>

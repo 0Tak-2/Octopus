@@ -126,20 +126,17 @@ public class EnemyDefinition : ScriptableObject
     [Header("Boss Movement (Optional)")]
     [Tooltip("Boss free moves per turn (1 free move + AP cost for additional moves)")]
     [Min(0)] public int bossFreeMovesPerTurn = 1;
-    
+
     // =========================
     // Color Module Drop (Phase 2)
     // =========================
     [Header("Color Module Drop")]
-    [Tooltip("Red module drop chance (0~1)")]
-    [Range(0f, 1f)] public float redModuleDropChance = 0f;
-    
-    [Tooltip("Blue module drop chance (0~1)")]
-    [Range(0f, 1f)] public float blueModuleDropChance = 0f;
-    
-    [Tooltip("Black module drop chance (0~1)")]
-    [Range(0f, 1f)] public float blackModuleDropChance = 0f;
-    
+    [Tooltip("드랍할 색 모듈 아이템 (ItemData)")]
+    public ItemData dropColorModule;
+
+    [Tooltip("색 모듈 드랍 확률 (0~1)")]
+    [Range(0f, 1f)] public float colorModuleDropChance = 0.15f;
+
     // =========================
     // Item Drop (Phase 4)
     // =========================

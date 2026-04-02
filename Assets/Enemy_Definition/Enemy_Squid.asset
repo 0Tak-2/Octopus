@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: "\uC624\uC9D5\uC5B4"
   tokenPrefab: {fileID: 4667636831984045804, guid: ca4dc545a1fe5f04696e2b30d3c37747, type: 3}
-  maxHP: 45
+  maxHP: 300
   defense: 0
   moveRange: 2
   attackRange: 1
@@ -60,9 +60,8 @@ MonoBehaviour:
   bossRageFullRatio: 0.4
   bossRageMaxMultiplier: 2
   bossFreeMovesPerTurn: 1
-  redModuleDropChance: 0.05
-  blueModuleDropChance: 0.1
-  blackModuleDropChance: 0
+  dropColorModule: {fileID: 0}
+  colorModuleDropChance: 0.15
   dropFood: {fileID: 11400000, guid: e27cffc35d92c9f41aaae2cbc4ceeb67, type: 2}
   dropMaterial: {fileID: 11400000, guid: e08500ae88d1254488d2ab279fae1716, type: 2}
   dropMaterial2: {fileID: 0}

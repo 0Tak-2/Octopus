@@ -346,3 +346,9 @@ MonoBehaviour:
     value: "\uCE58\uBA85\uD0C0 \uD53C\uD574"
   - key: STAT_STUN_CHANCE
     value: "\uC2A4\uD134 \uD655\uB960"
+  - key: UI_HINT_MOVE
+    value: "\uC774\uB3D9\uD560 \uC704\uCE58\uB97C \uD074\uB9AD (\uC6B0\uD074\uB9AD/ESC
+      \uCDE8\uC18C)"
+  - key: UI_HINT_ATTACK
+    value: "\uC801\uC744 \uD074\uB9AD\uD558\uC5EC \uACF5\uACA9 (\uC6B0\uD074\uB9AD/ESC
+      \uCDE8\uC18C)"

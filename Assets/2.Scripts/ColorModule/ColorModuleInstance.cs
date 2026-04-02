@@ -16,12 +16,12 @@ public class ColorModuleInstance
     /// </summary>
     [System.NonSerialized]
     public System.Collections.Generic.HashSet<Transform> firstStrikeUsedOn = new System.Collections.Generic.HashSet<Transform>();
-    
+
     /// <summary>
     /// 응징하는촉수: 버프 남은 턴
     /// </summary>
-    public int punishingBuffTurns = 0;
-    
+    public int punishingBuffNextAttack = 0;
+
     public ColorModuleInstance(ColorModuleDefinition def)
     {
         definition = def;
@@ -34,18 +34,18 @@ public class ColorModuleInstance
     public void ResetForCombat()
     {
         firstStrikeUsedOn?.Clear();
-        punishingBuffTurns = 0;
+        punishingBuffNextAttack = 0;
     }
-    
+
     /// <summary>
     /// 턴 종료 시 처리
     /// </summary>
     public void OnTurnEnd()
     {
-        if (punishingBuffTurns > 0)
-            punishingBuffTurns--;
+        // 응징하는촉수 버프는 공격 시 소비되므로 턴에서 안 건드림
     }
-    
+
+
     // === 편의 프로퍼티 ===
     public string Name => definition?.moduleName ?? "???";
     public ColorType Color => definition?.colorType ?? ColorType.Red;

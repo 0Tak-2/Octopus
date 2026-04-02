@@ -1281,7 +1281,20 @@ public class FocusedCombatManager : MonoBehaviour
         float enemyEVA = GetEnemyBaseEvasion();
         CombatUnitStats cs = _enemyToken.GetComponent<CombatUnitStats>();
         if (cs != null) enemyEVA = Mathf.Clamp01(enemyEVA + cs.Evasion);
-        
+
+        // === 패시브 ATK 배율 자동 적용 ===
+        var skillExec = ColorSkillExecutor.Instance;
+        if (skillExec != null)
+        {
+            int enemyStatusCount = _enemyStatusEffects != null ? _enemyStatusEffects.TotalEffectCount : 0;
+            int enemyMaxHP = _pendingEnemyDef != null ? _pendingEnemyDef.maxHP : State.enemyHP;
+            float passiveMultiplier = skillExec.CalculatePassiveATKMultiplier(
+                State.playerHP, _effectivePlayerMaxHP,
+                State.enemyHP, enemyMaxHP,
+                enemyStatusCount
+            );
+            attackMultiplier *= passiveMultiplier;
+        }
         // 전투 공식으로 계산
         var result = CombatCalculator.CalculatePlayerAttack(
             _playerStats,
