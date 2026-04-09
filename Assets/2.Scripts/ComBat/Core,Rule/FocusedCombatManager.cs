@@ -206,6 +206,8 @@ public class FocusedCombatManager : MonoBehaviour
         if (fieldTimeManager == null)
             fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
 
+        EnsureDisableDuringCombatTargets();
+
         _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
     }
 
@@ -350,6 +352,7 @@ public class FocusedCombatManager : MonoBehaviour
     private void DoEnter()
     {
         SetDisableDuringCombat(true);
+        ApplyFieldHudCombatMode(true);
 
         if (fieldRoot != null) fieldRoot.SetActive(false);
         if (combatUIRoot != null) combatUIRoot.SetActive(true);
@@ -530,6 +533,7 @@ public class FocusedCombatManager : MonoBehaviour
         if (fieldRoot != null) fieldRoot.SetActive(true);
 
         SetDisableDuringCombat(false);
+        ApplyFieldHudCombatMode(false);
 
         State.isInCombat = false;
         State.isBusy = false;
@@ -975,6 +979,7 @@ public class FocusedCombatManager : MonoBehaviour
         }
 
         State.playerHP = Mathf.Max(0, State.playerHP - dmg);
+        SyncPlayerStatsHpFromCombatState();
         StartCoroutine(vfx.HitPulse(_playerToken));
 
         RefreshUI();
@@ -1036,6 +1041,16 @@ public class FocusedCombatManager : MonoBehaviour
     // ==========================
     public void RefreshUIExternal() => RefreshUI();
     public void RefreshMoveHighlightsExternal() => RefreshMoveHighlights();
+
+    /// <summary>
+    /// 집중전투는 State.playerHP만 갱신하는 경우가 많아, 필드 UI(PlayerStatusBarUI)가 읽는 PlayerStats.hp와 어긋난다.
+    /// 피해/출혈 등 State를 바꾼 직후 호출한다.
+    /// </summary>
+    private void SyncPlayerStatsHpFromCombatState()
+    {
+        if (_playerStats == null) return;
+        _playerStats.hp = Mathf.Clamp(State.playerHP, 0, _playerStats.maxHP);
+    }
 
     private void RefreshUI()
     {
@@ -1163,6 +1178,68 @@ public class FocusedCombatManager : MonoBehaviour
         {
             if (disableDuringCombat[i] == null) continue;
             disableDuringCombat[i].enabled = !disable;
+        }
+    }
+
+    /// <summary>
+    /// 던전 씬 등에서 인스펙터에 PlayerGridMover 등이 비어 있을 때 자동으로 채움.
+    /// </summary>
+    private void EnsureDisableDuringCombatTargets()
+    {
+        if (disableDuringCombat != null && disableDuringCombat.Length > 0)
+        {
+            for (int i = 0; i < disableDuringCombat.Length; i++)
+            {
+                if (disableDuringCombat[i] != null) return;
+            }
+        }
+
+        PlayerStats stats = FindObjectOfType<PlayerStats>();
+        if (stats == null) return;
+
+        Transform t = stats.transform;
+        var list = new System.Collections.Generic.List<MonoBehaviour>(4);
+        var grid = t.GetComponent<PlayerGridMover>();
+        var crouch = t.GetComponent<PlayerCrouch>();
+        var rest = t.GetComponent<RestController>();
+        if (grid != null) list.Add(grid);
+        if (crouch != null) list.Add(crouch);
+        if (rest != null) list.Add(rest);
+        if (list.Count == 0) return;
+
+        disableDuringCombat = list.ToArray();
+    }
+
+    /// <summary>
+    /// 집중전투 진입 시 필드용 HUD(스킬바, 턴 HUD 등)를 끄고, 퇴장 시 복구.
+    /// GameHUDManager가 씬에 없어도 FieldSkillBarUI / TurnHUD를 찾아 처리한다.
+    /// </summary>
+    private void ApplyFieldHudCombatMode(bool inCombat)
+    {
+        if (inCombat && TooltipManager.Instance != null)
+            TooltipManager.Instance.Hide();
+
+        if (GameHUDManager.Instance != null)
+        {
+            if (inCombat) GameHUDManager.Instance.EnterCombatMode();
+            else GameHUDManager.Instance.ExitCombatMode();
+            return;
+        }
+
+        var sort = FindObjectsSortMode.None;
+        foreach (var bar in FindObjectsByType<FieldSkillBarUI>(FindObjectsInactive.Include, sort))
+        {
+            if (bar != null) bar.gameObject.SetActive(!inCombat);
+        }
+
+        foreach (var hud in FindObjectsByType<TurnHUD>(FindObjectsInactive.Include, sort))
+        {
+            if (hud != null) hud.gameObject.SetActive(!inCombat);
+        }
+
+        foreach (var prompt in FindObjectsByType<WorldPromptUI>(FindObjectsInactive.Include, sort))
+        {
+            if (prompt != null) prompt.gameObject.SetActive(!inCombat);
         }
     }
 
@@ -1371,6 +1448,7 @@ public class FocusedCombatManager : MonoBehaviour
         
         // 피해 적용
         State.playerHP = Mathf.Max(0, State.playerHP - result.finalDamage);
+        SyncPlayerStatsHpFromCombatState();
         StartCoroutine(vfx.HitPulse(_playerToken));
         
         RefreshUI();
@@ -1389,6 +1467,7 @@ public class FocusedCombatManager : MonoBehaviour
             if (bleedDmg > 0)
             {
                 State.playerHP = Mathf.Max(0, State.playerHP - bleedDmg);
+                SyncPlayerStatsHpFromCombatState();
                 if (vfx != null) vfx.ShowPopup(_playerToken, $"출혈 -{bleedDmg}");
                 RefreshUI();
             }

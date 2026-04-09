@@ -9,7 +9,7 @@ public class MapExitTrigger : MonoBehaviour
 {
     [Header("Settings")]
     [Tooltip("상호작용 키")]
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.E;
 
     [Tooltip("트리거 반경 (0 = 정확히 밟아야 함, 1 = 1칸 근처)")]
     [Range(0f, 2f)] public float triggerRadius = 0.5f;

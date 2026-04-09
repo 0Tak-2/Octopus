@@ -16,7 +16,6 @@ public class ColorModuleUI : MonoBehaviour
 
     [Header("UI Root")]
     public GameObject uiRoot;
-    public KeyCode toggleKey = KeyCode.M;
 
     [Header("Slot UI (5칸)")]
     public ColorModuleSlotUI[] slotUIs = new ColorModuleSlotUI[5];
@@ -74,15 +73,7 @@ public class ColorModuleUI : MonoBehaviour
             slots.OnSlotsChanged -= RefreshSlots;
     }
 
-    private void Update()
-    {
-        // 토글 키
-        if (Input.GetKeyDown(toggleKey))
-        {
-            ToggleUI();
-        }
-    }
-
+    
     public void ToggleUI()
     {
         if (uiRoot == null) return;

@@ -16,7 +16,6 @@ public class EquipmentUI : MonoBehaviour
 
     [Header("UI Root")]
     public GameObject uiRoot;
-    public KeyCode toggleKey = KeyCode.E;
 
     [Header("Slot UI (8칸)")]
     public EquipmentSlotUI[] slotUIs = new EquipmentSlotUI[8];
@@ -63,11 +62,7 @@ public class EquipmentUI : MonoBehaviour
             equipmentManager.OnEquipmentChanged -= RefreshAll;
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(toggleKey))
-            ToggleUI();
-    }
+   
 
     public void ToggleUI()
     {

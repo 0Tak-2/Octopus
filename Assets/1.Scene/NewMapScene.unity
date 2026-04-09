@@ -658,6 +658,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 56046364}
   m_CullTransparentMesh: 1
+--- !u!1 &58568036
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 58568038}
+  - component: {fileID: 58568037}
+  m_Layer: 0
+  m_Name: '[FogOfWar]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &58568037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 58568036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa3e779441b5c5b46a2a3099a22520c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grid: {fileID: 0}
+  player: {fileID: 0}
+  visibleColor: {r: 0, g: 0, b: 0, a: 0}
+  exploredColor: {r: 0, g: 0, b: 0, a: 0.55}
+  unexploredColor: {r: 0, g: 0, b: 0, a: 1}
+  textureScale: 4
+  blurPasses: 2
+  sortingOrder: 200
+  sortingLayerName: Default
+  hideEnemiesOutsideVision: 1
+  hideObjectsInUnexplored: 1
+  showDebugLogs: 0
+--- !u!4 &58568038
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 58568036}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 10.795439, y: 15.55662, z: 0.3219654}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &59226170
 GameObject:
   m_ObjectHideFlags: 0
@@ -12296,8 +12352,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridBoard: {fileID: 0}
   playerCrouch: {fileID: 0}
-  playerVisionRange: 5
-  enemyDetectionRange: 5
+  playerVisionRange: 4
+  enemyDetectionRange: 2
   coverDetectionPenalty: 0.5
   crouchDetectionPenalty: 0.2
   showDebugLogs: 0
@@ -21356,7 +21412,6 @@ MonoBehaviour:
   inventory: {fileID: 2011224905}
   slots: {fileID: 2011224904}
   uiRoot: {fileID: 1632206711}
-  toggleKey: 9
   slotUIs:
   - {fileID: 1892072580}
   - {fileID: 1506712675}
@@ -26059,7 +26114,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000030517578}
+  m_AnchoredPosition: {x: 0.000030517578, y: 0.000030517578}
   m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1585893452
@@ -26194,7 +26249,6 @@ MonoBehaviour:
   equipmentManager: {fileID: 2011224902}
   inventoryManager: {fileID: 729064318}
   uiRoot: {fileID: 140240563}
-  toggleKey: 9
   slotUIs:
   - {fileID: 2048053677}
   - {fileID: 60517667}
@@ -27324,7 +27378,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 71405312}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.9993995
+  m_Size: 0.9924412
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -31135,6 +31189,8 @@ MonoBehaviour:
   autoBuildUiAtRuntime: 1
   barSize: {x: 300, y: 20}
   useKoreanLabels: 1
+  screenCorner: 0
+  cornerPadding: {x: 16, y: 16}
   hpSlider: {fileID: 0}
   hpFillImage: {fileID: 0}
   hpText: {fileID: 0}
@@ -33118,6 +33174,10 @@ PrefabInstance:
       propertyPath: equippedItems.Array.data[3]
       value: 
       objectReference: {fileID: 11400000, guid: 10f5e54e80b8bf74f8de351fe2a298f7, type: 2}
+    - target: {fileID: 2826277930551839859, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
+      propertyPath: caster
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3519355663358756076, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: fieldTime
       value: 
@@ -33417,3 +33477,4 @@ SceneRoots:
   - {fileID: 1118916208}
   - {fileID: 819317715}
   - {fileID: 4019575123244086140}
+  - {fileID: 58568038}

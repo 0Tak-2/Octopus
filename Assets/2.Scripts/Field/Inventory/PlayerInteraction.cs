@@ -22,11 +22,12 @@ public class PlayerInteraction : MonoBehaviour
         if (fieldTimeManager == null) fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
     }
 
+    [Header("Input")]
+    public KeyCode interactKey = KeyCode.E;
+
     private void Update()
     {
-        // UI Ŭ�� ���̸� �Է� ����
-        // FŰ �Է�
-        if (Input.GetKeyDown(KeyCode.F))
+        if (Input.GetKeyDown(interactKey))
         {
             TryInteract();
         }

@@ -18,8 +18,10 @@ MonoBehaviour:
   fieldIndex: 1
   width: 30
   height: 30
-  wallProbability: 0.5
-  caIterations: 6
+  wallProbability: 0.46
+  caIterations: 4
+  borderThickness: 2
+  smoothPasses: 0
   dungeons:
   - {fileID: 11400000, guid: c2ec1b303c1813043bc89d2f741f4db9, type: 2}
   - {fileID: 11400000, guid: afe834c51b79fd34790875bf3088afec, type: 2}

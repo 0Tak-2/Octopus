@@ -37,13 +37,6 @@ public class GameHUDManager : MonoBehaviour
     public GameObject fieldSkillPanel;
     public FieldSkillBarUI fieldSkillBarUI;
     
-    [Header("=== Hotkeys ===")]
-    public KeyCode inventoryKey = KeyCode.I;
-    public KeyCode equipmentKey = KeyCode.E;
-    public KeyCode colorModuleKey = KeyCode.M;
-    public KeyCode craftingKey = KeyCode.C;
-    public KeyCode closeAllKey = KeyCode.Escape;
-    
     [Header("=== Settings ===")]
     [Tooltip("Close other panels when opening a new one")]
     public bool exclusivePanels = false;
@@ -81,13 +74,12 @@ public class GameHUDManager : MonoBehaviour
         if (fieldSkillPanel != null)
             fieldSkillPanel.SetActive(true);
     }
-    
+
     private void Update()
     {
-        HandleHotkeys();
         UpdatePanelState();
     }
-    
+
     private void SetupButtons()
     {
         if (inventoryToggleButton != null)
@@ -103,23 +95,7 @@ public class GameHUDManager : MonoBehaviour
             craftingToggleButton.onClick.AddListener(ToggleCrafting);
     }
     
-    private void HandleHotkeys()
-    {
-        if (Input.GetKeyDown(inventoryKey))
-            ToggleInventory();
-        
-        if (Input.GetKeyDown(equipmentKey))
-            ToggleEquipment();
-        
-        if (Input.GetKeyDown(colorModuleKey))
-            ToggleColorModule();
-        
-        if (Input.GetKeyDown(craftingKey))
-            ToggleCrafting();
-        
-        if (Input.GetKeyDown(closeAllKey))
-            CloseAllPanels();
-    }
+    
     
     private void UpdatePanelState()
     {

@@ -115,10 +115,41 @@ public class InventoryManager : MonoBehaviour
 
     private void Update()
     {
-        // TAB키로 인벤토리 토글
+        // TAB키로 통합 UI 토글 (인벤토리 + 장비 + 색상 모듈)
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            ToggleInventory();
+            ToggleUnifiedUI();
+        }
+    }
+
+    /// <summary>
+    /// Tab으로 인벤토리/장비/색상모듈 UI를 한꺼번에 토글.
+    /// 인벤토리의 현재 상태(isInventoryOpen)를 기준으로 세 패널을 같은 상태로 맞춤.
+    /// </summary>
+    private void ToggleUnifiedUI()
+    {
+        bool targetOpen = !isInventoryOpen;
+
+        // 1. 인벤토리
+        if (targetOpen)
+            OpenInventory();
+        else
+            CloseInventory();
+
+        // 2. 장비창 - 현재 상태가 다르면 토글해서 동기화
+        if (EquipmentUI.Instance != null && EquipmentUI.Instance.uiRoot != null)
+        {
+            bool equipOpen = EquipmentUI.Instance.uiRoot.activeSelf;
+            if (equipOpen != targetOpen)
+                EquipmentUI.Instance.ToggleUI();
+        }
+
+        // 3. 색상 모듈창 - 현재 상태가 다르면 토글해서 동기화
+        if (ColorModuleUI.Instance != null && ColorModuleUI.Instance.uiRoot != null)
+        {
+            bool moduleOpen = ColorModuleUI.Instance.uiRoot.activeSelf;
+            if (moduleOpen != targetOpen)
+                ColorModuleUI.Instance.ToggleUI();
         }
     }
 
@@ -211,10 +242,23 @@ public class InventoryManager : MonoBehaviour
     {
         if (inventoryUI != null)
         {
+            EnsureInventoryCanvasRootScale(inventoryUI.transform);
             inventoryUI.SetActive(true);
             isInventoryOpen = true;
             UpdateInventoryUI();
         }
+    }
+
+    /// <summary>
+    /// 씬에서 실수로 Canvas 스케일이 0인 경우 인벤이 보이지 않음 — Tab으로 열 때 복구
+    /// </summary>
+    private static void EnsureInventoryCanvasRootScale(Transform inventoryUiTransform)
+    {
+        Canvas canvas = inventoryUiTransform.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        var rt = canvas.transform as RectTransform;
+        if (rt != null && rt.localScale.sqrMagnitude < 1e-6f)
+            rt.localScale = Vector3.one;
     }
 
     public void CloseInventory()

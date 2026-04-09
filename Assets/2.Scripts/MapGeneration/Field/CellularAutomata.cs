@@ -23,7 +23,15 @@ public static class CellularAutomata
             map = ApplyCellularAutomata(map, 5);
         }
 
-        CreateBorder(map);
+        // 외곽 테두리 두껍게 (톱니 방지)
+        CreateThickBorder(map, fieldDef.borderThickness);
+
+        // 내부 벽 돌기/구멍 스무딩
+        map = SmoothWalls(map, fieldDef.smoothPasses);
+
+        // 스무딩 후 외곽 다시 보장
+        CreateThickBorder(map, fieldDef.borderThickness);
+
         FloodFillCleanup(map);
 
         return map;
@@ -49,8 +57,10 @@ public static class CellularAutomata
             map = ApplyCellularAutomata(map, config.wallThreshold);
         }
 
-        // 3단계: 외곽 벽 생성
-        CreateBorder(map);
+        // 3단계: 두꺼운 외곽 벽 + 스무딩
+        CreateThickBorder(map, thickness: 2);
+        map = SmoothWalls(map, passes: 2);
+        CreateThickBorder(map, thickness: 2);
 
         // 4단계: 고립된 영역 제거 (접근 가능한 영역만 남김)
         FloodFillCleanup(map);
@@ -141,7 +151,7 @@ public static class CellularAutomata
     }
 
     /// <summary>
-    /// 3단계: 외곽 벽 확실히 만들기
+    /// 외곽 1칸 벽 (기존 호환용, 새 코드에서는 CreateThickBorder 사용)
     /// </summary>
     private static void CreateBorder(MapData map)
     {
@@ -156,6 +166,68 @@ public static class CellularAutomata
             map.SetTile(0, y, TileType.Wall);
             map.SetTile(map.width - 1, y, TileType.Wall);
         }
+    }
+
+    /// <summary>
+    /// 두꺼운 외곽 테두리 생성 (톱니 방지)
+    /// </summary>
+    private static void CreateThickBorder(MapData map, int thickness)
+    {
+        for (int x = 0; x < map.width; x++)
+        {
+            for (int y = 0; y < map.height; y++)
+            {
+                if (x < thickness || x >= map.width - thickness ||
+                    y < thickness || y >= map.height - thickness)
+                {
+                    map.SetTile(x, y, TileType.Wall);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 벽 스무딩: 1~2칸짜리 벽 돌기와 작은 구멍을 정리
+    /// - 벽인데 이웃 벽이 너무 적으면 → 바닥
+    /// - 바닥인데 이웃 벽이 너무 많으면 → 벽
+    /// </summary>
+    private static MapData SmoothWalls(MapData map, int passes)
+    {
+        for (int p = 0; p < passes; p++)
+        {
+            MapData newMap = new MapData(map.width, map.height);
+
+            for (int x = 0; x < map.width; x++)
+            {
+                for (int y = 0; y < map.height; y++)
+                {
+                    // 외곽은 그대로 벽
+                    if (x == 0 || x == map.width - 1 || y == 0 || y == map.height - 1)
+                    {
+                        newMap.SetTile(x, y, TileType.Wall);
+                        continue;
+                    }
+
+                    int wallNeighbors = CountWallNeighbors(map, x, y);
+                    bool isWall = map.GetTile(x, y) == TileType.Wall;
+
+                    if (isWall)
+                    {
+                        // 벽인데 이웃 벽이 4개 미만이면 → 돌기로 판단, 제거
+                        newMap.SetTile(x, y, wallNeighbors >= 4 ? TileType.Wall : TileType.Empty);
+                    }
+                    else
+                    {
+                        // 바닥인데 이웃 벽이 5개 이상이면 → 작은 구멍으로 판단, 메움
+                        newMap.SetTile(x, y, wallNeighbors >= 5 ? TileType.Wall : TileType.Empty);
+                    }
+                }
+            }
+
+            map = newMap;
+        }
+
+        return map;
     }
 
     /// <summary>

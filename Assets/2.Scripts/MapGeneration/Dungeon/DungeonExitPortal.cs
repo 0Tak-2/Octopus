@@ -8,7 +8,7 @@ using TMPro;
 public class DungeonExitPortal : MonoBehaviour
 {
     [Header("Settings")]
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.E;
     [Range(0.5f, 3f)] public float triggerRadius = 1.5f;
 
     [Header("UI")]

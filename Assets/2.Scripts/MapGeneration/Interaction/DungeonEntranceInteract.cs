@@ -9,7 +9,7 @@ public class DungeonEntranceInteract : MonoBehaviour
 {
     [Header("Settings")]
     [Tooltip("상호작용 키")]
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.E;
 
     [Tooltip("트리거 반경")]
     [Range(0.5f, 3f)] public float triggerRadius = 1.5f;

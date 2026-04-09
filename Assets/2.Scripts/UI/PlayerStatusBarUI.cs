@@ -2,6 +2,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public enum StatusBarScreenCorner
+{
+    TopCenter,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight
+}
+
 /// <summary>
 /// 체력 / 허기 / 피로도 바 (각각 다른 색). PlayerStats를 표시합니다.
 /// 인스펙터에 Slider·Image를 연결하거나, Auto Build로 런타임 생성할 수 있습니다.
@@ -17,6 +27,12 @@ public class PlayerStatusBarUI : MonoBehaviour
     public Vector2 barSize = new Vector2(200f, 16f);
     [Tooltip("체력 → 허기 → 피로 순으로 쌓습니다.")]
     public bool useKoreanLabels = true;
+
+    [Header("화면 위치")]
+    [Tooltip("캔버스 전체(큰 박스) 기준으로 바를 둘 모서리. 게임 화면이 왼쪽 아래에만 있으면 BottomLeft 등으로 바꿔 보세요.")]
+    public StatusBarScreenCorner screenCorner = StatusBarScreenCorner.TopCenter;
+    [Tooltip("모서리에서 안쪽으로 얼마나 띄울지 (픽셀, Canvas Scaler 기준)")]
+    public Vector2 cornerPadding = new Vector2(16f, 16f);
 
     [Header("HP Bar")]
     public Slider hpSlider;
@@ -67,6 +83,64 @@ public class PlayerStatusBarUI : MonoBehaviour
             }
             return _whiteSprite;
         }
+    }
+
+    /// <summary>
+    /// UI는 new GameObject(name, typeof(RectTransform))로 만든다. 일반 GameObject는 SetParent 직후 as RectTransform이 null일 수 있다.
+    /// </summary>
+    private static RectTransform GetRect(GameObject go)
+    {
+        var rt = go.GetComponent<RectTransform>();
+        if (rt != null) return rt;
+        return go.transform as RectTransform;
+    }
+
+    private static GameObject CreateUiObject(string name)
+    {
+        return new GameObject(name, typeof(RectTransform));
+    }
+
+    private void ApplyScreenCorner(RectTransform rootRt)
+    {
+        Vector2 aMin, aMax, pivot;
+        Vector2 pos;
+
+        switch (screenCorner)
+        {
+            case StatusBarScreenCorner.TopLeft:
+                aMin = aMax = pivot = new Vector2(0f, 1f);
+                pos = new Vector2(cornerPadding.x, -cornerPadding.y);
+                break;
+            case StatusBarScreenCorner.TopCenter:
+                aMin = aMax = pivot = new Vector2(0.5f, 1f);
+                pos = new Vector2(0f, -cornerPadding.y);
+                break;
+            case StatusBarScreenCorner.TopRight:
+                aMin = aMax = pivot = new Vector2(1f, 1f);
+                pos = new Vector2(-cornerPadding.x, -cornerPadding.y);
+                break;
+            case StatusBarScreenCorner.BottomLeft:
+                aMin = aMax = pivot = new Vector2(0f, 0f);
+                pos = new Vector2(cornerPadding.x, cornerPadding.y);
+                break;
+            case StatusBarScreenCorner.BottomCenter:
+                aMin = aMax = pivot = new Vector2(0.5f, 0f);
+                pos = new Vector2(0f, cornerPadding.y);
+                break;
+            case StatusBarScreenCorner.BottomRight:
+                aMin = aMax = pivot = new Vector2(1f, 0f);
+                pos = new Vector2(-cornerPadding.x, cornerPadding.y);
+                break;
+            default:
+                aMin = aMax = pivot = new Vector2(0.5f, 1f);
+                pos = new Vector2(0f, -cornerPadding.y);
+                break;
+        }
+
+        rootRt.anchorMin = aMin;
+        rootRt.anchorMax = aMax;
+        rootRt.pivot = pivot;
+        rootRt.anchoredPosition = pos;
     }
 
     private void Awake()
@@ -124,7 +198,14 @@ public class PlayerStatusBarUI : MonoBehaviour
         var root = gameObject;
         var rootRt = root.GetComponent<RectTransform>();
         if (rootRt == null)
-            rootRt = root.AddComponent<RectTransform>();
+        {
+            Debug.LogError("[PlayerStatusBarUI] Canvas 등 RectTransform이 있는 UI 오브젝트에 붙여 주세요.", this);
+            return;
+        }
+
+        // 이전 빌드 실패로 남은 자식(중복 체력_Row 등) 제거
+        for (int i = root.transform.childCount - 1; i >= 0; i--)
+            Destroy(root.transform.GetChild(i).gameObject);
 
         var vlg = root.GetComponent<VerticalLayoutGroup>();
         if (vlg == null)
@@ -147,21 +228,21 @@ public class PlayerStatusBarUI : MonoBehaviour
         hungerFillImage = CreateBarRow(hunL, root.transform, out hungerText);
         fatigueFillImage = CreateBarRow(fatL, root.transform, out fatigueText);
 
-        // 최소 가로폭 (Bar가 0으로 접히는 것 방지)
-        rootRt.anchorMin = new Vector2(0.5f, 1f);
-        rootRt.anchorMax = new Vector2(0.5f, 1f);
-        rootRt.pivot = new Vector2(0.5f, 1f);
+        // 최소 가로폭 (Bar가 0으로 접히는 것 방지) + 화면 모서리
         rootRt.sizeDelta = new Vector2(Mathf.Max(280f, barSize.x + 120f), 110f);
+        ApplyScreenCorner(rootRt);
 
         _didBuild = true;
     }
 
     private Image CreateBarRow(string label, Transform parent, out TMP_Text valueText)
     {
-        var row = new GameObject(label + "_Row");
+        var row = CreateUiObject(label + "_Row");
         row.transform.SetParent(parent, false);
 
-        var rowRt = row.AddComponent<RectTransform>();
+        var rowRt = GetRect(row);
+        if (rowRt == null)
+            throw new System.InvalidOperationException("Row에 RectTransform이 없습니다. 부모가 UI(RectTransform)인지 확인하세요.");
         rowRt.sizeDelta = new Vector2(barSize.x + 88f, 28f);
 
         var leRow = row.AddComponent<LayoutElement>();
@@ -179,9 +260,11 @@ public class PlayerStatusBarUI : MonoBehaviour
         hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = false;
 
-        var labelGo = new GameObject("Label");
+        var labelGo = CreateUiObject("Label");
         labelGo.transform.SetParent(row.transform, false);
-        var labelRt = labelGo.AddComponent<RectTransform>();
+        var labelRt = GetRect(labelGo);
+        if (labelRt == null)
+            throw new System.InvalidOperationException("Label에 RectTransform이 없습니다.");
         labelRt.sizeDelta = new Vector2(52f, 24f);
         var labelTmp = labelGo.AddComponent<TextMeshProUGUI>();
         labelTmp.text = label;
@@ -195,7 +278,7 @@ public class PlayerStatusBarUI : MonoBehaviour
         leLabel.preferredWidth = 52f;
         leLabel.minWidth = 52f;
 
-        var barContainer = new GameObject("Bar");
+        var barContainer = CreateUiObject("Bar");
         barContainer.transform.SetParent(row.transform, false);
         var barLe = barContainer.AddComponent<LayoutElement>();
         barLe.minWidth = barSize.x;
@@ -204,12 +287,16 @@ public class PlayerStatusBarUI : MonoBehaviour
         barLe.minHeight = barSize.y;
         barLe.preferredHeight = barSize.y;
 
-        var barRt = barContainer.AddComponent<RectTransform>();
+        var barRt = GetRect(barContainer);
+        if (barRt == null)
+            throw new System.InvalidOperationException("Bar에 RectTransform이 없습니다.");
         barRt.sizeDelta = barSize;
 
-        var bg = new GameObject("Bg");
+        var bg = CreateUiObject("Bg");
         bg.transform.SetParent(barContainer.transform, false);
-        var bgRt = bg.AddComponent<RectTransform>();
+        var bgRt = GetRect(bg);
+        if (bgRt == null)
+            throw new System.InvalidOperationException("Bg에 RectTransform이 없습니다.");
         bgRt.anchorMin = Vector2.zero;
         bgRt.anchorMax = Vector2.one;
         bgRt.offsetMin = Vector2.zero;
@@ -219,9 +306,11 @@ public class PlayerStatusBarUI : MonoBehaviour
         bgImg.color = new Color(0.12f, 0.12f, 0.14f, 0.92f);
         bgImg.raycastTarget = false;
 
-        var fillGo = new GameObject("Fill");
+        var fillGo = CreateUiObject("Fill");
         fillGo.transform.SetParent(bg.transform, false);
-        var fillRt = fillGo.AddComponent<RectTransform>();
+        var fillRt = GetRect(fillGo);
+        if (fillRt == null)
+            throw new System.InvalidOperationException("Fill에 RectTransform이 없습니다.");
         fillRt.anchorMin = Vector2.zero;
         fillRt.anchorMax = Vector2.one;
         fillRt.offsetMin = Vector2.zero;
@@ -234,9 +323,11 @@ public class PlayerStatusBarUI : MonoBehaviour
         fill.fillAmount = 1f;
         fill.raycastTarget = false;
 
-        var valueGo = new GameObject("Value");
+        var valueGo = CreateUiObject("Value");
         valueGo.transform.SetParent(row.transform, false);
-        var valueRt = valueGo.AddComponent<RectTransform>();
+        var valueRt = GetRect(valueGo);
+        if (valueRt == null)
+            throw new System.InvalidOperationException("Value에 RectTransform이 없습니다.");
         valueRt.sizeDelta = new Vector2(72f, 24f);
         valueText = valueGo.AddComponent<TextMeshProUGUI>();
         valueText.fontSize = 16;
