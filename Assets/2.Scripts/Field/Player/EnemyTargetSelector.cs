@@ -101,6 +101,9 @@ public class EnemyTargetSelector : MonoBehaviour
 
     private void Update()
     {
+        // 신 주시 시스템이 활성화돼있으면 이 스크립트는 비활성화
+        if (WatchTargetingController.UseNewWatchSystem) return;
+
         // 집중전투 중이면 무시
         var mgr = FocusedCombatManager.Instance;
         if (mgr != null && mgr.IsInFocusedCombat)

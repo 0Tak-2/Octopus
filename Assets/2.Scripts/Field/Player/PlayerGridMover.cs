@@ -21,7 +21,8 @@ public class PlayerGridMover : MonoBehaviour
     public bool blockMoveIntoOccupiedCell = true;
 
     public Vector2Int CurrentCell { get; private set; }
-
+    /// <summary>true이면 WASD 이동 차단 (주시 시스템 등에서 사용)</summary>
+    [HideInInspector] public bool lockMovement = false;
 
     /// <summary>
     /// 외부에서 플레이어의 현재 셀 위치를 강제로 설정 (던전 스폰 등)
@@ -133,6 +134,7 @@ public class PlayerGridMover : MonoBehaviour
 
         if (_isMoving) return;
         if (grid == null) return;
+        if (lockMovement) return;
 
         if (Input.GetKeyDown(KeyCode.Space))
         {

@@ -46,8 +46,9 @@ public class EnemyFocusedCombatInteract : MonoBehaviour
 
     private void Update()
     {
+        if (WatchTargetingController.UseNewWatchSystem) return;
+
         var mgr = FocusedCombatManager.Instance;
-        if (mgr == null) return;
 
         if (mgr.IsInFocusedCombat)
         {

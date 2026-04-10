@@ -18,6 +18,8 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Current Values")]
     public int hp = 100;
+    /// <summary>데미지 받을 때 발생 (최종 데미지 값 전달)</summary>
+    public event System.Action<int> OnDamageTaken;
     public int fatigue = 100;
     public int hunger = 100;
 
@@ -159,6 +161,8 @@ public class PlayerStats : MonoBehaviour
         }
 
         Debug.Log($"[PlayerStats] Took {finalDamage} damage (raw: {rawDamage}, DEF: {DEF}). HP: {hp}/{maxHP}");
+        OnDamageTaken?.Invoke(finalDamage);
+
     }
     
     /// <summary>
@@ -171,6 +175,7 @@ public class PlayerStats : MonoBehaviour
         ClampAll();
         
         Debug.Log($"[PlayerStats] Took {finalDamage} raw damage. HP: {hp}/{maxHP}");
+        OnDamageTaken?.Invoke(finalDamage);
     }
     
     /// <summary>

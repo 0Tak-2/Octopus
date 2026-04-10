@@ -26114,7 +26114,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0.000030517578, y: 0.000030517578}
+  m_AnchoredPosition: {x: -0.000030517578, y: 0.000030517578}
   m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1585893452
@@ -27378,7 +27378,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 71405312}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.9924412
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -33259,6 +33259,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4171715228404938419, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 190883750178817036}
+    - targetCorrespondingSourceObject: {fileID: 4171715228404938419, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 190883750178817043}
   m_SourcePrefab: {fileID: 100100000, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
 --- !u!1 &190883750178817035 stripped
 GameObject:
@@ -33292,6 +33295,32 @@ MonoBehaviour:
   castReturnDuration: 0.05
   castDashFraction: 0.55
   log: 1
+--- !u!114 &190883750178817043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 190883750178817035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570e86bb4fd75a43aedd6ad868a82cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerMover: {fileID: 0}
+  playerStats: {fileID: 0}
+  grid: {fileID: 0}
+  fieldTime: {fileID: 0}
+  multiEnemyAttack: {fileID: 0}
+  targetingKey: 113
+  confirmKey: 102
+  cancelKey: 27
+  watchTurnsRequired: 3
+  turnDelay: 0.8
+  highlightColor: {r: 1, g: 1, b: 0, a: 0.5}
+  watchingColor: {r: 1, g: 0.3, b: 0, a: 0.6}
+  completeColor: {r: 0, g: 1, b: 0, a: 0.6}
+  showDebugLogs: 1
 --- !u!1001 &4019575123244086140
 PrefabInstance:
   m_ObjectHideFlags: 0
