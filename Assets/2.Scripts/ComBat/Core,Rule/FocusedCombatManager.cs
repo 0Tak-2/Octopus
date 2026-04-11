@@ -118,6 +118,11 @@ public class FocusedCombatManager : MonoBehaviour
     private CombatUnitToken _playerToken;
     private CombatUnitToken _enemyToken;
 
+    // ===== 다중 적 =====
+    private System.Collections.Generic.List<CombatEnemyState> _enemyStates
+        = new System.Collections.Generic.List<CombatEnemyState>();
+    private int _activeEnemyIndex = 0;
+
     private EnemyDefinition _pendingEnemyDef;
     public EnemyDefinition CurrentEnemyDef => _pendingEnemyDef;
 
@@ -349,6 +354,9 @@ public class FocusedCombatManager : MonoBehaviour
         yield return StartCoroutine(fader.FadeOutIn(DoExit, fadeOutDuration, fadeInDuration));
     }
 
+    // ★★★ 이 메서드 전체로 기존 DoEnter()를 교체하세요 ★★★
+    // ★★★ FocusedCombatManager.cs 의 private void DoEnter() { ... } 전체 ★★★
+
     private void DoEnter()
     {
         SetDisableDuringCombat(true);
@@ -359,7 +367,21 @@ public class FocusedCombatManager : MonoBehaviour
 
         ResolveBlocker();
 
-        Vector2Int size = mapSizes[Random.Range(0, mapSizes.Length)];
+        // ============ 맵 생성 분기 ============
+        BuildResult buildResult = null;
+        Vector2Int size;
+
+        if (_pendingContext != null && _pendingContext.HasEnvironment)
+        {
+            // 신 주시 시스템: 10x10 환경 스캔 기반
+            buildResult = FocusCombatBuilder.Build(_pendingContext);
+            size = new Vector2Int(buildResult.gridData.width, buildResult.gridData.height);
+        }
+        else
+        {
+            // 기존 1v1: 랜덤 크기
+            size = mapSizes[Random.Range(0, mapSizes.Length)];
+        }
 
         if (boardUI != null)
         {
@@ -368,42 +390,137 @@ public class FocusedCombatManager : MonoBehaviour
             boardUI.OnTileClicked += HandleTileClicked;
         }
 
-        if (spawnPlanner != null)
-            spawnPlanner.PickEdgeSpawns(size.x, size.y, out State.playerCell, out State.enemyCell);
+        if (buildResult != null)
+        {
+            // 신 시스템: 빌더가 만든 스폰 + 지형 사용
+            State.playerCell = buildResult.playerSpawn;
+            State.enemyCell = buildResult.primaryEnemySpawn;
+            gridData = buildResult.gridData;
+        }
         else
         {
-            int cx = (size.x - 1) / 2;
-            State.playerCell = new Vector2Int(cx, 0);
-            State.enemyCell = new Vector2Int(cx, size.y - 1);
-        }
+            // 기존 시스템: 스폰 플래너 + 지형 생성기
+            if (spawnPlanner != null)
+                spawnPlanner.PickEdgeSpawns(size.x, size.y, out State.playerCell, out State.enemyCell);
+            else
+            {
+                int cx = (size.x - 1) / 2;
+                State.playerCell = new Vector2Int(cx, 0);
+                State.enemyCell = new Vector2Int(cx, size.y - 1);
+            }
 
-        gridData = null;
-        if (terrainGenerator != null)
-        {
-            bool ok = terrainGenerator.Generate(size.x, size.y, State.playerCell, State.enemyCell, out CombatGridData gen);
-            if (ok) gridData = gen;
-            else if (fallbackToEmptyOnFail) gridData = new CombatGridData(size.x, size.y);
+            gridData = null;
+            if (terrainGenerator != null)
+            {
+                bool ok = terrainGenerator.Generate(size.x, size.y, State.playerCell, State.enemyCell, out CombatGridData gen);
+                if (ok) gridData = gen;
+                else if (fallbackToEmptyOnFail) gridData = new CombatGridData(size.x, size.y);
+            }
+            else gridData = new CombatGridData(size.x, size.y);
         }
-        else gridData = new CombatGridData(size.x, size.y);
 
         if (boardUI != null && gridData != null)
             boardUI.ApplyTerrainVisual(gridData);
 
+        // ============ 토큰 배치 ============
         if (boardUI != null)
         {
+            // 플레이어 토큰
             if (playerTokenPrefab != null)
                 _playerToken = boardUI.PlaceToken(playerTokenPrefab, State.playerCell.x, State.playerCell.y);
 
-            CombatUnitToken enemyPrefabToUse = enemyTokenPrefab;
-            if (_pendingEnemyDef != null && _pendingEnemyDef.tokenPrefab != null)
-                enemyPrefabToUse = _pendingEnemyDef.tokenPrefab;
+            if (buildResult != null && _pendingContext != null && _pendingContext.IsMultiEnemy)
+            {
+                // 신 시스템: 다중 적 토큰 배치
+                for (int i = 0; i < _pendingContext.enemies.Count; i++)
+                {
+                    var entry = _pendingContext.enemies[i];
+                    if (entry.instance == null || entry.instance.definition == null) continue;
 
-            if (enemyPrefabToUse != null)
-                _enemyToken = boardUI.PlaceToken(enemyPrefabToUse, State.enemyCell.x, State.enemyCell.y);
+                    CombatUnitToken prefab = entry.instance.definition.tokenPrefab ?? enemyTokenPrefab;
+                    if (prefab == null) continue;
+
+                    Vector2Int spawn = buildResult.enemySpawns[i];
+                    var token = boardUI.PlaceToken(prefab, spawn.x, spawn.y);
+
+                    // 주시 대상(인덱스 0)은 기존 _enemyToken에도 할당 (하위 호환)
+                    if (i == 0)
+                        _enemyToken = token;
+                }
+            }
+            else
+            {
+                // 기존 1v1: 적 토큰 1개
+                CombatUnitToken enemyPrefabToUse = enemyTokenPrefab;
+                if (_pendingEnemyDef != null && _pendingEnemyDef.tokenPrefab != null)
+                    enemyPrefabToUse = _pendingEnemyDef.tokenPrefab;
+
+                if (enemyPrefabToUse != null)
+                    _enemyToken = boardUI.PlaceToken(enemyPrefabToUse, State.enemyCell.x, State.enemyCell.y);
+            }
         }
 
+        // ============ 다중 적 상태 초기화 ============
+        _enemyStates.Clear();
+        _activeEnemyIndex = 0;
+
+        if (_pendingContext != null && _pendingContext.enemies != null && buildResult != null)
+        {
+            for (int i = 0; i < _pendingContext.enemies.Count; i++)
+            {
+                var entry = _pendingContext.enemies[i];
+                if (entry.instance == null || entry.instance.definition == null) continue;
+                if (buildResult.enemySpawns == null || i >= buildResult.enemySpawns.Count) continue;
+
+                int mhp = Mathf.Max(1, entry.instance.definition.maxHP);
+                int chp = Mathf.Clamp(entry.instance.currentHP, 1, mhp);
+
+                CombatUnitToken tok = null;
+                if (i == 0)
+                {
+                    tok = _enemyToken;
+                }
+                else if (boardUI != null)
+                {
+                    Vector2Int spawn = buildResult.enemySpawns[i];
+                    tok = boardUI.FindTokenAtCell(spawn.x, spawn.y, _playerToken);
+                }
+
+                _enemyStates.Add(new CombatEnemyState
+                {
+                    fieldInstance = entry.instance,
+                    fieldOriginalCell = entry.fieldCell,
+                    token = tok,
+                    hp = chp,
+                    maxHP = mhp,
+                    cell = buildResult.enemySpawns[i],
+                    isDead = false,
+                    definition = entry.instance.definition
+                });
+            }
+        }
+        else if (_pendingContext != null && _pendingContext.enemy != null)
+        {
+            int mhp = Mathf.Max(1, GetEnemyMaxHP());
+            int ehp = Mathf.Clamp(_pendingContext.enemy.currentHP, 0, mhp);
+            if (ehp <= 0) ehp = mhp;
+            _enemyStates.Add(new CombatEnemyState
+            {
+                fieldInstance = _pendingContext.enemy,
+                fieldOriginalCell = _pendingContext.enemyCell,
+                token = _enemyToken,
+                hp = ehp,
+                maxHP = mhp,
+                cell = State.enemyCell,
+                isDead = false,
+                definition = _pendingEnemyDef
+            });
+        }
+
+        // ============ VFX 바인드 ============
         vfx.Bind(boardUI);
 
+        // ============ HP 동기화 ============
         if (_pendingContext != null && _pendingContext.playerStats != null)
         {
             _effectivePlayerMaxHP = Mathf.Max(1, _pendingContext.playerStats.maxHP);
@@ -427,27 +544,32 @@ public class FocusedCombatManager : MonoBehaviour
             State.enemyHP = Mathf.Max(1, GetEnemyMaxHP());
         }
 
+        // ============ AP 초기화 ============
         State.startAP = startAP;
         State.maxAP = maxAP;
         State.currentAP = Mathf.Clamp(startAP, 0, maxAP);
         State.freeMovesUsedThisTurn = 0;
 
+        // ============ 이동 시스템 ============
         Movement = new CombatMovementService(
             moveRange: moveRange,
             isBlocked: IsBlocked,
             inBounds: (x, y) => boardUI != null && boardUI.InBounds(x, y)
         );
 
+        // ============ 지형 효과 ============
         terrainFx.Apply(gridData, State.playerCell, _playerToken);
         terrainFx.Apply(gridData, State.enemyCell, _enemyToken);
 
+        // ============ 탈출 타일 ============
         BuildEscapeTile();
 
+        // ============ 상태이상 / 스턴 ============
         _playerStunTurns = 0;
-        
+
         // ✅ Phase 1: 상태이상 매니저 초기화
         InitializeStatusEffects();
-        
+
         // ✅ Phase 1: 플레이어 스탯 참조 캐싱
         if (_pendingContext != null && _pendingContext.playerStats != null)
             _playerStats = _pendingContext.playerStats;
@@ -456,6 +578,7 @@ public class FocusedCombatManager : MonoBehaviour
 
         if (bossAI != null) bossAI.ResetBossState();
 
+        // ============ 턴 시작 ============
         BeginPlayerTurn(initialStart: true);
         HidePlayerHint();
 
@@ -485,7 +608,7 @@ public class FocusedCombatManager : MonoBehaviour
             Vector2Int c = new Vector2Int(x, y);
 
             if (c == State.playerCell) continue;
-            if (c == State.enemyCell) continue;
+            if (IsEnemyCell(c)) continue;
             if (IsBlocked(c)) continue;
 
             _escapeCell = c;
@@ -501,23 +624,36 @@ public class FocusedCombatManager : MonoBehaviour
 
         if (_pendingContext != null)
         {
+            // 플레이어 HP 역동기화
             if (_pendingContext.playerStats != null)
             {
                 _pendingContext.playerStats.hp = Mathf.Clamp(State.playerHP, 0, _pendingContext.playerStats.maxHP);
                 _pendingContext.playerStats.ClampAll();
             }
 
-            if (_pendingContext.enemy != null && _pendingContext.enemy.definition != null)
+            // 다중 적 결과 반영
+            SaveActiveEnemyState(); // 현재 활성 적 상태 저장
+            foreach (var es in _enemyStates)
             {
-                int maxEnemy = Mathf.Max(1, _pendingContext.enemy.definition.maxHP);
-                _pendingContext.enemy.currentHP = Mathf.Clamp(State.enemyHP, 0, maxEnemy);
+                if (es.fieldInstance == null) continue;
 
-                if (destroyFieldEnemyOnDefeat && _pendingContext.enemy.currentHP <= 0)
+                if (es.isDead || es.hp <= 0)
                 {
-                    Destroy(_pendingContext.enemy.gameObject);
+                    // 필드에서 적 제거
+                    if (destroyFieldEnemyOnDefeat)
+                        Destroy(es.fieldInstance.gameObject);
+                }
+                else
+                {
+                    // 살아남은 적: HP 역동기화
+                    es.fieldInstance.currentHP = es.hp;
                 }
             }
         }
+
+        // _enemyStates 정리
+        _enemyStates.Clear();
+        _activeEnemyIndex = 0;
 
         if (boardUI != null)
         {
@@ -682,34 +818,67 @@ public class FocusedCombatManager : MonoBehaviour
 
     private IEnumerator EnemyTurnRoutine()
     {
-        // ✅ Phase 1: 적이 스턴 상태면 턴 스킵
+        // ✅ Phase 1: 적이 스턴 상태면 턴 스킵 (활성 적 기준)
         if (_enemyStatusEffects != null && _enemyStatusEffects.IsStunned)
         {
             if (vfx != null) vfx.ShowPopup(_enemyToken, "기절!");
             yield return new WaitForSeconds(0.5f);
-            
-            // 적 턴 종료 시 상태이상 처리
+
             ProcessTurnEndStatusEffects(isPlayerTurn: false);
             ConsumeTimeForEnemyTurn();
-            
+
             if (!State.isInCombat) yield break;
             BeginPlayerTurn(initialStart: false);
             yield break;
         }
-        
-        EnemyAIType type = GetEnemyAIType();
 
-        if (type == EnemyAIType.AI4_Boss)
+        // 다중 적: 살아있는 모든 적이 순서대로 행동
+        if (_enemyStates.Count > 1)
         {
-            if (bossAI != null)
-                yield return StartCoroutine(bossAI.TakeTurn());
+            for (int i = 0; i < _enemyStates.Count; i++)
+            {
+                if (_enemyStates[i].isDead) continue;
+                if (!State.isInCombat) yield break;
+
+                // 이 적을 활성으로 전환
+                SetActiveEnemy(i);
+
+                // AI 실행
+                EnemyAIType type = GetEnemyAIType();
+                if (type == EnemyAIType.AI4_Boss)
+                {
+                    if (bossAI != null)
+                        yield return StartCoroutine(bossAI.TakeTurn());
+                }
+                else
+                {
+                    if (enemyAI != null)
+                        yield return StartCoroutine(enemyAI.TakeTurn());
+                }
+
+                // AI 행동 후 상태 저장
+                SaveActiveEnemyState();
+
+                // 짧은 딜레이 (적 간 행동 구분)
+                yield return new WaitForSeconds(0.15f);
+            }
         }
         else
         {
-            if (enemyAI != null)
-                yield return StartCoroutine(enemyAI.TakeTurn());
+            // 기존 1v1: 한 마리만 행동
+            EnemyAIType type = GetEnemyAIType();
+            if (type == EnemyAIType.AI4_Boss)
+            {
+                if (bossAI != null)
+                    yield return StartCoroutine(bossAI.TakeTurn());
+            }
+            else
+            {
+                if (enemyAI != null)
+                    yield return StartCoroutine(enemyAI.TakeTurn());
+            }
         }
-        
+
         // ✅ Phase 1: 적 턴 종료 시 상태이상 처리 (출혈 피해 등)
         ProcessTurnEndStatusEffects(isPlayerTurn: false);
 
@@ -755,7 +924,13 @@ public class FocusedCombatManager : MonoBehaviour
 
         Vector2Int target = new Vector2Int(x, y);
         if (target == State.playerCell) return;
-        if (target == State.enemyCell) return;
+
+        // 다중 적: 적 셀 클릭 시 타겟 전환
+        if (IsEnemyCell(target))
+        {
+            SwitchTargetAtCell(target);
+            return;
+        }
 
         CombatUnitStats ps = _playerToken.GetComponent<CombatUnitStats>();
         int freeTotal = (ps != null) ? ps.FreeMovesPerTurn : 1;
@@ -800,7 +975,7 @@ public class FocusedCombatManager : MonoBehaviour
         {
             Vector2Int step = steps[i];
 
-            if (IsBlocked(step) || step == State.enemyCell)
+            if (IsBlocked(step))
             {
                 // 롤백
                 if (spentAP)
@@ -861,6 +1036,7 @@ public class FocusedCombatManager : MonoBehaviour
             yield return StartCoroutine(vfx.StepMoveToCell(_enemyToken, step));
             boardUI.MoveExistingToken(_enemyToken, step.x, step.y);
             State.enemyCell = step;
+            SyncActiveEnemyCellFromState();
 
             if (stepDelay > 0f) yield return new WaitForSeconds(stepDelay);
             else yield return null;
@@ -956,7 +1132,7 @@ public class FocusedCombatManager : MonoBehaviour
         RefreshUI();
 
         if (State.enemyHP <= 0)
-            ExitFocusedCombat();
+            OnActiveEnemyDefeated();
 
         return true;
     }
@@ -995,6 +1171,18 @@ public class FocusedCombatManager : MonoBehaviour
         {
             if (!gridData.InBounds(cell.x, cell.y)) return true;
             if (gridData.Get(cell.x, cell.y).ToString() == "Wall") return true;
+        }
+
+        // 다중 적: 살아있는 모든 적 위치를 차단
+        if (_enemyStates.Count > 0)
+        {
+            foreach (var es in _enemyStates)
+                if (!es.isDead && es.cell == cell) return true;
+        }
+        else if (State.isInCombat && cell == State.enemyCell)
+        {
+            // _enemyStates 없이 1v1만 켠 경우(정의 전용 진입 등)
+            return true;
         }
 
         if (_blocker == null) return false;
@@ -1100,7 +1288,7 @@ public class FocusedCombatManager : MonoBehaviour
 
                 Vector2Int target = new Vector2Int(x, y);
                 if (target == State.playerCell) continue;
-                if (target == State.enemyCell) continue;
+                if (IsEnemyCell(target)) continue;
 
                 int dx = Mathf.Abs(x - State.playerCell.x);
                 int dy = Mathf.Abs(y - State.playerCell.y);
@@ -1412,7 +1600,7 @@ public class FocusedCombatManager : MonoBehaviour
         RefreshUI();
         
         if (State.enemyHP <= 0)
-            ExitFocusedCombat();
+            OnActiveEnemyDefeated();
         
         return result;
     }
@@ -1482,8 +1670,130 @@ public class FocusedCombatManager : MonoBehaviour
                 RefreshUI();
                 
                 if (State.enemyHP <= 0)
-                    ExitFocusedCombat();
+                    OnActiveEnemyDefeated();
             }
         }
+    }
+
+    // ===== 다중 적: 활성 적 스왑 =====
+
+    /// <summary>현재 활성 적 상태를 _enemyStates에 저장</summary>
+    private void SaveActiveEnemyState()
+    {
+        if (_activeEnemyIndex < 0 || _activeEnemyIndex >= _enemyStates.Count) return;
+        var es = _enemyStates[_activeEnemyIndex];
+        es.hp = State.enemyHP;
+        es.cell = State.enemyCell;
+        es.token = _enemyToken;
+    }
+
+    /// <summary>
+    /// 적 이동 등으로 <see cref="CombatState.enemyCell"/>만 바뀐 직후 호출.
+    /// 다중 적에서 <see cref="IsBlocked"/>/<see cref="IsEnemyCell"/>은 리스트의 cell을 보므로, 동기화하지 않으면 토큰 위치와 논리 격자가 어긋난다.
+    /// </summary>
+    private void SyncActiveEnemyCellFromState()
+    {
+        if (_activeEnemyIndex < 0 || _activeEnemyIndex >= _enemyStates.Count) return;
+        _enemyStates[_activeEnemyIndex].cell = State.enemyCell;
+    }
+
+    /// <summary>index번째 적을 활성으로 전환 (State/토큰 스왑)</summary>
+    private void SetActiveEnemy(int index)
+    {
+        if (index < 0 || index >= _enemyStates.Count) return;
+        SaveActiveEnemyState();
+        _activeEnemyIndex = index;
+        var es = _enemyStates[index];
+        State.enemyHP = es.hp;
+        State.enemyCell = es.cell;
+        _enemyToken = es.token;
+        _pendingEnemyDef = es.definition;
+
+        _enemyStatusEffects = null;
+        if (_enemyToken != null)
+        {
+            _enemyStatusEffects = _enemyToken.GetComponent<StatusEffectManager>();
+            if (_enemyStatusEffects == null)
+                _enemyStatusEffects = _enemyToken.gameObject.AddComponent<StatusEffectManager>();
+        }
+    }
+
+    /// <summary>해당 셀에 살아있는 적이 있는지</summary>
+    private bool IsEnemyCell(Vector2Int cell)
+    {
+        foreach (var es in _enemyStates)
+            if (!es.isDead && es.cell == cell) return true;
+        return false;
+    }
+
+    /// <summary>해당 셀의 적으로 타겟 전환</summary>
+    private void SwitchTargetAtCell(Vector2Int cell)
+    {
+        for (int i = 0; i < _enemyStates.Count; i++)
+        {
+            if (!_enemyStates[i].isDead && _enemyStates[i].cell == cell)
+            {
+                SetActiveEnemy(i);
+                RefreshMoveHighlights();
+                RefreshUI();
+                return;
+            }
+        }
+    }
+
+    /// <summary>현재 활성 적이 죽었을 때 호출</summary>
+    private void OnActiveEnemyDefeated()
+    {
+        if (_activeEnemyIndex >= 0 && _activeEnemyIndex < _enemyStates.Count)
+        {
+            var es = _enemyStates[_activeEnemyIndex];
+            es.isDead = true;
+            es.hp = 0;
+
+            // 토큰 제거
+            if (es.token != null)
+            {
+                if (boardUI != null)
+                    boardUI.RemoveToken(es.token);
+                else
+                    Destroy(es.token.gameObject);
+            }
+        }
+
+        // 전부 죽었으면 전투 종료
+        if (AreAllEnemiesDead())
+        {
+            ExitFocusedCombat();
+            return;
+        }
+
+        // 다음 살아있는 적으로 타겟 전환
+        for (int i = 0; i < _enemyStates.Count; i++)
+        {
+            if (!_enemyStates[i].isDead)
+            {
+                SetActiveEnemy(i);
+                RefreshUI();
+                RefreshMoveHighlights();
+                return;
+            }
+        }
+    }
+
+    /// <summary>모든 적이 죽었는지</summary>
+    private bool AreAllEnemiesDead()
+    {
+        foreach (var es in _enemyStates)
+            if (!es.isDead) return false;
+        return true;
+    }
+
+    /// <summary>모든 살아있는 적의 셀 목록</summary>
+    private System.Collections.Generic.HashSet<Vector2Int> GetAllAliveEnemyCells()
+    {
+        var cells = new System.Collections.Generic.HashSet<Vector2Int>();
+        foreach (var es in _enemyStates)
+            if (!es.isDead) cells.Add(es.cell);
+        return cells;
     }
 }

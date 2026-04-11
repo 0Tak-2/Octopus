@@ -42,8 +42,6 @@ public class GameManager : MonoBehaviour
     [Tooltip("챕터_맵인덱스 → 맵 데이터")]
     public List<FieldMapEntry> fieldMapDataList = new List<FieldMapEntry>();
 
-    // 현재 필드에서 온 건지 여부 (복원 시 필요)
-    private bool _comingFromField = false;
     private string _lastFieldMapKey = "";
 
     // =========================================================
@@ -320,9 +318,6 @@ public class GameManager : MonoBehaviour
 
         // 플레이어 위치 복원 (던전에서 돌아왔을 때 → 던전 입구 위치로)
         // ✅ FieldMapGenerator.SpawnPlayer()가 이미 처리했으므로 여기서는 안 함
-        // if (_comingFromField) { ... }
-
-        _comingFromField = false;
 
         if (logDataOperations)
             Debug.Log($"[GameManager] 필드 상태 복원: {mapKey}");
@@ -365,7 +360,6 @@ public class GameManager : MonoBehaviour
 
         playerData.currentDungeonId = dungeonId;
         playerData.returnToMapIndex = currentMapIndex;
-        _comingFromField = true;
 
         // ✅ 저장된 던전 데이터가 있으면 로드, 없으면 새로 생성
         currentDungeonData = GetOrCreateDungeonData(dungeonId);
@@ -430,8 +424,6 @@ public class GameManager : MonoBehaviour
         {
             SaveDungeonData(currentDungeonData);
         }
-
-        _comingFromField = true;
 
         if (logSceneTransitions)
             Debug.Log($"[GameManager] 필드로 복귀");

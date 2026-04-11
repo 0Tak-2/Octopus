@@ -5,13 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 吏묒쨷using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using System.Collections;
-using System.Collections.Generic;
-
-/// <summary>
 /// 집중전투 중 스킬 버튼 바
 /// 스킬 선택 → 타일/적 클릭으로 대상 지정 방식
 /// </summary>

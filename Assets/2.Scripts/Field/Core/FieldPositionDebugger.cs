@@ -9,9 +9,16 @@ public class EnemyPositionDebugger : MonoBehaviour
     [Header("Settings")]
     public bool enableDebug = true;
     public float checkInterval = 1f;
-    public bool autoFix = true; // true면 불일치 시 자동으로 위치 동기화
+    [Tooltip("Chebyshev 거리 1 이하는 이동 보간/피벗 오차로 흔함. 끄면 인접 불일치도 Error로 찍힌다.")]
+    public bool ignoreAdjacentCellMismatch = true;
+    public bool autoFix = true; // true면 불일치 시 Occupancy 기준으로 위치 동기화
 
     private float _timer;
+
+    private static int Chebyshev(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
+    }
 
     private void Update()
     {
@@ -49,18 +56,20 @@ public class EnemyPositionDebugger : MonoBehaviour
                 continue;
             }
 
-            // 불일치 감지
-            if (visualCell != occCell)
-            {
-                Debug.LogError($"[PosDebug] *** 위치 불일치! *** {enemy.name}: Visual=({visualCell}) vs Occupancy=({occCell}), World={enemy.transform.position}");
+            if (visualCell == occCell) continue;
 
-                if (autoFix)
-                {
-                    // Occupancy 기준으로 transform.position 동기화
-                    Vector3 correctPos = grid.CellToWorld(occCell);
-                    Debug.Log($"[PosDebug] 자동 수정: {enemy.name} -> ({occCell}), WorldPos={correctPos}");
-                    enemy.transform.position = correctPos;
-                }
+            int cellDist = Chebyshev(visualCell, occCell);
+            // 이동 중: TryMoveReserve가 목적지 셀을 먼저 잡고 transform은 Lerp로 따라옴 → 잠깐 어긋남.
+            if (ignoreAdjacentCellMismatch && cellDist <= 1)
+                continue;
+
+            Debug.LogError($"[PosDebug] *** 위치 불일치! *** {enemy.name}: Visual=({visualCell}) vs Occupancy=({occCell}), Chebyshev={cellDist}, World={enemy.transform.position}");
+
+            if (autoFix)
+            {
+                Vector3 correctPos = grid.CellToWorld(occCell);
+                Debug.Log($"[PosDebug] 자동 수정: {enemy.name} -> ({occCell}), WorldPos={correctPos}");
+                enemy.transform.position = correctPos;
             }
         }
     }

@@ -13,8 +13,10 @@ public class PlayerGridMover : MonoBehaviour
 
     [Header("Move")]
     public float moveDuration = 0.12f;
+    [Tooltip("일어선 상태에서 한 칸 이동 시 소모 Time")]
     public int baseMoveTimeCost = 1;
-    public int crouchExtraTimeCost = 1;
+    [Tooltip("웅크린 상태에서 한 칸 이동 시 소모 Time (기본 2)")]
+    [Min(1)] public int moveTimeCostWhenCrouching = 2;
 
     [Header("Occupancy")]
     [Tooltip("점유 시스템이 있을 때, 점유된 셀로 이동을 막습니다.")]
@@ -50,6 +52,18 @@ public class PlayerGridMover : MonoBehaviour
         if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
 
         Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
+    }
+
+    /// <summary>
+    /// 시야/표시는 transform 기준이어야 하는데 CurrentCell만 쓰면 스폰·애니·다른 스크립트 후 위치와 어긋날 수 있음.
+    /// 이동 중이 아닐 때 매 프레임 월드→셀을 맞춤.
+    /// </summary>
+    private void LateUpdate()
+    {
+        if (grid == null || _isMoving) return;
+        Vector2Int fromWorld = grid.WorldToCell(transform.position);
+        if (fromWorld != CurrentCell)
+            SetCurrentCell(fromWorld);
     }
 
     private void OnEnable()
@@ -184,11 +198,13 @@ public class PlayerGridMover : MonoBehaviour
 
     private int GetMoveTimeCost()
     {
-        int cost = baseMoveTimeCost;
         if (crouch != null && crouch.IsCrouching)
-            cost += crouchExtraTimeCost;
-        return Mathf.Max(0, cost);
+            return Mathf.Max(1, moveTimeCostWhenCrouching);
+        return Mathf.Max(0, baseMoveTimeCost);
     }
+
+    /// <summary>HUD 등에 표시용</summary>
+    public int GetMoveTimeCostForDisplay() => GetMoveTimeCost();
 
     private void TryMove(Vector2Int dir)
     {

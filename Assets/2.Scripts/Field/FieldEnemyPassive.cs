@@ -192,11 +192,11 @@ public class FieldEnemyPassive : MonoBehaviour
 
             if (dist <= fleeStartRange)
             {
-                // LoS check - only flee if can see player
+                // 엄폐(해초/산호) 위에서는 틱당 인식 확률이 낮음
                 var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
                 bool canSee = true;
                 if (visionSys != null)
-                    canSee = visionSys.CanSeePlayer(myCell, pCell);
+                    canSee = visionSys.TryDetectPlayer(myCell, pCell);
 
                 if (canSee)
                     StartFleeing();

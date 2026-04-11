@@ -12350,12 +12350,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9789bb04b34fb46469861d1d2662ab88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridBoard: {fileID: 0}
-  playerCrouch: {fileID: 0}
-  playerVisionRange: 4
+  gridBoard: {fileID: 1867473543}
+  playerCrouch: {fileID: 931578459}
+  playerVisionRange: 3
+  crouchPlayerVisionBonus: 1
   enemyDetectionRange: 2
-  coverDetectionPenalty: 0.5
-  crouchDetectionPenalty: 0.2
+  coverDetectionPenalty: 0.729
+  crouchDetectionPenalty: 0.268
   showDebugLogs: 0
 --- !u!4 &571585565
 Transform:
@@ -17248,6 +17249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableDebug: 1
   checkInterval: 1
+  ignoreAdjacentCellMismatch: 1
   autoFix: 1
 --- !u!4 &950388593
 Transform:
@@ -22031,12 +22033,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grid: {fileID: 0}
   player: {fileID: 931578458}
+  playerCrouch: {fileID: 0}
   baseVisionRange: 3
-  crouchBonusRange: 1
   show: 1
   toggleKey: 118
   sortingOrder: 50
-  alpha: 0.18
+  normalVisionColor: {r: 1, g: 1, b: 1, a: 0.2}
+  crouchBonusVisionColor: {r: 0.2, g: 0.95, b: 1, a: 0.58}
+  crouchBonusSortingOrderOffset: 2
+  crouchBonusScaleMul: 1.06
 --- !u!4 &1240661180
 Transform:
   m_ObjectHideFlags: 0
@@ -26114,7 +26119,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -0.000030517578, y: 0.000030517578}
+  m_AnchoredPosition: {x: -0.000061035156, y: 0.000030517578}
   m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1585893452
@@ -27378,7 +27383,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 71405312}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9987581
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -33321,6 +33326,7 @@ MonoBehaviour:
   watchingColor: {r: 1, g: 0.3, b: 0, a: 0.6}
   completeColor: {r: 0, g: 1, b: 0, a: 0.6}
   showDebugLogs: 1
+  scanRadius: 5
 --- !u!1001 &4019575123244086140
 PrefabInstance:
   m_ObjectHideFlags: 0

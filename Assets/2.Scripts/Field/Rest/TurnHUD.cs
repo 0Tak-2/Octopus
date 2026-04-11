@@ -30,13 +30,16 @@ public class TurnHUD : MonoBehaviour
 
         bool crouchOn = crouch != null && crouch.IsCrouching;
 
-        int baseRange = vision != null ? vision.baseVisionRange : 0;
-        int bonus = (vision != null && crouchOn) ? vision.crouchBonusRange : 0;
-        int range = baseRange + bonus;
+        int range = 0;
+        var fvs = FieldVisionSystem.Instance;
+        if (fvs != null)
+            range = fvs.GetEffectivePlayerVisionRange();
+        else if (vision != null)
+            range = vision.baseVisionRange;
 
         int moveCost = 1;
         if (player != null)
-            moveCost = player.baseMoveTimeCost + (crouchOn ? player.crouchExtraTimeCost : 0);
+            moveCost = player.GetMoveTimeCostForDisplay();
 
         string hpStr = stats != null ? $"{stats.hp}/{stats.maxHP}" : "-";
         string fatStr = stats != null ? $"{stats.fatigue}/{stats.maxFatigue}" : "-";
@@ -46,8 +49,8 @@ public class TurnHUD : MonoBehaviour
         bool confirm = rest != null && rest.IsConfirmPrompt;
 
         string prompt = "";
-        if (confirm) prompt = "\n휴식을 취하시겠습니까? (R)";
-        if (resting) prompt = "\n휴식 중... (R로 중단)";
+        if (confirm) prompt = "\n????? ????ð?????? (R)";
+        if (resting) prompt = "\n??? ??... (R?? ???)";
 
         text.text =
             $"Time: {t}\n" +
@@ -55,7 +58,7 @@ public class TurnHUD : MonoBehaviour
             $"Crouch: {(crouchOn ? "ON" : "OFF")}  |  Vision: {range} (MoveCost {moveCost})\n" +
             $"HP: {hpStr}   Fatigue: {fatStr}   Hunger: {hunStr}\n" +
             $"[WASD/Arrow] Move  |  [C] Crouch  |  [V] Vision  |  [R] Rest\n" +
-            $"(5 Time마다 Fatigue-1 / Hunger-2)" +
+            $"(5 Time???? Fatigue-1 / Hunger-2)" +
             prompt;
     }
 }

@@ -403,4 +403,34 @@ public class CombatBoardUI : MonoBehaviour
 
         EnforceChildOrder(toX, toY);
     }
+
+    /// <summary>
+    /// 특정 셀에 배치된 토큰 찾기 (excludeToken 제외). 토큰은 타일의 자식으로 둔다.
+    /// </summary>
+    public CombatUnitToken FindTokenAtCell(int x, int y, CombatUnitToken excludeToken)
+    {
+        var tile = GetTile(x, y);
+        if (tile == null) return null;
+
+        for (int i = 0; i < tile.childCount; i++)
+        {
+            var child = tile.GetChild(i);
+            string n = child.name;
+            if (n == "SpecialOverlay" || n == "HighlightOverlay") continue;
+
+            var tok = child.GetComponent<CombatUnitToken>();
+            if (tok == null) continue;
+            if (tok == excludeToken) continue;
+            return tok;
+        }
+
+        return null;
+    }
+
+    /// <summary>보드에서 토큰 인스턴스 제거 (다중 적 사망 시)</summary>
+    public void RemoveToken(CombatUnitToken token)
+    {
+        if (token == null) return;
+        Destroy(token.gameObject);
+    }
 }

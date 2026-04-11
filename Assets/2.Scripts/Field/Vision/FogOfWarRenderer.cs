@@ -2,19 +2,19 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 3상태 부드러운 안개 시스템.
-/// - 미탐사: 완전 검정
-/// - 탐사 완료(메모리): 어둡지만 윤곽 보임
-/// - 현재 시야: 안개 없음
-/// 단일 텍스처 + 양선형 필터 + 박스 블러로 부드러운 경계 구현.
-/// FieldVisionSystem의 LoS 기반 시야를 사용.
-/// 씬별 탐사 기록은 세션 메모리에 보관 (게임 재시작 시 초기화).
+/// 3???? ?????? ??? ?????.
+/// - ?????: ???? ????
+/// - ??? ???(???): ??????? ???? ????
+/// - ???? ????: ??? ????
+/// ???? ???? + ???? ???? + ??? ?????? ?????? ??? ????.
+/// FieldVisionSystem?? LoS ??? ????? ???.
+/// ???? ??? ????? ???? ???? ???? (???? ????? ?? ????).
 /// </summary>
 public class FogOfWarRenderer : MonoBehaviour
 {
     public static FogOfWarRenderer Instance { get; private set; }
 
-    // 씬 이름별 탐사 기록 (세션 메모리)
+    // ?? ????? ??? ??? (???? ???)
     private static readonly Dictionary<string, HashSet<Vector2Int>> _exploredBySceneName
         = new Dictionary<string, HashSet<Vector2Int>>();
 
@@ -22,15 +22,15 @@ public class FogOfWarRenderer : MonoBehaviour
     public GridBoard grid;
     public PlayerGridMover player;
 
-    [Header("Fog Colors (alpha = 0:투명 ~ 1:불투명)")]
+    [Header("Fog Colors (alpha = 0:???? ~ 1:??????)")]
     public Color visibleColor = new Color(0f, 0f, 0f, 0.0f);
     public Color exploredColor = new Color(0f, 0f, 0f, 0.55f);
     public Color unexploredColor = new Color(0f, 0f, 0f, 1.0f);
 
     [Header("Smoothing")]
-    [Tooltip("텍스처 해상도 배수. 1=셀당 1픽셀, 2=셀당 2x2픽셀, 4=4x4. 높을수록 더 부드러움")]
+    [Tooltip("???? ??? ???. 1=???? 1???, 2=???? 2x2???, 4=4x4. ???????? ?? ??????")]
     [Range(1, 8)] public int textureScale = 4;
-    [Tooltip("박스 블러 횟수. 높을수록 더 부드러우나 시야 경계가 흐려짐")]
+    [Tooltip("??? ???? ???. ???????? ?? ??????? ???? ??? ?????")]
     [Range(0, 5)] public int blurPasses = 2;
 
     [Header("Sorting")]
@@ -38,10 +38,10 @@ public class FogOfWarRenderer : MonoBehaviour
     public string sortingLayerName = "Default";
 
     [Header("Enemy Hiding")]
-    [Tooltip("시야 밖 적의 SpriteRenderer 비활성화")]
+    [Tooltip("???? ?? ???? SpriteRenderer ??????")]
     public bool hideEnemiesOutsideVision = true;
 
-    [Tooltip("미탐사 셀의 채집물/아이템/환경 오브젝트 숨김 (탐사 완료 후엔 보임)")]
+    [Tooltip("????? ???? ?????/??????/??? ??????? ???? (??? ??? ???? ????)")]
     public bool hideObjectsInUnexplored = true;
 
     [Header("Debug")]
@@ -52,8 +52,10 @@ public class FogOfWarRenderer : MonoBehaviour
     private SpriteRenderer _fogSR;
     private readonly HashSet<Vector2Int> _explored = new();
     private Vector2Int _lastPlayerCell = new(int.MinValue, int.MinValue);
+    private bool _lastCrouchState;
     private bool _initialized;
     private int _texW, _texH;
+    private PlayerCrouch _playerCrouch;
 
     private static readonly Vector2Int[] NeighborDirs8 = new Vector2Int[]
 {
@@ -74,37 +76,52 @@ public class FogOfWarRenderer : MonoBehaviour
 
         if (grid == null)
         {
-            Debug.LogError("[FogOfWar] GridBoard를 찾을 수 없습니다.");
+            Debug.LogError("[FogOfWar] GridBoard?? ??? ?? ???????.");
             return;
         }
 
         CreateFogTexture();
         CreateFogQuad();
 
-        // 씬별 탐사 기록 복원
+        // ???? ??? ??? ????
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (_exploredBySceneName.TryGetValue(sceneName, out var saved))
         {
             _explored.UnionWith(saved);
             if (showDebugLogs)
-                Debug.Log($"[FogOfWar] 씬 '{sceneName}'의 탐사 기록 {saved.Count}셀 복원");
+                Debug.Log($"[FogOfWar] ?? '{sceneName}'?? ??? ??? {saved.Count}?? ????");
+        }
+
+        _playerCrouch = FindObjectOfType<PlayerCrouch>();
+        if (_playerCrouch != null)
+        {
+            _lastCrouchState = _playerCrouch.IsCrouching;
+            _playerCrouch.OnCrouchChanged += OnCrouchChanged;
         }
 
         _initialized = true;
         ForceRefresh();
     }
 
+    private void OnCrouchChanged(bool crouching)
+    {
+        Debug.Log($"[FogOfWar] ??????? ???? ?? {crouching}, ??? ??? ????");
+        ForceRefresh();
+    }
+
     private void OnDestroy()
     {
-        // 씬별 탐사 기록 저장
+        // ???? ??? ??? ????
         if (_explored.Count > 0)
         {
             string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             _exploredBySceneName[sceneName] = new HashSet<Vector2Int>(_explored);
             if (showDebugLogs)
-                Debug.Log($"[FogOfWar] 씬 '{sceneName}'의 탐사 기록 {_explored.Count}셀 저장");
+                Debug.Log($"[FogOfWar] ?? '{sceneName}'?? ??? ??? {_explored.Count}?? ????");
         }
 
+        if (_playerCrouch != null)
+            _playerCrouch.OnCrouchChanged -= OnCrouchChanged;
         if (Instance == this) Instance = null;
         if (_fogTex != null) Destroy(_fogTex);
     }
@@ -114,14 +131,17 @@ public class FogOfWarRenderer : MonoBehaviour
         if (!_initialized || player == null) return;
 
         Vector2Int currentCell = player.CurrentCell;
-        if (currentCell != _lastPlayerCell)
+        bool crouching = _playerCrouch != null && _playerCrouch.IsCrouching;
+
+        if (currentCell != _lastPlayerCell || crouching != _lastCrouchState)
         {
             _lastPlayerCell = currentCell;
+            _lastCrouchState = crouching;
             RefreshFog(currentCell);
         }
     }
 
-    /// <summary>외부에서 강제 갱신 (적 스폰, 맵 변경 등)</summary>
+    /// <summary>??????? ???? ???? (?? ????, ?? ???? ??)</summary>
     public void ForceRefresh()
     {
         if (player == null) return;
@@ -130,7 +150,7 @@ public class FogOfWarRenderer : MonoBehaviour
     }
 
     // ============================================================
-    // 텍스처 생성
+    // ???? ????
     // ============================================================
 
     private void CreateFogTexture()
@@ -148,7 +168,7 @@ public class FogOfWarRenderer : MonoBehaviour
         _fogTex.Apply();
 
         if (showDebugLogs)
-            Debug.Log($"[FogOfWar] 텍스처 생성: {_texW}x{_texH} (그리드 {grid.width}x{grid.height} × scale {textureScale})");
+            Debug.Log($"[FogOfWar] ???? ????: {_texW}x{_texH} (????? {grid.width}x{grid.height} ?? scale {textureScale})");
     }
 
     private void CreateFogQuad()
@@ -175,7 +195,7 @@ public class FogOfWarRenderer : MonoBehaviour
     }
 
     // ============================================================
-    // 안개 갱신
+    // ??? ????
     // ============================================================
 
     private void RefreshFog(Vector2Int playerCell)
@@ -185,7 +205,7 @@ public class FogOfWarRenderer : MonoBehaviour
 
         HashSet<Vector2Int> visible = visionSys.GetPlayerVisibleCells(playerCell);
 
-        // 시야 내 셀을 메모리에 영구 추가
+        // ???? ?? ???? ???? ???? ???
         foreach (var c in visible) _explored.Add(c);
 
         Color[] pixels = new Color[_texW * _texH];
@@ -273,7 +293,7 @@ public class FogOfWarRenderer : MonoBehaviour
 
     private void RefreshObjectVisibility()
     {
-        // 채집물 (나무, 부싯돌, 수풀 등) - 한 번이라도 가본 셀이면 보임
+        // ????? (????, ?????, ??? ??) - ?? ????? ???? ????? ????
         var harvestables = FindObjectsOfType<Harvestable>();
         foreach (var h in harvestables)
         {
@@ -283,7 +303,7 @@ public class FogOfWarRenderer : MonoBehaviour
             ToggleRenderers(h.gameObject, show);
         }
 
-        // 드롭된 아이템
+        // ???? ??????
         var drops = FindObjectsOfType<DroppedItem>();
         foreach (var d in drops)
         {
@@ -293,7 +313,7 @@ public class FogOfWarRenderer : MonoBehaviour
             ToggleRenderers(d.gameObject, show);
         }
 
-        // 벽 (GridCellBlocker)
+        // ?? (GridCellBlocker)
         var blockers = FindObjectsOfType<GridCellBlocker>();
         foreach (var b in blockers)
         {
@@ -305,8 +325,8 @@ public class FogOfWarRenderer : MonoBehaviour
             {
                 Vector2Int neighbor = cell + dir;
                 if (!grid.InBounds(neighbor)) continue;
-                if (grid.IsVisionBlocked(neighbor)) continue; // 벽 이웃은 스킵
-                if (_explored.Contains(neighbor))              // floor 이웃이 탐사됐는지
+                if (grid.IsVisionBlocked(neighbor)) continue; // ?? ????? ???
+                if (_explored.Contains(neighbor))              // floor ????? ???????
                 {
                     show = true;
                     break;

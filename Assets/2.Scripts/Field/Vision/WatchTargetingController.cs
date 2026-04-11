@@ -341,7 +341,7 @@ public class WatchTargetingController : MonoBehaviour
                 Mathf.Abs(playerMover.CurrentCell.y - targetCell.y)
             );
             int watchRange = FieldVisionSystem.Instance != null
-                ? FieldVisionSystem.Instance.playerVisionRange + 2  // 시야보다 약간 관대하게
+                ? FieldVisionSystem.Instance.GetEffectivePlayerVisionRange() + 2  // 웅크 시 시야 반영
                 : 6;
             if (dist > watchRange)
             {
@@ -393,6 +393,10 @@ public class WatchTargetingController : MonoBehaviour
         }
     }
 
+    [Header("Environment Scan")]
+    [Tooltip("주시 대상 적 중심 환경 스캔 반경")]
+    public int scanRadius = 5;
+
     private void EnterFocusCombat()
     {
         if (_watchTarget == null) return;
@@ -406,17 +410,21 @@ public class WatchTargetingController : MonoBehaviour
         }
 
         Vector2Int playerCell = playerMover.CurrentCell;
-        Vector2Int enemyCell = grid.WorldToCell(_watchTarget.transform.position);
 
-        var ctx = new EncounterContext(playerStats, _watchTarget, playerCell, enemyCell);
+        // 환경 스캔 → 다중 적 + 환경 스냅샷 포함 컨텍스트
+        var ctx = EnvironmentScanner.Scan(
+            playerStats,
+            playerCell,
+            _watchTarget,
+            grid,
+            scanRadius
+        );
 
         if (showDebugLogs)
-            Debug.Log($"[WatchTargeting] 집중전투 진입: {_watchTarget.name}");
+            Debug.Log($"[WatchTargeting] 집중전투 진입: {_watchTarget.name}, " +
+                      $"적 {ctx.enemies.Count}마리, 환경 [{ctx.environment}]");
 
-        // 상태 초기화 (진입 전에)
         CancelToNormal();
-
-        // 집중전투 진입
         fcm.EnterFocusedCombat(ctx);
     }
 

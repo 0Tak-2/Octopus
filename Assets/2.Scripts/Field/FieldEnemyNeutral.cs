@@ -234,13 +234,10 @@ public class FieldEnemyNeutral : MonoBehaviour
             return;
         }
 
-        // LoS check - can't chase through walls
+        // 시야 + 엄폐(해초/산호): 기하학적 LoS와 틱당 인식 확률(TryDetectPlayer)
         var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
-        if (visionSys != null && !visionSys.CanSeePlayer(myCell, pCell))
-        {
-            // Can't see player - stop chasing
+        if (visionSys != null && !visionSys.TryDetectPlayer(myCell, pCell))
             return;
-        }
 
         // Adjacent = attack handled by FieldMultiEnemyAttack
         if (dist <= 1)

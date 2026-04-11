@@ -85,9 +85,10 @@ public class GridBoard : MonoBehaviour
     {
         if (_unityGrid != null)
         {
-            return _unityGrid.CellToWorld(new Vector3Int(cell.x, cell.y, 0)) + _unityGrid.cellSize * 0.5f;
+            // CellToWorld는 셀 앵커(모서리) 기준. WorldToCell과 쌍을 맞추려면 셀 중심을 써야 한다.
+            return _unityGrid.GetCellCenterWorld(new Vector3Int(cell.x, cell.y, 0));
         }
-        return origin + new Vector3(cell.x * cellSize, cell.y * cellSize, 0f);
+        return origin + new Vector3((cell.x + 0.5f) * cellSize, (cell.y + 0.5f) * cellSize, 0f);
     }
 
     public Vector2Int WorldToCell(Vector3 worldPos)

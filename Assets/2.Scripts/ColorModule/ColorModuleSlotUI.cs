@@ -4,12 +4,6 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
-/// 媛쒕퀎 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using TMPro;
-
-/// <summary>
 /// 개별 색 모듈 슬롯 UI
 /// </summary>
 public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
