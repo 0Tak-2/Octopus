@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -14,6 +15,8 @@ public class HitEffectManager : MonoBehaviour
 
     [Header("Damage Text")]
     public bool showDamageText = true;
+
+    private readonly Dictionary<Transform, Coroutine> _shakeByTarget = new Dictionary<Transform, Coroutine>();
 
     private void Awake()
     {
@@ -32,46 +35,72 @@ public class HitEffectManager : MonoBehaviour
     {
         if (target == null) return;
 
-        // 흔들림
-        StartCoroutine(ShakeCoroutine(target));
+        StopShakeForTarget(target);
 
-        // 데미지 텍스트
+        Vector3 baseForText = GetShakeBasePosition(target);
+        var co = StartCoroutine(ShakeCoroutine(target, baseForText));
+        _shakeByTarget[target] = co;
+
         if (showDamageText)
-        {
-            ShowDamageText(damage, target.position);
-        }
+            ShowDamageText(damage, baseForText);
     }
 
     /// <summary>
-    /// 좌우 흔들림
+    /// 플레이어는 격자 셀 중심을 기준으로 흔들여야 이동/스냅과 어긋나지 않는다.
     /// </summary>
-    private IEnumerator ShakeCoroutine(Transform target)
+    private static Vector3 GetShakeBasePosition(Transform target)
     {
-        // ✅ 현재 위치를 기준으로 오프셋만 적용
-        Vector3 startPos = target.position;
+        if (target == null) return Vector3.zero;
+
+        var mover = target.GetComponent<PlayerGridMover>();
+        if (mover != null && mover.grid != null)
+            return mover.grid.CellToWorld(mover.CurrentCell);
+
+        return target.position;
+    }
+
+    private void StopShakeForTarget(Transform target)
+    {
+        if (target == null) return;
+        if (!_shakeByTarget.TryGetValue(target, out Coroutine c) || c == null)
+            return;
+
+        StopCoroutine(c);
+        _shakeByTarget.Remove(target);
+
+        if (target != null)
+            target.position = GetShakeBasePosition(target);
+    }
+
+    private IEnumerator ShakeCoroutine(Transform target, Vector3 baseWorldPos)
+    {
         float elapsed = 0f;
 
-        while (elapsed < shakeDuration)
+        try
         {
-            elapsed += Time.deltaTime;
+            while (elapsed < shakeDuration)
+            {
+                if (target == null) yield break;
 
-            // 좌우로 흔들림 (시간에 따라 감쇠)
-            float progress = elapsed / shakeDuration;
-            float currentShake = shakeAmount * (1f - progress); // 점점 약해짐
-            float offsetX = Random.Range(-currentShake, currentShake);
+                elapsed += Time.deltaTime;
+                float progress = Mathf.Clamp01(elapsed / shakeDuration);
+                float currentShake = shakeAmount * (1f - progress);
+                float offsetX = Random.Range(-currentShake, currentShake);
+                target.position = baseWorldPos + new Vector3(offsetX, 0f, 0f);
 
-            target.position = startPos + new Vector3(offsetX, 0, 0);
-
-            yield return null;
+                yield return null;
+            }
         }
+        finally
+        {
+            if (target != null)
+                target.position = GetShakeBasePosition(target);
 
-        // 원래 위치로 복귀
-        target.position = startPos;
+            if (target != null)
+                _shakeByTarget.Remove(target);
+        }
     }
 
-    /// <summary>
-    /// 데미지 텍스트 생성
-    /// </summary>
     private void ShowDamageText(int damage, Vector3 worldPosition)
     {
         GameObject textObj = new GameObject("DamageText");

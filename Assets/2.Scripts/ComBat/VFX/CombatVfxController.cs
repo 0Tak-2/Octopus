@@ -17,7 +17,7 @@ public class CombatVfxController : MonoBehaviour
     public float enemyDashPauseTime = 0.03f;
     public float enemyDashBackTime = 0.08f;
 
-    // 주입
+    // ????
     private CombatBoardUI _boardUI;
 
     public void Bind(CombatBoardUI boardUI)
@@ -53,8 +53,8 @@ public class CombatVfxController : MonoBehaviour
     }
 
     /// <summary>
-    /// 토큰을 다음 칸 중심까지 "보이는" 이동(Lerp) + 이동 중 최상단 렌더(타일 밑 깔림 방지)
-    /// 이동이 끝나면 호출자가 MoveExistingToken으로 정착시켜야 함.
+    /// ????? ???? ? ?????? "?????" ???(Lerp) + ??? ?? ???? ????(??? ?? ?? ????)
+    /// ????? ?????? ?????? MoveExistingToken???? ????????? ??.
     /// </summary>
     public IEnumerator StepMoveToCell(CombatUnitToken token, Vector2Int cell, float durationOverride = -1f)
     {
@@ -65,7 +65,7 @@ public class CombatVfxController : MonoBehaviour
 
         float dur = (durationOverride >= 0f) ? durationOverride : stepMoveDuration;
 
-        // 이동 중엔 보드 최상단(overlay)
+        // ??? ??? ???? ????(overlay)
         if (_boardUI.boardRoot != null)
         {
             rt.SetParent(_boardUI.boardRoot, worldPositionStays: true);
@@ -84,11 +84,13 @@ public class CombatVfxController : MonoBehaviour
         float t = 0f;
         while (t < dur)
         {
+            if (rt == null) yield break;
             t += Time.deltaTime;
             float u = Mathf.Clamp01(t / dur);
             rt.position = Vector3.Lerp(start, end, u);
             yield return null;
         }
+        if (rt == null) yield break;
         rt.position = end;
     }
 
@@ -111,7 +113,7 @@ public class CombatVfxController : MonoBehaviour
         Vector3 start = rt.position;
         Vector3 end = _boardUI.GetTileWorldCenter(targetCell.x, targetCell.y);
 
-        // 대시 중엔 최상단
+        // ??? ??? ????
         if (_boardUI.boardRoot != null)
         {
             rt.SetParent(_boardUI.boardRoot, worldPositionStays: true);
@@ -125,8 +127,8 @@ public class CombatVfxController : MonoBehaviour
 
         yield return LerpWorldPos(rt, end, start, backTime);
 
-        // 복귀 시 부모는 호출자가 MoveExistingToken으로 "정착"시키는 걸 권장하지만,
-        // 혹시 정착 호출이 없는 경우를 대비해 원복.
+        // ???? ?? ????? ?????? MoveExistingToken???? "????"????? ?? ??????????,
+        // ??? ???? ????? ???? ???? ????? ????.
         if (rt != null && originalParent != null)
             rt.SetParent(originalParent, worldPositionStays: true);
     }
@@ -143,6 +145,8 @@ public class CombatVfxController : MonoBehaviour
         Vector3 baseScale = rt.localScale;
         rt.localScale = baseScale * 1.15f;
         yield return new WaitForSeconds(0.06f);
+        // ????? ???? ?? ????(RemoveToken)??? RectTransform?? ?ı??? ?? ??????? ?´?.
+        if (rt == null) yield break;
         rt.localScale = baseScale;
     }
 
@@ -159,11 +163,13 @@ public class CombatVfxController : MonoBehaviour
         float t = 0f;
         while (t < dur)
         {
+            if (rt == null) yield break;
             t += Time.deltaTime;
             float u = Mathf.Clamp01(t / dur);
             rt.position = Vector3.LerpUnclamped(a, b, u);
             yield return null;
         }
+        if (rt == null) yield break;
         rt.position = b;
     }
 }

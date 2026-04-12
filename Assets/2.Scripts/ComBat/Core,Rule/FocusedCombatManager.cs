@@ -371,7 +371,7 @@ public class FocusedCombatManager : MonoBehaviour
         BuildResult buildResult = null;
         Vector2Int size;
 
-        if (_pendingContext != null && _pendingContext.HasEnvironment)
+        if (_pendingContext != null && _pendingContext.HasCapsule)
         {
             // 신 주시 시스템: 10x10 환경 스캔 기반
             buildResult = FocusCombatBuilder.Build(_pendingContext);
@@ -622,6 +622,10 @@ public class FocusedCombatManager : MonoBehaviour
     {
         HidePlayerHint();
 
+        // 퇴장 후 필드 동기화용 (전투 중 마지막 플레이어 칸)
+        Vector2Int lastPlayerCombatCell = State.playerCell;
+        EncounterContext exitContext = _pendingContext;
+
         if (_pendingContext != null)
         {
             // 플레이어 HP 역동기화
@@ -633,15 +637,22 @@ public class FocusedCombatManager : MonoBehaviour
 
             // 다중 적 결과 반영
             SaveActiveEnemyState(); // 현재 활성 적 상태 저장
+
+            // 죽은 적: 전투 마지막 칸 기준으로 필드에 드랍 (캡슐이면 CombatToField)
+            var pendingDrops = new System.Collections.Generic.List<PendingEnemyDropState>();
+
             foreach (var es in _enemyStates)
             {
                 if (es.fieldInstance == null) continue;
 
                 if (es.isDead || es.hp <= 0)
                 {
-                    // 필드에서 적 제거
-                    if (destroyFieldEnemyOnDefeat)
-                        Destroy(es.fieldInstance.gameObject);
+                    pendingDrops.Add(new PendingEnemyDropState
+                    {
+                        enemy = es.fieldInstance,
+                        lastCombatCell = es.cell,
+                        fieldOriginalCell = es.fieldOriginalCell
+                    });
                 }
                 else
                 {
@@ -649,6 +660,9 @@ public class FocusedCombatManager : MonoBehaviour
                     es.fieldInstance.currentHP = es.hp;
                 }
             }
+
+            if (pendingDrops.Count > 0)
+                StartCoroutine(DropItemsAtPlayerAfterReturn(pendingDrops, exitContext));
         }
 
         // _enemyStates 정리
@@ -671,6 +685,9 @@ public class FocusedCombatManager : MonoBehaviour
         SetDisableDuringCombat(false);
         ApplyFieldHudCombatMode(false);
 
+        // 캡슐(주시) 전투: 전투 보드 마지막 칸 → 필드 동일 영역 타일로 복귀
+        SyncPlayerFieldPositionFromLastCombatCell(lastPlayerCombatCell, exitContext);
+
         State.isInCombat = false;
         State.isBusy = false;
 
@@ -690,6 +707,30 @@ public class FocusedCombatManager : MonoBehaviour
             fader.ForceClear();
 
         _isTransitioning = false;
+    }
+
+    /// <summary>
+    /// 캡슐(주시) 집중전투: 전투 보드에서의 마지막 플레이어 칸을 <see cref="CapsuleRegion.CombatToField"/>로 필드 셀로 옮겨 복귀.
+    /// 레거시 랜덤 소형 보드(캡슐 없음)는 필드와 1:1 대응이 없어 적용하지 않음.
+    /// </summary>
+    private void SyncPlayerFieldPositionFromLastCombatCell(Vector2Int lastCombatCell, EncounterContext ctx)
+    {
+        if (ctx == null || !ctx.HasCapsule || ctx.capsule == null)
+            return;
+
+        GridBoard fieldGrid = ctx.fieldGrid != null ? ctx.fieldGrid : FindObjectOfType<GridBoard>();
+        if (fieldGrid == null)
+            return;
+
+        Vector2Int fieldCell = ctx.capsule.CombatToField(lastCombatCell);
+        if (!fieldGrid.InBounds(fieldCell))
+            return;
+
+        PlayerGridMover mover = FindObjectOfType<PlayerGridMover>();
+        if (mover == null)
+            return;
+
+        mover.WarpToFieldCell(fieldCell);
     }
 
     // ==========================
@@ -1135,6 +1176,76 @@ public class FocusedCombatManager : MonoBehaviour
             OnActiveEnemyDefeated();
 
         return true;
+    }
+    private sealed class PendingEnemyDropState
+    {
+        public EnemyInstance enemy;
+        public Vector2Int lastCombatCell;
+        public Vector2Int fieldOriginalCell;
+    }
+
+    private IEnumerator DropItemsAtPlayerAfterReturn(
+        System.Collections.Generic.List<PendingEnemyDropState> deadEntries,
+        EncounterContext ctx)
+    {
+        // fieldRoot 활성화 + 1프레임 대기
+        yield return null;
+
+        var playerMover = FindObjectOfType<PlayerGridMover>();
+        GridBoard grid = playerMover != null ? playerMover.grid : null;
+        if (grid == null && ctx != null && ctx.fieldGrid != null)
+            grid = ctx.fieldGrid;
+        if (grid == null)
+            grid = FindObjectOfType<GridBoard>();
+
+        Vector3 playerWorldFallback = (playerMover != null && grid != null)
+            ? grid.CellToWorld(playerMover.CurrentCell)
+            : (playerMover != null ? playerMover.transform.position : Vector3.zero);
+
+        if (grid == null)
+        {
+            foreach (var e in deadEntries)
+                if (e != null && e.enemy != null) Destroy(e.enemy.gameObject);
+            yield break;
+        }
+
+        // → 적의 OnDestroy/Die 핸들러가 자기 위치 기준으로 드롭한다고 가정
+        foreach (var entry in deadEntries)
+        {
+            if (entry == null || entry.enemy == null) continue;
+
+            Vector3 dropWorld = ResolveEnemyDropWorldPosition(entry, ctx, grid, playerWorldFallback);
+            entry.enemy.transform.position = dropWorld;
+
+            entry.enemy.currentHP = 0;
+            var dropHandler = entry.enemy.GetComponent<EnemyDropHandler>();
+            if (dropHandler != null)
+                dropHandler.ForceProcessDrops();
+
+            Destroy(entry.enemy.gameObject);
+        }
+    }
+
+    private static Vector3 ResolveEnemyDropWorldPosition(
+        PendingEnemyDropState entry,
+        EncounterContext ctx,
+        GridBoard grid,
+        Vector3 playerWorldFallback)
+    {
+        if (grid == null)
+            return playerWorldFallback;
+
+        if (ctx != null && ctx.HasCapsule && ctx.capsule != null)
+        {
+            Vector2Int fieldCell = ctx.capsule.CombatToField(entry.lastCombatCell);
+            if (grid.InBounds(fieldCell))
+                return grid.CellToWorld(fieldCell);
+        }
+
+        if (grid.InBounds(entry.fieldOriginalCell))
+            return grid.CellToWorld(entry.fieldOriginalCell);
+
+        return playerWorldFallback;
     }
 
     public bool TryDamagePlayer(int dmg)
@@ -1721,9 +1832,53 @@ public class FocusedCombatManager : MonoBehaviour
     /// <summary>해당 셀에 살아있는 적이 있는지</summary>
     private bool IsEnemyCell(Vector2Int cell)
     {
-        foreach (var es in _enemyStates)
-            if (!es.isDead && es.cell == cell) return true;
-        return false;
+        if (_enemyStates.Count > 0)
+        {
+            foreach (var es in _enemyStates)
+                if (!es.isDead && es.cell == cell) return true;
+            return false;
+        }
+        return State.isInCombat && cell == State.enemyCell && _enemyToken != null;
+    }
+
+    /// <summary>스킬/이동 등에서 사용: 살아 있는 적이 있는 전투 칸인지.</summary>
+    public bool HasLivingEnemyAtCombatCell(Vector2Int cell)
+        => IsEnemyCell(cell);
+
+    /// <summary>
+    /// 클릭한 칸에 적이 있으면 활성 타겟으로 전환하고 true.
+    /// 다중 적 전투에서 스킬로 옆 적을 때리려면 이 호출이 필요하다.
+    /// </summary>
+    public bool TrySelectEnemyTargetForAction(Vector2Int cell)
+    {
+        if (!State.isInCombat) return false;
+        if (_enemyStates.Count > 0)
+        {
+            for (int i = 0; i < _enemyStates.Count; i++)
+            {
+                if (_enemyStates[i].isDead) continue;
+                if (_enemyStates[i].cell != cell) continue;
+                if (i != _activeEnemyIndex)
+                    SetActiveEnemy(i);
+                return true;
+            }
+            return false;
+        }
+        return cell == State.enemyCell && _enemyToken != null;
+    }
+
+    /// <summary>사거리 프리뷰용: 살아 있는 적들의 전투 격자 좌표.</summary>
+    public System.Collections.Generic.List<Vector2Int> GetLivingEnemyCombatCellsSnapshot()
+    {
+        var cells = new System.Collections.Generic.List<Vector2Int>(8);
+        if (_enemyStates.Count > 0)
+        {
+            foreach (var es in _enemyStates)
+                if (!es.isDead) cells.Add(es.cell);
+        }
+        else if (State.isInCombat)
+            cells.Add(State.enemyCell);
+        return cells;
     }
 
     /// <summary>해당 셀의 적으로 타겟 전환</summary>
@@ -1750,7 +1905,6 @@ public class FocusedCombatManager : MonoBehaviour
             es.isDead = true;
             es.hp = 0;
 
-            // 토큰 제거
             if (es.token != null)
             {
                 if (boardUI != null)
@@ -1758,16 +1912,28 @@ public class FocusedCombatManager : MonoBehaviour
                 else
                     Destroy(es.token.gameObject);
             }
+
+            if (es.fieldInstance != null)
+                es.fieldInstance.currentHP = 0;
         }
 
-        // 전부 죽었으면 전투 종료
+        // ▼▼▼ 추가 ▼▼▼
+        // 다중 적 처치 보상: AP 1 반환 (마지막 적은 어차피 종료라 제외)
+        if (_enemyStates.Count > 1 && !AreAllEnemiesDead())
+        {
+            State.currentAP = Mathf.Min(State.currentAP + 1, State.maxAP);
+            if (vfx != null && _playerToken != null)
+                vfx.ShowPopup(_playerToken, "+1 AP");
+            RefreshUI();
+        }
+        // ▲▲▲ 추가 ▲▲▲
+
         if (AreAllEnemiesDead())
         {
             ExitFocusedCombat();
             return;
         }
 
-        // 다음 살아있는 적으로 타겟 전환
         for (int i = 0; i < _enemyStates.Count; i++)
         {
             if (!_enemyStates[i].isDead)

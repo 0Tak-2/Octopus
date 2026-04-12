@@ -282,10 +282,16 @@ public class FogOfWarRenderer : MonoBehaviour
     private void RefreshEnemyVisibility(HashSet<Vector2Int> visible)
     {
         var enemies = FindObjectsOfType<EnemyInstance>();
+        var occ = GridOccupancyRegistry.Instance;
         foreach (var enemy in enemies)
         {
             if (enemy == null) continue;
-            Vector2Int ec = grid.WorldToCell(enemy.transform.position);
+            // 이동 중 transform은 셀 경계 근처라 WorldToCell이 논리 격자(점유)와 어긋날 수 있음.
+            Vector2Int ec;
+            if (occ != null && occ.TryGetCurrentCell(enemy.transform, out ec))
+            { }
+            else
+                ec = grid.WorldToCell(enemy.transform.position);
             bool show = visible.Contains(ec);
             ToggleRenderers(enemy.gameObject, show);
         }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 154
   itemName: ParalyzingMucus
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 57e334aee0a4b4d4797d4f8c07ccef67, type: 3}
   description: 
   nameKey: ITEM_NAME_PARALYZING_MUCUS
   descKey: ITEM_DESC_PARALYZING_MUCUS

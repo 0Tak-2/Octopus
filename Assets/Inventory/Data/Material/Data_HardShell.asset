@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 151
   itemName: HardShell
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 57e334aee0a4b4d4797d4f8c07ccef67, type: 3}
   description: 
   nameKey: ITEM_NAME_HARD_SHELL
   descKey: ITEM_DESC_HARD_SHELL

@@ -72,17 +72,29 @@ public class WatchTargetingController : MonoBehaviour
     {
         if (_watchTarget == null) return;
 
-        // 하이라이트 따라가기
+        Vector3 anchor = GetHighlightWorldPosition(_watchTarget);
+
+        // 하이라이트: 논리 격자 셀 중심 (스프라이트 피벗/이동 보간과 어긋나지 않게)
         if (_highlightObj != null && _highlightObj.activeSelf)
-            _highlightObj.transform.position = _watchTarget.transform.position;
+            _highlightObj.transform.position = anchor;
 
         // 카운터 텍스트 따라가기
         if (_watchCounterObj != null && _watchCounterObj.activeSelf)
         {
-            Vector3 pos = _watchTarget.transform.position;
-            pos.y += 1.5f;
+            Vector3 pos = anchor;
+            float lift = grid != null ? grid.cellSize * 1.2f : 1.5f;
+            pos.y += lift;
             _watchCounterObj.transform.position = pos;
         }
+    }
+
+    /// <summary>주시 링을 스프라이트가 아닌 격자 논리 위치에 맞춘다.</summary>
+    private Vector3 GetHighlightWorldPosition(EnemyInstance enemy)
+    {
+        if (enemy == null) return Vector3.zero;
+        if (grid != null)
+            return grid.CellToWorld(GetEnemyLogicalCell(enemy));
+        return enemy.transform.position;
     }
     private void Start()
     {
@@ -221,11 +233,21 @@ public class WatchTargetingController : MonoBehaviour
         return new Vector2Int(dx, dy);
     }
 
+    /// <summary>점유 레지스트리가 있으면 논리 셀, 없으면 transform 기준 셀.</summary>
+    private Vector2Int GetEnemyLogicalCell(EnemyInstance enemy)
+    {
+        if (enemy == null || grid == null) return default;
+        var occ = GridOccupancyRegistry.Instance;
+        if (occ != null && occ.TryGetCurrentCell(enemy.transform, out var c))
+            return c;
+        return grid.WorldToCell(enemy.transform.position);
+    }
+
     private EnemyInstance FindEnemyInDirection(Vector2Int dir)
     {
         if (_highlightedEnemy == null) return null;
 
-        Vector2Int currentCell = grid.WorldToCell(_highlightedEnemy.transform.position);
+        Vector2Int currentCell = GetEnemyLogicalCell(_highlightedEnemy);
         EnemyInstance best = null;
         float bestDist = float.MaxValue;
 
@@ -233,7 +255,7 @@ public class WatchTargetingController : MonoBehaviour
         {
             if (enemy == _highlightedEnemy) continue;
 
-            Vector2Int ec = grid.WorldToCell(enemy.transform.position);
+            Vector2Int ec = GetEnemyLogicalCell(enemy);
             Vector2Int delta = ec - currentCell;
 
             // 방향 필터: 요청 방향에 적이 있는지
@@ -266,7 +288,7 @@ public class WatchTargetingController : MonoBehaviour
         foreach (var enemy in _visibleEnemies)
         {
             if (enemy == null) continue;
-            Vector2Int ec = grid.WorldToCell(enemy.transform.position);
+            Vector2Int ec = GetEnemyLogicalCell(enemy);
             if (ec == mouseCell) return enemy;
         }
         return null;
@@ -335,7 +357,7 @@ public class WatchTargetingController : MonoBehaviour
             }
 
             // 대상 적 거리 이탈 체크 (주시 시작 후엔 LoS 무시, 거리만 확인)
-            Vector2Int targetCell = grid.WorldToCell(_watchTarget.transform.position);
+            Vector2Int targetCell = GetEnemyLogicalCell(_watchTarget);
             int dist = Mathf.Max(
                 Mathf.Abs(playerMover.CurrentCell.x - targetCell.x),
                 Mathf.Abs(playerMover.CurrentCell.y - targetCell.y)
@@ -393,10 +415,6 @@ public class WatchTargetingController : MonoBehaviour
         }
     }
 
-    [Header("Environment Scan")]
-    [Tooltip("주시 대상 적 중심 환경 스캔 반경")]
-    public int scanRadius = 5;
-
     private void EnterFocusCombat()
     {
         if (_watchTarget == null) return;
@@ -411,18 +429,25 @@ public class WatchTargetingController : MonoBehaviour
 
         Vector2Int playerCell = playerMover.CurrentCell;
 
-        // 환경 스캔 → 다중 적 + 환경 스냅샷 포함 컨텍스트
+        // 캡슐 영역 계산 + 컨텍스트 생성
         var ctx = EnvironmentScanner.Scan(
             playerStats,
             playerCell,
             _watchTarget,
-            grid,
-            scanRadius
+            grid
         );
+
+        if (ctx == null)
+        {
+            Debug.LogError("[WatchTargeting] 컨텍스트 생성 실패");
+            CancelToNormal();
+            return;
+        }
 
         if (showDebugLogs)
             Debug.Log($"[WatchTargeting] 집중전투 진입: {_watchTarget.name}, " +
-                      $"적 {ctx.enemies.Count}마리, 환경 [{ctx.environment}]");
+                      $"적 {ctx.enemies.Count}마리, " +
+                      $"전투그리드 {ctx.capsule.width}x{ctx.capsule.height}");
 
         CancelToNormal();
         fcm.EnterFocusedCombat(ctx);
@@ -473,7 +498,7 @@ public class WatchTargetingController : MonoBehaviour
         {
             if (enemy == null || !enemy.gameObject.activeSelf || enemy.currentHP <= 0) continue;
 
-            Vector2Int ec = grid.WorldToCell(enemy.transform.position);
+            Vector2Int ec = GetEnemyLogicalCell(enemy);
             if (visibleCells.Contains(ec))
                 _visibleEnemies.Add(enemy);
         }
@@ -489,7 +514,7 @@ public class WatchTargetingController : MonoBehaviour
 
         foreach (var enemy in _visibleEnemies)
         {
-            Vector2Int ec = grid.WorldToCell(enemy.transform.position);
+            Vector2Int ec = GetEnemyLogicalCell(enemy);
             float dist = (ec - playerCell).sqrMagnitude;
             if (dist < closestDist)
             {
@@ -530,7 +555,7 @@ public class WatchTargetingController : MonoBehaviour
         }
 
         _highlightObj.SetActive(true);
-        _highlightObj.transform.position = _highlightedEnemy.transform.position;
+        _highlightObj.transform.position = GetHighlightWorldPosition(_highlightedEnemy);
 
         _highlightSR.color = CurrentState switch
         {
@@ -590,8 +615,10 @@ public class WatchTargetingController : MonoBehaviour
 
         _watchCounterObj.SetActive(true);
 
-        Vector3 pos = _watchTarget.transform.position;
-        pos.y += 1.5f;
+        Vector3 anchor = GetHighlightWorldPosition(_watchTarget);
+        float lift = grid != null ? grid.cellSize * 1.2f : 1.5f;
+        Vector3 pos = anchor;
+        pos.y += lift;
         _watchCounterObj.transform.position = pos;
 
         if (CurrentState == WatchState.Watching)
@@ -609,7 +636,7 @@ public class WatchTargetingController : MonoBehaviour
         if (_highlightObj != null)
         {
             _highlightObj.SetActive(true);
-            _highlightObj.transform.position = _watchTarget.transform.position;
+            _highlightObj.transform.position = GetHighlightWorldPosition(_watchTarget);
             _highlightSR.color = CurrentState == WatchState.WatchComplete ? completeColor : watchingColor;
         }
     }

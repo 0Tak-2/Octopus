@@ -1,15 +1,15 @@
 using UnityEngine;
 
 /// <summary>
-/// ÇÃ·¹ÀÌ¾î°¡ Âø¿ëÇÑ µµ±¸ °ü¸®
+/// ?????? ?????? ???? ????
 /// </summary>
 public class ToolManager : MonoBehaviour
 {
     public static ToolManager Instance { get; private set; }
 
     [Header("Current Tools")]
-    public int equippedPickaxeID = -1; // Âø¿ëÇÑ °î±ªÀÌ (-1 = ¾øÀ½)
-    public int equippedShovelID = -1; // Âø¿ëÇÑ »ğ (-1 = ¾øÀ½)
+    public int equippedPickaxeID = -1; // ?????? ???? (-1 = ????)
+    public int equippedShovelID = -1; // ?????? ?? (-1 = ????)
 
     private void Awake()
     {
@@ -25,7 +25,7 @@ public class ToolManager : MonoBehaviour
     }
 
     /// <summary>
-    /// °î±ªÀÌ Âø¿ë
+    /// ???? ????
     /// </summary>
     public void EquipPickaxe(int pickaxeID)
     {
@@ -37,7 +37,7 @@ public class ToolManager : MonoBehaviour
     }
 
     /// <summary>
-    /// »ğ Âø¿ë
+    /// ?? ????
     /// </summary>
     public void EquipShovel(int shovelID)
     {
@@ -49,7 +49,7 @@ public class ToolManager : MonoBehaviour
     }
 
     /// <summary>
-    /// °î±ªÀÌ Âø¿ë ÁßÀÎÁö
+    /// ???? ???? ??????
     /// </summary>
     public bool HasPickaxe()
     {
@@ -57,7 +57,7 @@ public class ToolManager : MonoBehaviour
     }
 
     /// <summary>
-    /// »ğ Âø¿ë ÁßÀÎÁö
+    /// ?? ???? ??????
     /// </summary>
     public bool HasShovel()
     {
@@ -65,24 +65,24 @@ public class ToolManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Âø¿ëÇÑ °î±ªÀÌ ÀÌ¸§
+    /// ?????? ???? ???
     /// </summary>
     public string GetPickaxeName()
     {
-        if (equippedPickaxeID <= 0) return "¾øÀ½";
+        if (equippedPickaxeID <= 0) return "????";
 
         ItemData itemData = ItemDatabase.Instance?.GetItemData(equippedPickaxeID);
-        return itemData != null ? itemData.itemName : "¾Ë ¼ö ¾øÀ½";
+        return itemData != null ? itemData.itemName : "?? ?? ????";
     }
 
     /// <summary>
-    /// Âø¿ëÇÑ »ğ ÀÌ¸§
+    /// ?????? ?? ???
     /// </summary>
     public string GetShovelName()
     {
-        if (equippedShovelID <= 0) return "¾øÀ½";
+        if (equippedShovelID <= 0) return "????";
 
         ItemData itemData = ItemDatabase.Instance?.GetItemData(equippedShovelID);
-        return itemData != null ? itemData.itemName : "¾Ë ¼ö ¾øÀ½";
+        return itemData != null ? itemData.itemName : "?? ?? ????";
     }
 }

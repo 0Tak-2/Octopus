@@ -7,218 +7,165 @@ public class BuildResult
     public Vector2Int playerSpawn;
     public Vector2Int primaryEnemySpawn;
     public List<Vector2Int> enemySpawns;
+
+    /// <summary>캡슐 시스템에서 사용한 영역 정보 (전투 중 캡슐 밖 셀 판정에 필요)</summary>
+    public CapsuleRegion capsule;
 }
 
 /// <summary>
-/// EnvironmentSnapshot + 다중 적 정보로 10x10 전투 필드를 생성.
+/// 캡슐 영역을 기반으로 집중전투 필드를 생성.
+/// - 필드 좌표를 그대로 보존 (벽/지형 위치 동일)
+/// - 캡슐 밖은 Wall로 처리 (시각적으로는 검정 먹물)
+/// - 캡슐 안의 모든 적/채집물 그대로 합류
 /// </summary>
 public static class FocusCombatBuilder
 {
-    public static readonly int FIELD_SIZE = 10;
-
+    /// <summary>
+    /// 캡슐 시스템 기반 빌드 (신 시스템).
+    /// EncounterContext.capsule이 설정돼 있어야 함.
+    /// </summary>
     public static BuildResult Build(EncounterContext ctx)
     {
-        int w = FIELD_SIZE;
-        int h = FIELD_SIZE;
+        if (ctx == null || ctx.capsule == null)
+        {
+            Debug.LogError("[FocusCombatBuilder] capsule이 없는 컨텍스트로 호출됨");
+            return null;
+        }
 
-        var result = new BuildResult();
-        result.gridData = new CombatGridData(w, h);
+        var capsule = ctx.capsule;
+        var grid = ctx.fieldGrid;
 
-        PlaceSpawnPositions(ctx, w, h, result);
-        HashSet<Vector2Int> reserved = BuildReservedCells(result);
+        var result = new BuildResult
+        {
+            capsule = capsule,
+            gridData = new CombatGridData(capsule.width, capsule.height),
+            enemySpawns = new List<Vector2Int>()
+        };
 
-        if (ctx.HasEnvironment)
-            PlaceEnvironment(result.gridData, ctx.environment, reserved, w, h);
+        // 1. 모든 셀 채우기
+        FillGridFromCapsule(result.gridData, capsule, grid);
 
-        Debug.Log($"[FocusCombatBuilder] 필드 생성 완료: {w}x{h}, " +
+        // 2. 플레이어/적 스폰 좌표 매핑
+        result.playerSpawn = capsule.FieldToCombat(capsule.playerFieldCell);
+        result.primaryEnemySpawn = capsule.FieldToCombat(capsule.primaryEnemyFieldCell);
+
+        // 3. 적 스폰 리스트 (필드 좌표 → 전투 좌표)
+        if (ctx.enemies != null)
+        {
+            for (int i = 0; i < ctx.enemies.Count; i++)
+            {
+                var entry = ctx.enemies[i];
+                Vector2Int combatCell = capsule.FieldToCombat(entry.fieldCell);
+
+                // 적이 캡슐 밖이면 (이론적으로 없어야 하지만 안전장치)
+                if (!capsule.ContainsFieldCell(entry.fieldCell))
+                {
+                    Debug.LogWarning($"[FocusCombatBuilder] 적 {entry.instance?.name}이 캡슐 밖에 있음. 스킵.");
+                    continue;
+                }
+
+                result.enemySpawns.Add(combatCell);
+            }
+        }
+
+        // 4. 안전: 스폰 셀이 Wall로 채워졌으면 Empty로 강제
+        EnsureSpawnIsEmpty(result.gridData, result.playerSpawn);
+        EnsureSpawnIsEmpty(result.gridData, result.primaryEnemySpawn);
+        foreach (var es in result.enemySpawns)
+            EnsureSpawnIsEmpty(result.gridData, es);
+
+        Debug.Log($"[FocusCombatBuilder] 캡슐 필드 생성: " +
+                  $"{capsule.width}x{capsule.height}, " +
                   $"플레이어={result.playerSpawn}, " +
                   $"적 {result.enemySpawns.Count}마리");
 
         return result;
     }
 
-    private static void PlaceSpawnPositions(EncounterContext ctx, int w, int h, BuildResult result)
+    /// <summary>
+    /// 캡슐 영역을 순회하며 각 셀을 적절한 타일 타입으로 채움.
+    /// </summary>
+    private static void FillGridFromCapsule(CombatGridData gridData, CapsuleRegion capsule, GridBoard fieldGrid)
     {
-        int cx = w / 2;
-        int primaryY = h - 3;
-        result.primaryEnemySpawn = new Vector2Int(cx, primaryY);
+        // 채집물 위치 캐시 (Harvestable.fieldCell → CombatTileType)
+        Dictionary<Vector2Int, CombatTileType> harvestableTiles = BuildHarvestableMap(capsule, fieldGrid);
 
-        int playerY = 2;
-        result.playerSpawn = new Vector2Int(cx, playerY);
-
-        result.enemySpawns = new List<Vector2Int>();
-        result.enemySpawns.Add(result.primaryEnemySpawn);
-
-        if (ctx.enemies != null && ctx.enemies.Count > 1)
+        for (int cx = 0; cx < capsule.width; cx++)
         {
-            var usedCells = new HashSet<Vector2Int>
+            for (int cy = 0; cy < capsule.height; cy++)
             {
-                result.playerSpawn,
-                result.primaryEnemySpawn
-            };
+                Vector2Int combatCell = new Vector2Int(cx, cy);
+                Vector2Int fieldCell = capsule.CombatToField(combatCell);
 
-            for (int i = 1; i < ctx.enemies.Count; i++)
-            {
-                Vector2Int spawn = FindNearbyOpen(
-                    result.primaryEnemySpawn,
-                    usedCells, w, h, 1, 3
-                );
-                result.enemySpawns.Add(spawn);
-                usedCells.Add(spawn);
+                // 1. 캡슐 밖 → Wall (시각적으로는 검정 먹물)
+                if (!capsule.ContainsFieldCell(fieldCell))
+                {
+                    gridData.Set(cx, cy, CombatTileType.Wall);
+                    continue;
+                }
+
+                // 2. 필드 벽인지 체크
+                if (fieldGrid != null && fieldGrid.IsMoveBlocked(fieldCell))
+                {
+                    gridData.Set(cx, cy, CombatTileType.Wall);
+                    continue;
+                }
+
+                // 3. 채집물 (해초/언덕)
+                if (harvestableTiles.TryGetValue(fieldCell, out var harvestType))
+                {
+                    gridData.Set(cx, cy, harvestType);
+                    continue;
+                }
+
+                // 4. 그 외는 빈 칸
+                gridData.Set(cx, cy, CombatTileType.Empty);
             }
         }
     }
 
-    private static Vector2Int FindNearbyOpen(
-        Vector2Int center, HashSet<Vector2Int> used,
-        int w, int h, int minDist, int maxDist)
+    /// <summary>
+    /// 캡슐 안에 있는 채집물들을 카테고리별 CombatTileType으로 매핑.
+    /// </summary>
+    private static Dictionary<Vector2Int, CombatTileType> BuildHarvestableMap(CapsuleRegion capsule, GridBoard fieldGrid)
     {
-        for (int dist = minDist; dist <= maxDist; dist++)
+        var map = new Dictionary<Vector2Int, CombatTileType>();
+        if (fieldGrid == null) return map;
+
+        var harvestables = Object.FindObjectsOfType<Harvestable>();
+        foreach (var h in harvestables)
         {
-            var candidates = new List<Vector2Int>();
-            for (int dx = -dist; dx <= dist; dx++)
-            {
-                for (int dy = -dist; dy <= dist; dy++)
-                {
-                    if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != dist) continue;
-                    Vector2Int c = new Vector2Int(center.x + dx, center.y + dy);
-                    if (c.x < 1 || c.x >= w - 1 || c.y < 1 || c.y >= h - 1) continue;
-                    if (used.Contains(c)) continue;
-                    candidates.Add(c);
-                }
-            }
-            if (candidates.Count > 0)
-                return candidates[Random.Range(0, candidates.Count)];
+            if (h == null || h.isHarvested) continue;
+
+            Vector2Int hc = fieldGrid.WorldToCell(h.transform.position);
+            if (!capsule.ContainsFieldCell(hc)) continue;
+
+            string name = h.itemName?.ToLower() ?? "";
+            CombatTileType type = CombatTileType.Empty;
+
+            if (name.Contains("해초") || name.Contains("수풀") || name.Contains("seaweed"))
+                type = CombatTileType.Seaweed;
+            else if (name.Contains("바위") || name.Contains("rock") || name.Contains("돌"))
+                type = CombatTileType.Hill;
+
+            if (type != CombatTileType.Empty && !map.ContainsKey(hc))
+                map[hc] = type;
         }
 
-        for (int x = 1; x < w - 1; x++)
-            for (int y = 1; y < h - 1; y++)
-            {
-                Vector2Int c = new Vector2Int(x, y);
-                if (!used.Contains(c)) return c;
-            }
-
-        return center + Vector2Int.right;
+        return map;
     }
 
-    private static HashSet<Vector2Int> BuildReservedCells(BuildResult result)
+    /// <summary>
+    /// 스폰 위치가 Wall로 채워졌으면 Empty로 강제 (안전장치).
+    /// 캡슐 모서리에 있는 플레이어/적이 벽으로 잘못 잡히는 경우 방지.
+    /// </summary>
+    private static void EnsureSpawnIsEmpty(CombatGridData gridData, Vector2Int cell)
     {
-        var reserved = new HashSet<Vector2Int>();
-        AddWithNeighbors(reserved, result.playerSpawn);
-        foreach (var es in result.enemySpawns)
-            AddWithNeighbors(reserved, es);
-        return reserved;
-    }
-
-    private static void AddWithNeighbors(HashSet<Vector2Int> set, Vector2Int cell)
-    {
-        for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
-                set.Add(new Vector2Int(cell.x + dx, cell.y + dy));
-    }
-
-    private static void PlaceEnvironment(
-        CombatGridData grid, EnvironmentSnapshot env,
-        HashSet<Vector2Int> reserved, int w, int h)
-    {
-        int walls = Mathf.Clamp(Mathf.RoundToInt(env.wallCount * 0.3f), 0, 12);
-        int seaweeds = Mathf.Clamp(Mathf.RoundToInt(env.seaweedCount * 0.4f), 0, 5);
-        int hills = Mathf.Clamp(Mathf.RoundToInt(env.hillCount * 0.4f), 0, 4);
-        int currents = Mathf.Clamp(Mathf.RoundToInt(env.currentCount * 0.4f), 0, 3);
-
-        PlaceWallClusters(grid, walls, reserved, w, h);
-        PlaceSingleTiles(grid, CombatTileType.Seaweed, seaweeds, reserved, w, h);
-        PlaceSingleTiles(grid, CombatTileType.Hill, hills, reserved, w, h);
-        PlaceSingleTiles(grid, CombatTileType.Current, currents, reserved, w, h);
-
-        Debug.Log($"[FocusCombatBuilder] 지형 배치: " +
-                  $"벽={walls}, 해초={seaweeds}, 언덕={hills}, 해류={currents}");
-    }
-
-    private static void PlaceWallClusters(
-        CombatGridData grid, int totalWalls,
-        HashSet<Vector2Int> reserved, int w, int h)
-    {
-        if (totalWalls <= 0) return;
-
-        int placed = 0;
-        int attempts = 0;
-
-        while (placed < totalWalls && attempts < 200)
+        if (!gridData.InBounds(cell.x, cell.y)) return;
+        if (gridData.IsWall(cell.x, cell.y))
         {
-            attempts++;
-
-            int clusterSize = Mathf.Min(Random.Range(2, 4), totalWalls - placed);
-
-            int sx = Random.Range(1, w - 1);
-            int sy = Random.Range(1, h - 1);
-            Vector2Int start = new Vector2Int(sx, sy);
-
-            if (reserved.Contains(start)) continue;
-            if (grid.Get(sx, sy) != CombatTileType.Empty) continue;
-
-            var cluster = new List<Vector2Int> { start };
-            var frontier = new List<Vector2Int> { start };
-
-            while (cluster.Count < clusterSize && frontier.Count > 0)
-            {
-                var from = frontier[Random.Range(0, frontier.Count)];
-                var dirs = new Vector2Int[]
-                {
-                    Vector2Int.up, Vector2Int.down,
-                    Vector2Int.left, Vector2Int.right
-                };
-
-                for (int i = dirs.Length - 1; i > 0; i--)
-                {
-                    int j = Random.Range(0, i + 1);
-                    (dirs[i], dirs[j]) = (dirs[j], dirs[i]);
-                }
-
-                bool grew = false;
-                foreach (var d in dirs)
-                {
-                    Vector2Int next = from + d;
-                    if (next.x < 1 || next.x >= w - 1 || next.y < 1 || next.y >= h - 1) continue;
-                    if (reserved.Contains(next)) continue;
-                    if (cluster.Contains(next)) continue;
-                    if (grid.Get(next.x, next.y) != CombatTileType.Empty) continue;
-
-                    cluster.Add(next);
-                    frontier.Add(next);
-                    grew = true;
-                    break;
-                }
-
-                if (!grew) frontier.Remove(from);
-            }
-
-            foreach (var c in cluster)
-            {
-                grid.Set(c.x, c.y, CombatTileType.Wall);
-                reserved.Add(c);
-                placed++;
-            }
-        }
-    }
-
-    private static void PlaceSingleTiles(
-        CombatGridData grid, CombatTileType type, int count,
-        HashSet<Vector2Int> reserved, int w, int h)
-    {
-        int placed = 0;
-        for (int i = 0; i < 100 && placed < count; i++)
-        {
-            int x = Random.Range(1, w - 1);
-            int y = Random.Range(1, h - 1);
-            Vector2Int c = new Vector2Int(x, y);
-
-            if (reserved.Contains(c)) continue;
-            if (grid.Get(x, y) != CombatTileType.Empty) continue;
-
-            grid.Set(x, y, type);
-            reserved.Add(c);
-            placed++;
+            gridData.Set(cell.x, cell.y, CombatTileType.Empty);
+            Debug.LogWarning($"[FocusCombatBuilder] 스폰 셀 {cell}이 Wall이라 Empty로 강제 변경");
         }
     }
 }

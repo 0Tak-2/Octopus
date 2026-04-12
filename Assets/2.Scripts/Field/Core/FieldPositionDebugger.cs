@@ -1,17 +1,17 @@
 using UnityEngine;
 
 /// <summary>
-/// ÀûÀÇ ½Ã°¢Àû À§Ä¡(transform)¿Í ±×¸®µå Á¡À¯ À§Ä¡(Occupancy)ÀÇ ºÒÀÏÄ¡¸¦ Áø´Ü
-/// ¸ðµç Àû ÇÁ¸®ÆÕ¿¡ Ãß°¡ÇÏ°Å³ª ºó ¿ÀºêÁ§Æ®¿¡ ºÙ¿©¼­ »ç¿ë
+/// ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡(transform)ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡(Occupancy)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+/// ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ¿ï¿½ ï¿½ß°ï¿½ï¿½Ï°Å³ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ù¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 /// </summary>
 public class EnemyPositionDebugger : MonoBehaviour
 {
     [Header("Settings")]
     public bool enableDebug = true;
     public float checkInterval = 1f;
-    [Tooltip("Chebyshev °Å¸® 1 ÀÌÇÏ´Â ÀÌµ¿ º¸°£/ÇÇ¹þ ¿ÀÂ÷·Î ÈçÇÔ. ²ô¸é ÀÎÁ¢ ºÒÀÏÄ¡µµ Error·Î ÂïÈù´Ù.")]
+    [Tooltip("Chebyshev ï¿½Å¸ï¿½ 1 ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½Ç¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ï¿½ Errorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.")]
     public bool ignoreAdjacentCellMismatch = true;
-    public bool autoFix = true; // true¸é ºÒÀÏÄ¡ ½Ã Occupancy ±âÁØÀ¸·Î À§Ä¡ µ¿±âÈ­
+    public bool autoFix = true; // trueï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ Occupancy ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½È­
 
     private float _timer;
 
@@ -43,32 +43,32 @@ public class EnemyPositionDebugger : MonoBehaviour
         {
             if (enemy == null || enemy.currentHP <= 0 || !enemy.gameObject.activeSelf) continue;
 
-            // ½Ã°¢Àû À§Ä¡ (transform)
+            // ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (transform)
             Vector2Int visualCell = grid.WorldToCell(enemy.transform.position);
 
-            // Á¡À¯ À§Ä¡ (occupancy)
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (occupancy)
             Vector2Int occCell = Vector2Int.zero;
             bool hasOcc = occ.TryGetCurrentCell(enemy.transform, out occCell);
 
             if (!hasOcc)
             {
-                Debug.LogWarning($"[PosDebug] {enemy.name}: Occupancy¿¡ µî·ÏµÇÁö ¾ÊÀ½! Visual=({visualCell})");
+                Debug.LogWarning($"[PosDebug] {enemy.name}: Occupancyï¿½ï¿½ ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½! Visual=({visualCell})");
                 continue;
             }
 
             if (visualCell == occCell) continue;
 
             int cellDist = Chebyshev(visualCell, occCell);
-            // ÀÌµ¿ Áß: TryMoveReserve°¡ ¸ñÀûÁö ¼¿À» ¸ÕÀú Àâ°í transformÀº Lerp·Î µû¶ó¿È ¡æ Àá±ñ ¾î±ß³².
+            // ï¿½Ìµï¿½ ï¿½ï¿½: TryMoveReserveï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ transformï¿½ï¿½ Lerpï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ß³ï¿½.
             if (ignoreAdjacentCellMismatch && cellDist <= 1)
                 continue;
 
-            Debug.LogError($"[PosDebug] *** À§Ä¡ ºÒÀÏÄ¡! *** {enemy.name}: Visual=({visualCell}) vs Occupancy=({occCell}), Chebyshev={cellDist}, World={enemy.transform.position}");
+            Debug.LogError($"[PosDebug] *** ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½Ä¡! *** {enemy.name}: Visual=({visualCell}) vs Occupancy=({occCell}), Chebyshev={cellDist}, World={enemy.transform.position}");
 
             if (autoFix)
             {
                 Vector3 correctPos = grid.CellToWorld(occCell);
-                Debug.Log($"[PosDebug] ÀÚµ¿ ¼öÁ¤: {enemy.name} -> ({occCell}), WorldPos={correctPos}");
+                Debug.Log($"[PosDebug] ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½: {enemy.name} -> ({occCell}), WorldPos={correctPos}");
                 enemy.transform.position = correctPos;
             }
         }

@@ -103,14 +103,17 @@ public class PlayerCombatActionController : MonoBehaviour
 
     private IEnumerator ExecuteAttackRoutine(Vector2Int target)
     {
+        if (_currentAttack.requireEnemyOnTarget)
+            combat.TrySelectEnemyTargetForAction(target);
+
         bool isMeleeDash =
             _currentAttack.requireEnemyOnTarget &&
-            target == combat.State.enemyCell;
+            combat.HasLivingEnemyAtCombatCell(target);
 
         if (isMeleeDash)
         {
             yield return combat.Anim_PlayerDashHitReturn(
-                targetCell: combat.State.enemyCell,
+                targetCell: target,
                 onImpact: () => ApplyDamageAtTarget(target)
             );
         }
@@ -145,8 +148,11 @@ public class PlayerCombatActionController : MonoBehaviour
             if (!combat.boardUI.InBounds(hit.x, hit.y)) continue;
             if (combat.IsBlocked(hit)) continue;
 
-            if (hit == combat.State.enemyCell)
+            if (combat.HasLivingEnemyAtCombatCell(hit))
+            {
+                combat.TrySelectEnemyTargetForAction(hit);
                 combat.TryDamageEnemy(_currentAttack.damage);
+            }
         }
     }
 
@@ -161,7 +167,7 @@ public class PlayerCombatActionController : MonoBehaviour
 
         if (_currentAttack.requireEnemyOnTarget)
         {
-            if (cell == combat.State.enemyCell && IsTargetValid(cell))
+            if (combat.HasLivingEnemyAtCombatCell(cell) && IsTargetValid(cell))
                 combat.boardUI.SetHighlight(cell.x, cell.y, true);
             else if (combat.boardUI.InBounds(cell.x, cell.y))
                 combat.boardUI.SetInvalidTarget(cell.x, cell.y);
@@ -197,8 +203,13 @@ public class PlayerCombatActionController : MonoBehaviour
 
         if (_currentAttack.requireEnemyOnTarget)
         {
-            if (IsTargetValid(combat.State.enemyCell))
-                combat.boardUI.SetHighlight(combat.State.enemyCell.x, combat.State.enemyCell.y, true);
+            var enemyCells = combat.GetLivingEnemyCombatCellsSnapshot();
+            for (int i = 0; i < enemyCells.Count; i++)
+            {
+                Vector2Int ec = enemyCells[i];
+                if (IsTargetValid(ec))
+                    combat.boardUI.SetHighlight(ec.x, ec.y, true);
+            }
             return;
         }
 
@@ -242,7 +253,7 @@ public class PlayerCombatActionController : MonoBehaviour
 
         if (!combat.boardUI.InBounds(target.x, target.y)) return false;
 
-        if (_currentAttack.requireEnemyOnTarget && target != combat.State.enemyCell)
+        if (_currentAttack.requireEnemyOnTarget && !combat.HasLivingEnemyAtCombatCell(target))
             return false;
 
         if (combat.IsBlocked(target)) return false;

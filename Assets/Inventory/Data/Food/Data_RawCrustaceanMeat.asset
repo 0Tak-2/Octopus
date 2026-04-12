@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 101
   itemName: "\uB0A0 \uAC11\uAC01\uB958\uC0B4"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a3244c5e5e81bca4c9ca02392923562d, type: 3}
   description: Looks like Good
   nameKey: ITEM_NAME_RAW_CRUSTACEAN
   descKey: ITEM_DESC_RAW_CRUSTACEAN

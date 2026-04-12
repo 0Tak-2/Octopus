@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 105
   itemName: RawClamMeat
-  icon: {fileID: 0}
+  icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
   description: Looks like Good
   nameKey: ITEM_NAME_RAW_CLAM
   descKey: ITEM_DESC_RAW_CLAM

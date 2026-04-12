@@ -29,7 +29,12 @@ MonoBehaviour:
   - {fileID: 9105843625278447542, guid: 8ccfbc201905d744d99ebd5084231304, type: 3}
   - {fileID: 9105843625278447542, guid: c3b1c0fad2b525f47aa9dd5af9881849, type: 3}
   - {fileID: 9105843625278447542, guid: 859e8164987e3334fb76c35d1bf6d094, type: 3}
-  normalEnemyCount: 5
+  - {fileID: 9105843625278447542, guid: 44b46e5649ec7e448801249b794b100d, type: 3}
+  - {fileID: 9105843625278447542, guid: f2113e12c2880d548b99a4860d80deff, type: 3}
+  - {fileID: 9105843625278447542, guid: 6c443994287b7874c932be326cd26e51, type: 3}
+  - {fileID: 9105843625278447542, guid: f4d291f7b007cff419dd26a14e926220, type: 3}
+  - {fileID: 9105843625278447542, guid: e794bc53b4f5035468d7db8f45a8b15c, type: 3}
+  normalEnemyCount: 8
   eliteEnemyPrefabs: []
   eliteEnemyCount: 0
   neutralEnemyPrefabs:

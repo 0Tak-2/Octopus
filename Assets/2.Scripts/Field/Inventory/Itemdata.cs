@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -55,6 +56,26 @@ public class ItemData : ScriptableObject
     /// 소비 가능한 아이템인지
     /// </summary>
     public bool IsConsumable => itemType == ItemType.Food || itemType == ItemType.Consumable;
+
+    /// <summary>채굴용 곡괭이(암석 등). 레거시 ID 101·103 + ItemType.Tool 이름 규칙.</summary>
+    public bool IsGatheringPickaxe()
+    {
+        if (itemID == 101 || itemID == 103) return true;
+        if (itemType != ItemType.Tool) return false;
+        string n = itemName ?? string.Empty;
+        return n.IndexOf("pickaxe", StringComparison.OrdinalIgnoreCase) >= 0
+            || n.Contains("곡괭이");
+    }
+
+    /// <summary>채굴용 삽(모래 등). 레거시 ID 104 + ItemType.Tool 이름 규칙.</summary>
+    public bool IsGatheringShovel()
+    {
+        if (itemID == 104) return true;
+        if (itemType != ItemType.Tool) return false;
+        string n = itemName ?? string.Empty;
+        return n.IndexOf("shovel", StringComparison.OrdinalIgnoreCase) >= 0
+            || n.Contains("삽");
+    }
 }
 
 /// <summary>

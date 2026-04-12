@@ -40,6 +40,21 @@ public class PlayerGridMover : MonoBehaviour
             occupancy.TryOccupy(transform, cell);
         }
     }
+
+    /// <summary>
+    /// 집중전투 퇴장 등: 격자 셀과 월드 위치를 한 번에 맞춤.
+    /// </summary>
+    public void WarpToFieldCell(Vector2Int cell)
+    {
+        if (grid == null)
+            grid = FindObjectOfType<GridBoard>();
+        if (grid == null || !grid.InBounds(cell))
+            return;
+
+        transform.position = grid.CellToWorld(cell);
+        SetCurrentCell(cell);
+    }
+
     private bool _isMoving;
 
     private void Awake()

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: "\uC624\uC9D5\uC5B4"
   tokenPrefab: {fileID: 4667636831984045804, guid: ca4dc545a1fe5f04696e2b30d3c37747, type: 3}
-  maxHP: 300
+  maxHP: 40
   defense: 0
   moveRange: 2
   attackRange: 1

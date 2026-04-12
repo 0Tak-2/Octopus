@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: 201
   itemName: GrilledCrustacean
-  icon: {fileID: 0}
+  icon: {fileID: 2061396515, guid: b8ad499e8bf20dd47abd21778260224c, type: 3}
   description: Looks like Good
   nameKey: ITEM_NAME_GRILLED_CRUSTACEAN
   descKey: ITEM_DESC_GRILLED_CRUSTACEAN

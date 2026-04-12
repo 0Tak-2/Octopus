@@ -2,21 +2,81 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 주시 대상 적 주변을 스캔해서 다중 적 EncounterContext를 생성.
+/// 주시 진입 시 캡슐 영역을 계산하고 EncounterContext를 만든다.
+/// - 캡슐 안의 모든 적 자동 합류 (플레이어 시야 영역 + 적 시야 영역 사이의 모든 적)
+/// - 시야 반경은 FieldVisionSystem.playerVisionRange를 동적으로 사용
 /// </summary>
 public static class EnvironmentScanner
 {
+    /// <summary>
+    /// 캡슐 시스템 기반 스캔.
+    /// </summary>
     public static EncounterContext Scan(
         PlayerStats playerStats,
         Vector2Int playerCell,
         EnemyInstance primaryEnemy,
-        GridBoard grid,
-        int scanRadius = 5)
+        GridBoard grid)
     {
+        if (primaryEnemy == null || grid == null)
+        {
+            Debug.LogError("[EnvironmentScanner] primaryEnemy 또는 grid가 null");
+            return null;
+        }
+
         Vector2Int primaryCell = grid.WorldToCell(primaryEnemy.transform.position);
 
-        // 1. 스캔 범위 내 적 수집
-        List<EnemyEntry> enemies = new List<EnemyEntry>();
+        // 1. 시야 반경 가져오기 (웅크리기/스킬 등 자동 반영)
+        int radius = GetCurrentVisionRadius();
+
+        // 2. 캡슐 영역 계산
+        CapsuleRegion capsule = CapsuleRegionBuilder.Build(playerCell, primaryCell, radius, grid);
+
+        // 3. 캡슐 안에 있는 모든 적 합류
+        List<EnemyEntry> enemies = CollectEnemiesInCapsule(primaryEnemy, primaryCell, capsule, grid);
+
+        // 4. 컨텍스트 조립
+        var ctx = new EncounterContext(
+            playerStats: playerStats,
+            playerCell: playerCell,
+            primaryEnemy: primaryEnemy,
+            primaryEnemyCell: primaryCell,
+            enemies: enemies,
+            capsule: capsule,
+            fieldGrid: grid
+        );
+
+        Debug.Log($"[EnvironmentScanner] 캡슐 스캔 완료: " +
+                  $"radius={radius}, " +
+                  $"적 {enemies.Count}마리, " +
+                  $"전투그리드={capsule.width}x{capsule.height}");
+
+        return ctx;
+    }
+
+    /// <summary>
+    /// 현재 플레이어 시야 반경을 가져옴.
+    /// FieldVisionSystem이 웅크리기/스킬에 따라 동적으로 값을 관리한다고 가정.
+    /// </summary>
+    private static int GetCurrentVisionRadius()
+    {
+        var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+        if (visionSys == null) return 4; // 안전 폴백
+
+        return Mathf.Max(1, visionSys.playerVisionRange);
+    }
+
+    /// <summary>
+    /// 캡슐 안에 있는 모든 적 수집 (주시 대상은 항상 인덱스 0).
+    /// </summary>
+    private static List<EnemyEntry> CollectEnemiesInCapsule(
+        EnemyInstance primaryEnemy,
+        Vector2Int primaryCell,
+        CapsuleRegion capsule,
+        GridBoard grid)
+    {
+        var enemies = new List<EnemyEntry>();
+
+        // 주시 대상이 항상 인덱스 0
         enemies.Add(new EnemyEntry(primaryEnemy, primaryCell));
 
         var allEnemies = Object.FindObjectsOfType<EnemyInstance>();
@@ -27,74 +87,12 @@ public static class EnvironmentScanner
             if (enemy.currentHP <= 0) continue;
 
             Vector2Int ec = grid.WorldToCell(enemy.transform.position);
-            int dist = Mathf.Max(
-                Mathf.Abs(ec.x - primaryCell.x),
-                Mathf.Abs(ec.y - primaryCell.y)
-            );
 
-            if (dist <= scanRadius)
+            // 캡슐 안에 있으면 합류
+            if (capsule.ContainsFieldCell(ec))
                 enemies.Add(new EnemyEntry(enemy, ec));
         }
 
-        // 2. 환경 카운트
-        EnvironmentSnapshot env = ScanEnvironment(grid, primaryCell, scanRadius);
-
-        // 3. 조립
-        var ctx = new EncounterContext(
-            playerStats, playerCell,
-            primaryEnemy, primaryCell,
-            enemies, env
-        );
-
-        Debug.Log($"[EnvironmentScanner] 스캔 완료: " +
-                  $"적 {enemies.Count}마리, 환경 [{env}], " +
-                  $"중심={primaryCell}, 반경={scanRadius}");
-
-        return ctx;
-    }
-
-    private static EnvironmentSnapshot ScanEnvironment(
-        GridBoard grid, Vector2Int center, int radius)
-    {
-        var snap = new EnvironmentSnapshot();
-
-        for (int dx = -radius; dx <= radius; dx++)
-        {
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) > radius) continue;
-                Vector2Int cell = new Vector2Int(center.x + dx, center.y + dy);
-                if (!grid.InBounds(cell)) continue;
-
-                if (grid.IsMoveBlocked(cell))
-                {
-                    snap.wallCount++;
-                    continue;
-                }
-            }
-        }
-
-        var harvestables = Object.FindObjectsOfType<Harvestable>();
-        foreach (var h in harvestables)
-        {
-            if (h == null || h.isHarvested) continue;
-
-            Vector2Int hc = grid.WorldToCell(h.transform.position);
-            int dist = Mathf.Max(
-                Mathf.Abs(hc.x - center.x),
-                Mathf.Abs(hc.y - center.y)
-            );
-            if (dist > radius) continue;
-
-            string name = h.itemName?.ToLower() ?? "";
-            if (name.Contains("해초") || name.Contains("수풀") || name.Contains("seaweed"))
-                snap.seaweedCount++;
-            else if (name.Contains("바위") || name.Contains("rock") || name.Contains("돌"))
-                snap.hillCount++;
-        }
-
-        snap.wallCount = Mathf.Min(snap.wallCount, 20);
-
-        return snap;
+        return enemies;
     }
 }

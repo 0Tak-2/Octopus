@@ -176,8 +176,8 @@ public class CombatSkillBarUI : MonoBehaviour
             if (targetCell == combat.State.playerCell)
                 return;
 
-            // 적 위치 클릭 불가
-            if (targetCell == combat.State.enemyCell)
+            // 적이 있는 칸으로는 이동 불가 (다중 적 포함)
+            if (combat.HasLivingEnemyAtCombatCell(targetCell))
             {
                 Debug.Log("[CombatSkillBar] 적 위치로 이동 불가!");
                 return;
@@ -207,8 +207,8 @@ public class CombatSkillBarUI : MonoBehaviour
         }
 
         // === 공격 스킬 (단일 대상) ===
-        // 적이 있는 타일을 클릭해야 함
-        if (targetCell != combat.State.enemyCell)
+        // 클릭한 칸의 적을 활성 타겟으로 맞춘 뒤 사거리 검사 (다중 적에서 옆 적 타격 허용)
+        if (!combat.TrySelectEnemyTargetForAction(targetCell))
         {
             Debug.Log("[CombatSkillBar] 적을 클릭하세요!");
             return;
@@ -216,7 +216,7 @@ public class CombatSkillBarUI : MonoBehaviour
 
         // 사거리 체크
         int range = _selectedSkill.definition != null ? _selectedSkill.definition.range : 1;
-        int dist = Chebyshev(combat.State.playerCell, combat.State.enemyCell);
+        int dist = Chebyshev(combat.State.playerCell, targetCell);
 
         if (dist > range)
         {
@@ -275,7 +275,7 @@ public class CombatSkillBarUI : MonoBehaviour
                     if (!combat.boardUI.InBounds(x, y)) continue;
                     Vector2Int cell = new Vector2Int(x, y);
                     if (cell == from) continue;
-                    if (cell == combat.State.enemyCell) continue;
+                    if (combat.HasLivingEnemyAtCombatCell(cell)) continue;
                     if (combat.IsBlocked(cell)) continue;
 
                     int d = Chebyshev(from, cell);
@@ -286,13 +286,15 @@ public class CombatSkillBarUI : MonoBehaviour
             return;
         }
 
-        // 공격 스킬: 적이 사거리 내에 있으면 적 위치 하이라이트
+        // 공격 스킬: 사거리 내 모든 적 칸 하이라이트
         int range = _selectedSkill.definition != null ? _selectedSkill.definition.range : 1;
-        int dist = Chebyshev(combat.State.playerCell, combat.State.enemyCell);
-
-        if (dist <= range)
+        var enemyCells = combat.GetLivingEnemyCombatCellsSnapshot();
+        Vector2Int playerCell = combat.State.playerCell;
+        for (int i = 0; i < enemyCells.Count; i++)
         {
-            combat.boardUI.SetHighlight(combat.State.enemyCell.x, combat.State.enemyCell.y, true);
+            Vector2Int ec = enemyCells[i];
+            if (Chebyshev(playerCell, ec) <= range)
+                combat.boardUI.SetHighlight(ec.x, ec.y, true);
         }
     }
 

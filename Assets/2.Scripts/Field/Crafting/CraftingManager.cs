@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// ���� �ý��� ����
+/// 제작 시스템 매니저
 /// </summary>
 public class CraftingManager : MonoBehaviour
 {
     public static CraftingManager Instance { get; private set; }
 
-    [Header("������ ���")]
+    [Header("모든 레시피")]
     public List<CraftingRecipe> allRecipes = new List<CraftingRecipe>();
 
     private void Awake()
@@ -26,7 +26,7 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ī�װ����� ������ ��������
+    /// 카테고리별 레시피 목록
     /// </summary>
     public List<CraftingRecipe> GetRecipesByCategory(RecipeCategory category)
     {
@@ -37,7 +37,7 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ���� ������ �����Ǹ� ��������
+    /// 재료가 충분하면 제작 가능한 레시피만
     /// </summary>
     public List<CraftingRecipe> GetCraftableRecipes(RecipeCategory category)
     {
@@ -48,7 +48,7 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ������ ����
+    /// 아이템 제작
     /// </summary>
     public bool CraftItem(CraftingRecipe recipe)
     {
@@ -60,10 +60,10 @@ public class CraftingManager : MonoBehaviour
             return false;
         }
 
-        // ��� �Ҹ�
+        // 재료 소비
         recipe.ConsumeIngredients(inventory);
 
-        // ����� �߰� (���ۿ� �Լ� ���)
+        // 결과물 추가 (인벤토리 함수 사용)
         ItemData resultData = ItemDatabase.Instance.GetItemData(recipe.resultItemID);
         if (resultData != null)
         {
@@ -73,7 +73,7 @@ public class CraftingManager : MonoBehaviour
                 recipe.resultCount
             );
 
-            // ���� �ڵ� ����
+            // 도구 자동 장착
             AutoEquipTool(recipe.resultItemID, resultData);
 
             Debug.Log($"[CraftingManager] Crafted {resultData.itemName} x{recipe.resultCount}");
@@ -85,21 +85,15 @@ public class CraftingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ���� �ڵ� ����
+    /// 제작 직후 채굴 도구 자동 장착 (ItemData 기준 — 산호 곡괭이 401 등).
     /// </summary>
     private void AutoEquipTool(int itemID, ItemData itemData)
     {
-        if (ToolManager.Instance == null) return;
+        if (ToolManager.Instance == null || itemData == null) return;
 
-        // ��� ���� (ID: 101=��ȣ ���, 103=�� ���)
-        if (itemID == 101 || itemID == 103)
-        {
+        if (itemData.IsGatheringPickaxe())
             ToolManager.Instance.EquipPickaxe(itemID);
-        }
-        // �� ���� (ID: 104=�� ��)
-        else if (itemID == 104)
-        {
+        else if (itemData.IsGatheringShovel())
             ToolManager.Instance.EquipShovel(itemID);
-        }
     }
 }
