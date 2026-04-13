@@ -23,7 +23,10 @@ public class FieldEnemyWanderChase : MonoBehaviour
     [Tooltip("(Deprecated) FieldVisionSystem uses own range")]
     public int aggroRange = 5;
     public bool requireLoS = true;
+    [Tooltip("추적 중 플레이어와의 거리(체스보드·대각선 포함 Chebyshev)가 이 칸 수를 넘으면 어그로 해제. 시야/LoS와 무관하게 적용됩니다.")]
+    [Min(1)]
     public int aggroDropDistance = 15;
+    [Tooltip("체크 시 EnemyDefinition의 탐지/어그로 거리로 위 값들을 덮어씁니다. 해제하면 인스펙터 값만 사용합니다.")]
     public bool useCustomDetection = false;
 
     [Header("Wander")]
@@ -169,18 +172,10 @@ public class FieldEnemyWanderChase : MonoBehaviour
         }
         else if (isAggro)
         {
-            // Already aggro - check if can still see (LoS only, no detection roll)
-            bool canStillSee = false;
-            if (visionSys != null)
-                canStillSee = visionSys.CanSeePlayer(myCell, pCell);
-            else
-                canStillSee = distToPlayer <= aggroRange &&
-                    (!requireLoS || FieldCombatUtils.HasLineOfSight(gridBoard, myCell, pCell));
-
-            if (!canStillSee && distToPlayer > aggroDropDistance)
-            {
+            // 리시(최대 추적 거리): 시야 반경이 넓으면 CanSeePlayer가 멀리서도 true가 되어
+            // 예전 조건(!canStillSee && 거리)만으로는 어그로가 안 풀리는 경우가 있었음.
+            if (distToPlayer > aggroDropDistance)
                 isAggro = false;
-            }
         }
 
         if (canSee && !_wasChasing)

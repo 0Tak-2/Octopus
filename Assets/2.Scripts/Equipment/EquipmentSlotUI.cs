@@ -6,7 +6,8 @@ using TMPro;
 /// <summary>
 /// 개별 장비 슬롯 UI
 /// </summary>
-public class EquipmentSlotUI : MonoBehaviour, IPointerClickHandler
+public class EquipmentSlotUI : MonoBehaviour,
+    IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [Header("UI Elements")]
     public Image iconImage;
@@ -94,6 +95,7 @@ public class EquipmentSlotUI : MonoBehaviour, IPointerClickHandler
     
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (!eventData.eligibleForClick) return;
         if (EquipmentUI.Instance == null) return;
         
         if (eventData.button == PointerEventData.InputButton.Left)
@@ -104,5 +106,47 @@ public class EquipmentSlotUI : MonoBehaviour, IPointerClickHandler
         {
             EquipmentUI.Instance.OnSlotRightClicked(_slotIndex);
         }
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (_equipment == null || _slotIndex < 0) return;
+        InventoryDragSession.BeginEquipment(_slotIndex);
+
+        if (iconImage != null && iconImage.sprite != null)
+        {
+            Canvas c = GetComponentInParent<Canvas>();
+            if (c != null)
+            {
+                GameObject g = new GameObject("EqDragGhost");
+                g.transform.SetParent(c.transform, false);
+                g.transform.SetAsLastSibling();
+                var img = g.AddComponent<Image>();
+                img.sprite = iconImage.sprite;
+                img.raycastTarget = false;
+                img.preserveAspect = true;
+                var rt = g.GetComponent<RectTransform>();
+                rt.sizeDelta = iconImage.rectTransform.rect.size;
+                InventoryDragSession.DragGhost = g;
+            }
+        }
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (InventoryDragSession.DragGhost != null)
+            InventoryDragSession.DragGhost.transform.position = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        InventoryDragSession.Clear();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        if (_slotIndex < 0) return;
+        if (InventoryDragResolver.TryDropOnEquipmentSlot(_slotIndex))
+            InventoryDragSession.Clear();
     }
 }

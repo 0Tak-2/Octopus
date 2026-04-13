@@ -6,7 +6,8 @@ using TMPro;
 /// <summary>
 /// 개별 색 모듈 슬롯 UI
 /// </summary>
-public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
+public class ColorModuleSlotUI : MonoBehaviour,
+    IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [Header("UI Elements")]
     public Image iconImage;
@@ -95,6 +96,7 @@ public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)  
     {
+        if (!eventData.eligibleForClick) return;
         if (ColorModuleUI.Instance == null) return;
 
         if (eventData.button == PointerEventData.InputButton.Left)
@@ -105,5 +107,47 @@ public class ColorModuleSlotUI : MonoBehaviour, IPointerClickHandler
         {
             ColorModuleUI.Instance.OnSlotRightClicked(_slotIndex);
         }
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (_module == null || _slotIndex < 0) return;
+        InventoryDragSession.BeginColorModuleSlot(_slotIndex);
+
+        if (iconImage != null && iconImage.sprite != null)
+        {
+            Canvas c = GetComponentInParent<Canvas>();
+            if (c != null)
+            {
+                GameObject g = new GameObject("ModDragGhost");
+                g.transform.SetParent(c.transform, false);
+                g.transform.SetAsLastSibling();
+                var img = g.AddComponent<Image>();
+                img.sprite = iconImage.sprite;
+                img.raycastTarget = false;
+                img.preserveAspect = true;
+                var rt = g.GetComponent<RectTransform>();
+                rt.sizeDelta = iconImage.rectTransform.rect.size;
+                InventoryDragSession.DragGhost = g;
+            }
+        }
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (InventoryDragSession.DragGhost != null)
+            InventoryDragSession.DragGhost.transform.position = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        InventoryDragSession.Clear();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        if (_slotIndex < 0) return;
+        if (InventoryDragResolver.TryDropOnColorModuleSlot(_slotIndex))
+            InventoryDragSession.Clear();
     }
 }

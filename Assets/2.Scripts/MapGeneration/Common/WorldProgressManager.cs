@@ -10,10 +10,11 @@ public class WorldProgressManager : MonoBehaviour
     public static WorldProgressManager Instance { get; private set; }
     
     [Header("Field Definitions (in order)")]
-    [Tooltip("All fields in progression order")]
+    [Tooltip("진행 순서대로. 인덱스 0 = 게임 시작 시 첫 필드(필드1).")]
     public FieldDefinition[] allFields;
     
     [Header("Current State")]
+    [Tooltip("0 = allFields[0] 에서 시작. PlayerPrefs로 저장됩니다.")]
     [SerializeField] private int currentFieldIndex = 0;
     [SerializeField] private string currentDungeonID = "";
     [SerializeField] private int currentDungeonFloor = 0;
@@ -97,7 +98,7 @@ public class WorldProgressManager : MonoBehaviour
             Debug.Log($"[WorldProgress] Going to Field {fieldIndex + 1}: {allFields[fieldIndex].fieldName}");
         
         OnFieldChanged?.Invoke(allFields[fieldIndex]);
-        SceneManager.LoadScene(fieldSceneName);
+        SceneManager.LoadScene(ResolveFieldSceneName());
     }
     
     /// <summary>
@@ -130,6 +131,30 @@ public class WorldProgressManager : MonoBehaviour
             if (showDebugLogs)
                 Debug.Log("[WorldProgress] Already at first field!");
         }
+    }
+
+    /// <summary>
+    /// FieldDefinition.nextField / previousField로 이동할 때 사용.
+    /// allFields 배열에 해당 에셋이 포함되어 있어야 합니다 (순서 = 진행 순서).
+    /// </summary>
+    public bool TryGoToFieldByAsset(FieldDefinition def)
+    {
+        if (def == null || allFields == null)
+            return false;
+
+        for (int i = 0; i < allFields.Length; i++)
+        {
+            if (allFields[i] == def)
+            {
+                GoToField(i);
+                return true;
+            }
+        }
+
+        if (showDebugLogs)
+            Debug.LogWarning($"[WorldProgress] '{def.fieldName}' 에셋이 allFields 목록에 없습니다. 목록에 추가하세요.");
+
+        return false;
     }
     
     // ============================================
@@ -182,7 +207,14 @@ public class WorldProgressManager : MonoBehaviour
         currentDungeonID = "";
         currentDungeonFloor = 0;
         
-        SceneManager.LoadScene(fieldSceneName);
+        SceneManager.LoadScene(ResolveFieldSceneName());
+    }
+
+    private string ResolveFieldSceneName()
+    {
+        if (GameManager.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.fieldSceneName))
+            return GameManager.Instance.fieldSceneName;
+        return fieldSceneName;
     }
     
     // ============================================

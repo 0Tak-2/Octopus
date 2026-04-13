@@ -22,17 +22,34 @@ public class MapExitTrigger : MonoBehaviour
     public TextMeshProUGUI promptText;
 
     [Tooltip("표시할 메시지")]
-    public string promptMessage = "다음 지역으로 이동 (F)";
+    public string promptMessage = "다음 지역으로 이동 (E)";
 
     [Header("Direction")]
     [Tooltip("다음 맵인가? (false면 이전 맵)")]
     public bool isNextMap = true;
+
+    [Tooltip("출구가 놓인 가장자리 (필드 생성기에서 설정 — 입구 반대편 스폰용)")]
+    public EdgeSide exitEdge = EdgeSide.Right;
+
+    [Tooltip("맵 연결 위치 계산용 (비워두면 상호작용 시 추론)")]
+    public Vector2Int exitCell;
+    public int sourceMapWidth;
+    public int sourceMapHeight;
 
     [Header("Debug")]
     public bool logInteraction = true;
 
     private Transform player;
     private bool playerInRange = false;
+
+    /// <summary>FieldMapGenerator가 스폰 직후 호출</summary>
+    public void ConfigurePortal(EdgeSide edge, Vector2Int cell, int mapW, int mapH)
+    {
+        exitEdge = edge;
+        exitCell = cell;
+        sourceMapWidth = mapW;
+        sourceMapHeight = mapH;
+    }
 
     private void Start()
     {
@@ -84,11 +101,32 @@ public class MapExitTrigger : MonoBehaviour
             return;
         }
 
-        // 다음 맵 or 이전 맵 로드
+        EdgeSide edge = exitEdge;
+        Vector2Int cell = exitCell;
+        int mw = sourceMapWidth;
+        int mh = sourceMapHeight;
+
+        if (cell == Vector2Int.zero || mw <= 0 || mh <= 0)
+            gridBoardTryInfer(ref edge, ref cell, ref mw, ref mh);
+
+        if (mw > 0 && mh > 0 && cell != Vector2Int.zero)
+            gm.RegisterFieldExitForNextScene(edge, cell, mw, mh);
+
         if (isNextMap)
             gm.LoadNextMap();
         else
             gm.LoadPreviousMap();
+    }
+
+    private bool gridBoardTryInfer(ref EdgeSide edge, ref Vector2Int cell, ref int mw, ref int mh)
+    {
+        var grid = FindObjectOfType<GridBoard>();
+        if (grid == null) return false;
+        mw = grid.width;
+        mh = grid.height;
+        cell = grid.WorldToCell(transform.position);
+        edge = FieldTransitionUtil.InferClosestEdge(cell, mw, mh);
+        return true;
     }
 
     /// <summary>

@@ -21,6 +21,12 @@ public class PlayerSaveData
     public Vector2Int lastFieldPosition;      // 필드에서 마지막 위치
     public Vector2Int dungeonEntrancePosition; // 던전 입구 위치 (나올 때 여기로)
 
+    [Header("Field portal (다음 씬 입구 배치)")]
+    [Tooltip("이전 맵에서 나온 방향·정렬로 다음 맵 입구를 잡을 때 사용")]
+    public bool hasPendingEntranceHint;
+    public EdgeSide enterNewFieldFromEdge;
+    [Range(0f, 1f)] public float entranceAlignT = 0.5f;
+
     [Header("Dungeon")]
     public string currentDungeonId;
     public int returnToMapIndex;
@@ -35,14 +41,17 @@ public class InventoryItemSave
     public int itemID;
     public string itemName;
     public int count;
+    /// <summary>-1 = 구 세이브(슬롯 순서 없음), 0 이상 = 그리드 칸 인덱스</summary>
+    public int slotIndex = -1;
 
     public InventoryItemSave() { }
 
-    public InventoryItemSave(int id, string name, int cnt)
+    public InventoryItemSave(int id, string name, int cnt, int slot = -1)
     {
         itemID = id;
         itemName = name;
         count = cnt;
+        slotIndex = slot;
     }
 }
 
@@ -80,6 +89,11 @@ public class FieldMapSaveData
     public List<EnemyStateSave> enemies;             // 적 상태들
     public List<string> collectedItems;              // 수집한 아이템 ID들 (재스폰 방지)
     public List<string> destroyedObjects;            // 파괴된 오브젝트들
+
+    [Tooltip("디스크·세션 공통: 한 번 정해진 출구/입구 통로 (왕복 유지)")]
+    public bool hasSavedPortalCells;
+    public Vector2Int savedExitToNext;
+    public Vector2Int savedEntranceFromPrev;
 
     public FieldMapSaveData()
     {

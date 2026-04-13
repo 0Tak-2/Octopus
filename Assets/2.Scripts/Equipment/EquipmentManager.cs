@@ -58,6 +58,28 @@ public class EquipmentManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 슬롯을 직접 설정 (인벤 드래그용). null이면 빈 슬롯.
+    /// </summary>
+    public void SetSlotWithoutUnequip(int slotIndex, EquipmentDefinition equipment)
+    {
+        if (slotIndex < 0 || slotIndex >= MAX_SLOTS) return;
+        equippedItems[slotIndex] = equipment;
+        RecalculateStats();
+        OnEquipmentChanged?.Invoke();
+    }
+
+    public void SwapEquipmentSlots(int a, int b)
+    {
+        if (a < 0 || a >= MAX_SLOTS || b < 0 || b >= MAX_SLOTS) return;
+        if (a == b) return;
+        var t = equippedItems[a];
+        equippedItems[a] = equippedItems[b];
+        equippedItems[b] = t;
+        RecalculateStats();
+        OnEquipmentChanged?.Invoke();
+    }
+
+    /// <summary>
     /// 슬롯에 장비 장착
     /// </summary>
     public bool Equip(int slotIndex, EquipmentDefinition equipment)

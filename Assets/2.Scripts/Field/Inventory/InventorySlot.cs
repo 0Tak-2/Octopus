@@ -4,11 +4,14 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
-/// 인벤토리 슬롯 (마우스 이벤트 포함)
-/// 좌클릭: 상세 정보 표시
-/// 우클릭: 아이템 사용/장착/해제 토글
+/// ?????? ???? (????J ???? ????)
+/// ?????: ?? ???? ???
+/// ?????: ?????? ???/????/???? ???
+/// ?????: ??? ???? ?????????? ???????? ???/???
 /// </summary>
-public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class InventorySlot : MonoBehaviour,
+    IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler,
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [Header("UI Elements")]
     public Image iconImage;
@@ -22,11 +25,15 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     private InventoryItem item;
     private InventoryUI inventoryUI;
+    private int _slotIndex = -1;
 
-    public void Setup(InventoryItem item, InventoryUI ui)
+    public int SlotIndex => _slotIndex;
+
+    public void Setup(InventoryItem item, InventoryUI ui, int slotIndex)
     {
         this.item = item;
         this.inventoryUI = ui;
+        _slotIndex = slotIndex;
 
         if (iconImage != null)
         {
@@ -61,10 +68,11 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         }
     }
 
-    public void SetupEmpty(InventoryUI ui)
+    public void SetupEmpty(InventoryUI ui, int slotIndex)
     {
         this.item = null;
         this.inventoryUI = ui;
+        _slotIndex = slotIndex;
 
         if (iconImage != null)
             iconImage.enabled = false;
@@ -103,6 +111,8 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        // eligibleForClick: ?????? ????? ?????? ????? false (OnEndDrag???? OnPointerClick?? ???? ?? ?? ??? _dragging ??????? ??????)
+        if (!eventData.eligibleForClick) return;
         if (item == null) return;
 
         if (eventData.button == PointerEventData.InputButton.Left)
@@ -117,7 +127,7 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     }
 
     /// <summary>
-    /// 아이템 타입에 따라 사용 또는 장착/해제 토글
+    /// ?????? ???? ???? ??? ??? ????/???? ???
     /// </summary>
     private void TryUseOrEquip()
     {
@@ -129,43 +139,43 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         if (itemData == null)
         {
-            Debug.LogWarning($"[InventorySlot] ItemData를 찾을 수 없음: ID={item.itemID}");
+            Debug.LogWarning($"[InventorySlot] ItemData?? ??? ?? ????: ID={item.itemID}");
             return;
         }
 
-        // === 음식: 배고픔 회복 ===
+        // === ????: ????? ??? ===
         if (itemData.itemType == ItemType.Food)
         {
             UseFood(itemData);
             return;
         }
 
-        // === 소비 아이템: HP 회복 ===
+        // === ??? ??????: HP ??? ===
         if (itemData.itemType == ItemType.Consumable)
         {
             UseConsumable(itemData);
             return;
         }
 
-        // === 장비: 장착/해제 토글 ===
+        // === ???: ????/???? ??? ===
         if (itemData.IsEquipable)
         {
             ToggleEquipItem(itemData);
             return;
         }
 
-        // === 색 모듈: 장착/해제 토글 ===
+        // === ?? ???: ????/???? ??? ===
         if (itemData.IsColorModule)
         {
             ToggleColorModule(itemData);
             return;
         }
 
-        Debug.Log($"[InventorySlot] {item.itemName}은(는) 사용할 수 없습니다.");
+        Debug.Log($"[InventorySlot] {item.itemName}??(??) ????? ?? ???????.");
     }
 
     // ============================================
-    // 음식 사용
+    // ???? ???
     // ============================================
     private void UseFood(ItemData itemData)
     {
@@ -174,7 +184,7 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         if (stats.hunger >= stats.maxHunger)
         {
-            Debug.Log("[InventorySlot] 배고픔이 이미 가득 찼습니다.");
+            Debug.Log("[InventorySlot] ??????? ??? ???? ??????.");
             return;
         }
 
@@ -186,12 +196,12 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         stats.ClampAll();
 
         InventoryManager.Instance?.RemoveItem(item.itemID, 1);
-        Debug.Log($"[InventorySlot] {item.itemName} 사용! 배고픔 +{itemData.hungerRestore}");
+        Debug.Log($"[InventorySlot] {item.itemName} ???! ????? +{itemData.hungerRestore}");
         inventoryUI?.RefreshUI();
     }
 
     // ============================================
-    // 소비 아이템 사용 (HP 회복)
+    // ??? ?????? ??? (HP ???)
     // ============================================
     private void UseConsumable(ItemData itemData)
     {
@@ -202,7 +212,7 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             if (stats.hp >= stats.maxHP)
             {
-                Debug.Log("[InventorySlot] HP가 이미 가득 찼습니다.");
+                Debug.Log("[InventorySlot] HP?? ??? ???? ??????.");
                 return;
             }
             stats.Heal(itemData.hpRestore);
@@ -217,51 +227,51 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         stats.ClampAll();
 
         InventoryManager.Instance?.RemoveItem(item.itemID, 1);
-        Debug.Log($"[InventorySlot] {item.itemName} 사용! HP +{itemData.hpRestore}");
+        Debug.Log($"[InventorySlot] {item.itemName} ???! HP +{itemData.hpRestore}");
         inventoryUI?.RefreshUI();
     }
 
     // ============================================
-    // 장비 장착: 인벤토리에서 제거 → 장비 슬롯으로 이동
+    // ??? ????: ?????????? ???? ?? ??? ???????? ???
     // ============================================
     private void ToggleEquipItem(ItemData itemData)
     {
         EquipmentManager equipMgr = EquipmentManager.Instance;
         if (equipMgr == null)
         {
-            Debug.LogWarning("[InventorySlot] EquipmentManager를 찾을 수 없습니다.");
+            Debug.LogWarning("[InventorySlot] EquipmentManager?? ??? ?? ???????.");
             return;
         }
 
-        // 빈 슬롯에 장착
+        // ?? ????? ????
         bool success = equipMgr.AutoEquip(itemData.equipmentDefinition);
         if (success)
         {
-            // 인벤토리에서 제거
+            // ?????????? ????
             InventoryManager.Instance?.RemoveItem(item.itemID, 1);
-            Debug.Log($"[InventorySlot] {item.itemName} 장착! (인벤토리 → 장비 슬롯)");
+            Debug.Log($"[InventorySlot] {item.itemName} ????! (?????? ?? ??? ????)");
         }
         else
         {
-            Debug.Log("[InventorySlot] 빈 장비 슬롯이 없습니다!");
+            Debug.Log("[InventorySlot] ?? ??? ?????? ???????!");
         }
 
         inventoryUI?.RefreshUI();
     }
 
     // ============================================
-    // 색 모듈 장착: 인벤토리에서 제거 → 모듈 슬롯으로 이동
+    // ?? ??? ????: ?????????? ???? ?? ??? ???????? ???
     // ============================================
     private void ToggleColorModule(ItemData itemData)
     {
         ColorModuleSlots moduleSlots = ColorModuleSlots.Instance;
         if (moduleSlots == null)
         {
-            Debug.LogWarning("[InventorySlot] ColorModuleSlots를 찾을 수 없습니다.");
+            Debug.LogWarning("[InventorySlot] ColorModuleSlots?? ??? ?? ???????.");
             return;
         }
 
-        // 빈 슬롯에 장착
+        // ?? ????? ????
         ColorModuleInstance moduleInstance = new ColorModuleInstance(itemData.colorModuleDefinition);
         bool equipped = false;
 
@@ -270,17 +280,60 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             if (moduleSlots.GetSlot(i) == null)
             {
                 moduleSlots.Equip(i, moduleInstance);
-                // 인벤토리에서 제거
+                // ?????????? ????
                 InventoryManager.Instance?.RemoveItem(item.itemID, 1);
-                Debug.Log($"[InventorySlot] {item.itemName} 모듈 장착! (인벤토리 → 슬롯 {i})");
+                Debug.Log($"[InventorySlot] {item.itemName} ??? ????! (?????? ?? ???? {i})");
                 equipped = true;
                 break;
             }
         }
 
         if (!equipped)
-            Debug.Log("[InventorySlot] 빈 모듈 슬롯이 없습니다! (최대 5개)");
+            Debug.Log("[InventorySlot] ?? ??? ?????? ???????! (??? 5??)");
 
         inventoryUI?.RefreshUI();
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (item == null || _slotIndex < 0) return;
+        InventoryDragSession.BeginInventory(_slotIndex);
+
+        if (iconImage != null && iconImage.sprite != null)
+        {
+            Canvas c = GetComponentInParent<Canvas>();
+            if (c != null)
+            {
+                GameObject g = new GameObject("InvDragGhost");
+                g.transform.SetParent(c.transform, false);
+                g.transform.SetAsLastSibling();
+                var img = g.AddComponent<Image>();
+                img.sprite = iconImage.sprite;
+                img.raycastTarget = false;
+                img.preserveAspect = true;
+                var rt = g.GetComponent<RectTransform>();
+                var src = iconImage.rectTransform;
+                rt.sizeDelta = src.rect.size;
+                InventoryDragSession.DragGhost = g;
+            }
+        }
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (InventoryDragSession.DragGhost != null)
+            InventoryDragSession.DragGhost.transform.position = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        InventoryDragSession.Clear();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        if (_slotIndex < 0) return;
+        if (InventoryDragResolver.TryDropOnInventorySlot(_slotIndex))
+            InventoryDragSession.Clear();
     }
 }

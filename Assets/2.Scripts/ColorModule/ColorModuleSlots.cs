@@ -104,6 +104,20 @@ public class ColorModuleSlots : MonoBehaviour
         return true;
     }
     
+    public void SwapModuleSlots(int a, int b)
+    {
+        if (a < 0 || a >= MAX_SLOTS || b < 0 || b >= MAX_SLOTS) return;
+        if (a == b) return;
+        var tm = _equippedModules[a];
+        _equippedModules[a] = _equippedModules[b];
+        _equippedModules[b] = tm;
+        var td = equippedDefinitions[a];
+        equippedDefinitions[a] = equippedDefinitions[b];
+        equippedDefinitions[b] = td;
+        OnSlotsChanged?.Invoke();
+        RecalculateColorBonuses();
+    }
+
     /// <summary>
     /// 슬롯에서 모듈 해제
     /// </summary>

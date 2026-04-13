@@ -62,6 +62,9 @@ public class MapRenderer : MonoBehaviour
                 break;
 
             case TileType.Wall:
+                // Floor under walls so rounded corners / transparency show dirt, not void.
+                if (floorTilemap != null && floorTile != null)
+                    floorTilemap.SetTile(cellPos, floorTile);
                 if (wallTilemap != null && wallTile != null)
                     wallTilemap.SetTile(cellPos, wallTile);
                 break;
@@ -81,6 +84,8 @@ public class MapRenderer : MonoBehaviour
                 break;
 
             case TileType.Tree:
+                if (floorTilemap != null && floorTile != null)
+                    floorTilemap.SetTile(cellPos, floorTile);
                 if (wallTilemap != null && wallTile != null)
                     wallTilemap.SetTile(cellPos, wallTile);
                 break;

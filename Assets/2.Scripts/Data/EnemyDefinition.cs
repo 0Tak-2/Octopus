@@ -37,7 +37,7 @@ public class EnemyDefinition : ScriptableObject
     public bool fieldRequireLoS = true;
 
     [Header("Aggro System")]
-    [Tooltip("Aggro drop distance after first detection")]
+    [Tooltip("필드 추적 시 플레이어와 Chebyshev 거리가 이 값을 넘으면 어그로 해제 (시야 반경과 별개로 최대 추적 거리)")]
     [Min(1)] public int aggroDropDistance = 15;
     [Tooltip("Ignore LoS when aggro")]
     public bool ignoreLoSWhenAggro = true;

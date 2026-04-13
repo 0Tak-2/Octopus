@@ -29,6 +29,9 @@ public class EquipmentUI : MonoBehaviour
     [Header("Total Stats Display")]
     public TMP_Text totalStatsText;
 
+    [Tooltip("Info 패널 등이 SlotsContainer보다 뒤에 그려지면 하단 슬롯 레이캐스트가 가려짐 → 슬롯 부모를 맨 앞으로")]
+    [SerializeField] private bool bringSlotGridAboveSiblingPanels = true;
+
     private EquipmentDefinition _selectedEquipment;
     private int _selectedSlot = -1;
 
@@ -56,6 +59,19 @@ public class EquipmentUI : MonoBehaviour
         RefreshAll();
     }
 
+    /// <summary>
+    /// 씬에서 InfoPanel 등이 SlotsContainer보다 나중 형제로 올라가 있으면, 같은 영역의 하단 장비 칸 레이캐스트를 먹는다.
+    /// 슬롯 그리드 부모를 마지막 형제로 올려 드롭/클릭이 슬롯에 먼저 닿게 한다.
+    /// </summary>
+    private void BringSlotGridToFront()
+    {
+        if (!bringSlotGridAboveSiblingPanels) return;
+        if (slotUIs == null || slotUIs.Length == 0 || slotUIs[0] == null) return;
+        Transform gridParent = slotUIs[0].transform.parent;
+        if (gridParent != null)
+            gridParent.SetAsLastSibling();
+    }
+
     private void OnDestroy()
     {
         if (equipmentManager != null)
@@ -80,6 +96,7 @@ public class EquipmentUI : MonoBehaviour
         RefreshSlots();
         RefreshTotalStats();
         ClearSelection();
+        BringSlotGridToFront();
     }
 
     // ============================================

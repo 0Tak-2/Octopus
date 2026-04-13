@@ -90,6 +90,11 @@ public class GameManager : MonoBehaviour
         if (logSceneTransitions)
             Debug.Log($"[GameManager] 씬 로드 완료: {scene.name}");
 
+        // WorldProgressManager와 맵 인덱스 동기화 (필드 세이브 키 C*_M* 일관성)
+        var wpm = WorldProgressManager.Instance;
+        if (wpm != null && (scene.name == fieldSceneName || scene.name.Contains("Field") || scene.name.Contains("Map")))
+            SyncFieldProgressFromWorld();
+
         // 플레이어 스탯은 항상 복원
         RestorePlayerStats();
 
@@ -167,12 +172,18 @@ public class GameManager : MonoBehaviour
 
         inventoryData.Clear();
 
-        foreach (var kvp in inventory.items)
+        inventory.RebuildSlotsFromDictionaryIfEmpty();
+
+        for (int s = 0; s < inventory.maxInventorySize; s++)
         {
+            int id = inventory.GetSlotItemId(s);
+            if (id == 0) continue;
+            if (!inventory.items.TryGetValue(id, out var invItem)) continue;
             inventoryData.Add(new InventoryItemSave(
-                kvp.Value.itemID,
-                kvp.Value.itemName,
-                kvp.Value.count
+                invItem.itemID,
+                invItem.itemName,
+                invItem.count,
+                s
             ));
         }
 
@@ -185,10 +196,8 @@ public class GameManager : MonoBehaviour
         InventoryManager inventory = InventoryManager.Instance ?? FindObjectOfType<InventoryManager>();
         if (inventory == null) return;
 
-        // 기존 인벤토리 클리어
-        inventory.items.Clear();
+        inventory.ClearAllItemsAndSlots();
 
-        // 저장된 데이터로 복원
         foreach (var item in inventoryData)
         {
             inventory.items[item.itemID] = new InventoryItem
@@ -196,11 +205,10 @@ public class GameManager : MonoBehaviour
                 itemID = item.itemID,
                 itemName = item.itemName,
                 count = item.count,
-                icon = null,  // ItemDatabase에서 다시 로드해야 함
+                icon = null,
                 description = ""
             };
 
-            // ItemDatabase에서 아이콘/설명 복원
             if (ItemDatabase.Instance != null)
             {
                 var itemData = ItemDatabase.Instance.GetItemData(item.itemID);
@@ -210,7 +218,13 @@ public class GameManager : MonoBehaviour
                     inventory.items[item.itemID].description = itemData.description;
                 }
             }
+
+            if (item.slotIndex >= 0 && item.slotIndex < inventory.maxInventorySize)
+                inventory.ForceAssignSlot(item.slotIndex, item.itemID);
         }
+
+        // 구 세이브(slotIndex 없음) 또는 누락 시 칸 배치
+        inventory.RebuildSlotsFromDictionaryIfEmpty();
 
         if (logDataOperations)
             Debug.Log($"[GameManager] 인벤토리 복원: {inventory.items.Count}개 아이템");
@@ -221,7 +235,39 @@ public class GameManager : MonoBehaviour
     // =========================================================
     public string GetCurrentMapKey()
     {
+        var wpm = WorldProgressManager.Instance;
+        if (wpm != null && wpm.CurrentField != null)
+        {
+            string id = string.IsNullOrEmpty(wpm.CurrentField.fieldID)
+                ? wpm.CurrentFieldIndex.ToString()
+                : wpm.CurrentField.fieldID;
+            return $"Field_{wpm.CurrentFieldIndex}_{id}";
+        }
+
         return $"C{currentChapter}_M{currentMapIndex}";
+    }
+
+    /// <summary>
+    /// 포털 상호작용 직후 다음 씬에서 입구를 반대편 가장자리에 맞추기 위한 힌트
+    /// </summary>
+    public void RegisterFieldExitForNextScene(EdgeSide exitedThrough, Vector2Int exitCell, int mapWidth, int mapHeight)
+    {
+        float alignT = FieldTransitionUtil.ComputeAlignT(exitedThrough, exitCell, mapWidth, mapHeight);
+        playerData.hasPendingEntranceHint = true;
+        playerData.enterNewFieldFromEdge = FieldTransitionUtil.Opposite(exitedThrough);
+        playerData.entranceAlignT = alignT;
+
+        if (logSceneTransitions)
+            Debug.Log($"[GameManager] 다음 필드 입구 힌트: 들어오는 변={playerData.enterNewFieldFromEdge}, alignT={alignT:F2} (나간 변={exitedThrough})");
+    }
+
+    /// <summary>WorldProgressManager와 currentMapIndex·챕터 동기화</summary>
+    public void SyncFieldProgressFromWorld()
+    {
+        var wpm = WorldProgressManager.Instance;
+        if (wpm == null) return;
+        currentMapIndex = wpm.CurrentFieldIndex;
+        currentChapter = 1;
     }
 
     public FieldMapSaveData GetOrCreateFieldMapData(string mapKey)
@@ -230,9 +276,28 @@ public class GameManager : MonoBehaviour
         if (entry != null)
             return entry.data;
 
-        // 새로 생성 (랜덤 시드)
+        // 디스크에 있으면 같은 시드·통로로 복원 (왕복 통로 유지)
+        if (FieldLayoutDiskStore.TryLoad(mapKey, out int diskSeed, out Vector2Int diskEx, out Vector2Int diskEn, out bool diskPortals))
+        {
+            var fromDisk = new FieldMapSaveData(diskSeed);
+            if (diskPortals && diskEx != Vector2Int.zero && diskEn != Vector2Int.zero)
+            {
+                fromDisk.savedExitToNext = diskEx;
+                fromDisk.savedEntranceFromPrev = diskEn;
+                fromDisk.hasSavedPortalCells = true;
+            }
+
+            fieldMapDataList.Add(new FieldMapEntry(mapKey, fromDisk));
+
+            if (logDataOperations)
+                Debug.Log($"[GameManager] 디스크에서 필드 맵 데이터 복원: {mapKey}, Seed={diskSeed}, 통로={fromDisk.hasSavedPortalCells}");
+
+            return fromDisk;
+        }
+
         var newData = new FieldMapSaveData(Random.Range(1, int.MaxValue));
         fieldMapDataList.Add(new FieldMapEntry(mapKey, newData));
+        FieldLayoutDiskStore.Save(mapKey, newData.mapSeed, Vector2Int.zero, Vector2Int.zero, false);
 
         if (logDataOperations)
             Debug.Log($"[GameManager] 새 맵 데이터 생성: {mapKey}, Seed={newData.mapSeed}");
@@ -446,6 +511,17 @@ public class GameManager : MonoBehaviour
     {
         SaveAllCurrentState();
 
+        var wpm = WorldProgressManager.Instance;
+        if (wpm != null)
+        {
+            FieldDefinition cur = wpm.CurrentField;
+            if (cur != null && cur.hasNextFieldExit && cur.nextField != null)
+            {
+                if (wpm.TryGoToFieldByAsset(cur.nextField))
+                    return;
+            }
+        }
+
         currentMapIndex++;
 
         if (currentMapIndex >= mapsPerChapter)
@@ -466,6 +542,17 @@ public class GameManager : MonoBehaviour
     public void LoadPreviousMap()
     {
         SaveAllCurrentState();
+
+        var wpm = WorldProgressManager.Instance;
+        if (wpm != null)
+        {
+            FieldDefinition cur = wpm.CurrentField;
+            if (cur != null && cur.previousField != null)
+            {
+                if (wpm.TryGoToFieldByAsset(cur.previousField))
+                    return;
+            }
+        }
 
         currentMapIndex--;
         if (currentMapIndex < 0)
@@ -494,6 +581,22 @@ public class GameManager : MonoBehaviour
         inventoryData.Clear();
         fieldMapDataList.Clear();
         currentDungeonData = null;
+
+        var wpm = WorldProgressManager.Instance;
+        if (wpm != null)
+        {
+            wpm.ResetProgress();
+            if (wpm.allFields != null)
+            {
+                for (int i = 0; i < wpm.allFields.Length; i++)
+                {
+                    var f = wpm.allFields[i];
+                    if (f == null) continue;
+                    string id = string.IsNullOrEmpty(f.fieldID) ? i.ToString() : f.fieldID;
+                    FieldLayoutDiskStore.ClearKey($"Field_{i}_{id}");
+                }
+            }
+        }
 
         if (logDataOperations)
             Debug.Log("[GameManager] 게임 리셋 완료");

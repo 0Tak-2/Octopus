@@ -235,6 +235,21 @@ public class ColorModuleUI : MonoBehaviour
             var capturedModule = module;
             button.onClick.AddListener(() => OnInventoryItemClicked(capturedModule));
         }
+
+        // Button(행 클릭)과 IBeginDrag가 같은 오브젝트에 있으면 클릭이 씹힘 → 드래그는 Icon에만 붙임
+        if (icon != null)
+        {
+            var drag = icon.GetComponent<ColorModuleListDragSource>();
+            if (drag == null) drag = icon.gameObject.AddComponent<ColorModuleListDragSource>();
+            drag.module = module;
+            if (!icon.raycastTarget) icon.raycastTarget = true;
+        }
+        else
+        {
+            var drag = item.GetComponent<ColorModuleListDragSource>();
+            if (drag == null) drag = item.gameObject.AddComponent<ColorModuleListDragSource>();
+            drag.module = module;
+        }
     }
 
     private void OnInventoryItemClicked(ColorModuleInstance module)

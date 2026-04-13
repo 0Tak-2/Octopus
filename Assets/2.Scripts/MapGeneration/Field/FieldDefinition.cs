@@ -90,10 +90,10 @@ public class FieldDefinition : ScriptableObject
     [Tooltip("Has exit to next field?")]
     public bool hasNextFieldExit = true;
 
-    [Tooltip("Next field definition (null = last field)")]
+    [Tooltip("다음 필드 에셋. WorldProgressManager의 allFields에도 같은 순서로 등록해야 이동이 동작합니다.")]
     public FieldDefinition nextField;
 
-    [Tooltip("Previous field definition (null = first field)")]
+    [Tooltip("이전 필드 에셋 (되돌아가기 출구). allFields에 등록 필요.")]
     public FieldDefinition previousField;
 
     [Header("Visuals")]

@@ -64,24 +64,23 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
+        inventory.RebuildSlotsFromDictionaryIfEmpty();
         Debug.Log($"[InventoryUI] Item count: {inventory.items.Count}");
 
-        // 酒捞袍 浇吩 积己
-        foreach (var item in inventory.items.Values)
+        for (int i = 0; i < inventory.maxInventorySize; i++)
         {
-            Debug.Log($"[InventoryUI] Creating slot for {item.itemName} x{item.count}");
-            CreateItemSlot(item);
-        }
-
-        // 后 浇吩 积己
-        int emptySlots = inventory.maxInventorySize - inventory.items.Count;
-        for (int i = 0; i < emptySlots; i++)
-        {
-            CreateEmptySlot();
+            int id = inventory.GetSlotItemId(i);
+            if (id != 0 && inventory.items.TryGetValue(id, out var invItem))
+            {
+                Debug.Log($"[InventoryUI] Creating slot {i} for {invItem.itemName} x{invItem.count}");
+                CreateItemSlot(invItem, i);
+            }
+            else
+                CreateEmptySlot(i);
         }
     }
 
-    private void CreateItemSlot(InventoryItem item)
+    private void CreateItemSlot(InventoryItem item, int slotIndex)
     {
         if (itemSlotPrefab == null || slotsParent == null)
         {
@@ -94,7 +93,7 @@ public class InventoryUI : MonoBehaviour
 
         if (slot != null)
         {
-            slot.Setup(item, this);
+            slot.Setup(item, this, slotIndex);
             itemSlots.Add(slot);
             Debug.Log($"[InventoryUI] Slot created for {item.itemName}");
         }
@@ -104,7 +103,7 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    private void CreateEmptySlot()
+    private void CreateEmptySlot(int slotIndex)
     {
         if (itemSlotPrefab == null || slotsParent == null) return;
 
@@ -113,7 +112,7 @@ public class InventoryUI : MonoBehaviour
 
         if (slot != null)
         {
-            slot.SetupEmpty(this);
+            slot.SetupEmpty(this, slotIndex);
             itemSlots.Add(slot);
         }
     }

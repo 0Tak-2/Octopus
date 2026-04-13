@@ -69,13 +69,22 @@ public class FieldMapGenerator : MonoBehaviour
             return;
         }
 
-        // WorldProgressManager에서 현재 필드 가져오기
-        if (fieldDefinition == null && WorldProgressManager.Instance != null)
+        // 인스펙터에 예전 필드가 박혀 있어도 항상 진행도의 현재 필드 사용 (필드2 맵·시드가 바뀌도록)
+        if (WorldProgressManager.Instance != null && WorldProgressManager.Instance.CurrentField != null)
+        {
+            fieldDefinition = WorldProgressManager.Instance.CurrentField;
+            if (logGeneration)
+                Debug.Log($"[FieldMapGenerator] 현재 진행 필드 적용: {fieldDefinition.fieldName} (index {WorldProgressManager.Instance.CurrentFieldIndex})");
+        }
+        else if (fieldDefinition == null && WorldProgressManager.Instance != null)
         {
             fieldDefinition = WorldProgressManager.Instance.CurrentField;
             if (logGeneration && fieldDefinition != null)
                 Debug.Log($"[FieldMapGenerator] WorldProgressManager에서 필드 가져옴: {fieldDefinition.fieldName}");
         }
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.SyncFieldProgressFromWorld();
 
         // 게임 시작 시 자동 생성
         GenerateMap();
@@ -128,17 +137,17 @@ public class FieldMapGenerator : MonoBehaviour
         // 1. 맵 데이터 생성 (FieldDefinition의 크기/설정 사용)
         currentMap = CellularAutomata.Generate(fieldDefinition, seed);
 
-        // 2. 플레이어 스폰 위치
+        // 2. 맵 출구/입구 — 저장된 통로 우선, 입구 좌표가 있어야 플레이어 스폰(이전 맵에서 들어온 경우)이 맞음
+        ResolveMapConnections(currentMap);
+
+        // 3. 플레이어 스폰 위치
         currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
 
-        // 3. 던전 입구 위치
+        // 4. 던전 입구 위치
         FindDungeonEntrancePositions(currentMap);
 
-        // 4. 적 스폰 위치 (카테고리별)
+        // 5. 적 스폰 위치 (카테고리별)
         FindEnemySpawnPositions(currentMap);
-
-        // 5. 맵 출구/입구 위치
-        FindMapConnectionPositions(currentMap);
 
         // 6. 렌더링
         if (mapRenderer != null)
@@ -211,10 +220,10 @@ public class FieldMapGenerator : MonoBehaviour
         ClearSpawnedObjects();
 
         currentMap = CellularAutomata.Generate(config, seed);
+        ResolveMapConnections(currentMap);
         currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
         FindDungeonEntrancePositions(currentMap);
         FindEnemySpawnPositions(currentMap);
-        FindMapConnectionPositions(currentMap);
 
         if (mapRenderer != null)
         {
@@ -246,11 +255,9 @@ public class FieldMapGenerator : MonoBehaviour
     private Vector2Int FindPlayerSpawnPosition(MapData map)
     {
         GameManager gm = GameManager.Instance;
-        if (gm != null && gm.currentMapIndex > 0)
-        {
-            if (map.entranceFromPrevMap != Vector2Int.zero)
-                return map.entranceFromPrevMap;
-        }
+        // 다른 필드에서 포털로 들어온 경우에만 입구에 스폰 (첫 필드는 가운데)
+        if (gm != null && gm.playerData.hasPendingEntranceHint && map.entranceFromPrevMap != Vector2Int.zero)
+            return map.entranceFromPrevMap;
 
         int centerX = map.width / 2;
         int centerY = map.height / 2;
@@ -323,15 +330,198 @@ public class FieldMapGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 저장된 출구/입구가 있으면 항상 그 통로를 쓰고(왕복 유지), 없으면 새로 찾은 뒤 디스크에 저장합니다.
+    /// </summary>
+    private void ResolveMapConnections(MapData map)
+    {
+        var gm = GameManager.Instance;
+        if (gm != null && TryRestorePersistentPortals(map))
+            return;
+
+        FindMapConnectionPositions(map);
+
+        if (gm == null) return;
+        var save = gm.GetOrCreateFieldMapData(gm.GetCurrentMapKey());
+        if (map.exitToNextMap != Vector2Int.zero && map.entranceFromPrevMap != Vector2Int.zero)
+        {
+            save.savedExitToNext = map.exitToNextMap;
+            save.savedEntranceFromPrev = map.entranceFromPrevMap;
+            save.hasSavedPortalCells = true;
+            FieldLayoutDiskStore.Save(gm.GetCurrentMapKey(), save.mapSeed, save.savedExitToNext, save.savedEntranceFromPrev, true);
+        }
+    }
+
+    private bool TryRestorePersistentPortals(MapData map)
+    {
+        var gm = GameManager.Instance;
+        if (gm == null) return false;
+        var save = gm.GetOrCreateFieldMapData(gm.GetCurrentMapKey());
+        if (!save.hasSavedPortalCells) return false;
+
+        Vector2Int ex = save.savedExitToNext;
+        Vector2Int en = save.savedEntranceFromPrev;
+        if (ex == Vector2Int.zero || en == Vector2Int.zero) return false;
+        if (!map.InBounds(ex.x, ex.y) || !map.InBounds(en.x, en.y))
+            return false;
+
+        // 벽으로 막혀 있어도 통로는 항상 열림
+        map.SetTile(ex.x, ex.y, TileType.Road);
+        map.SetTile(en.x, en.y, TileType.Road);
+        map.exitToNextMap = ex;
+        map.entranceFromPrevMap = en;
+        CreateRoadArea(map, ex);
+        CreateRoadArea(map, en);
+
+        if (logGeneration)
+            Debug.Log($"[FieldMapGenerator] 영구 통로 복원: 출구 {ex}, 입구 {en}");
+
+        return true;
+    }
+
     private void FindMapConnectionPositions(MapData map)
     {
-        map.exitToNextMap = FindEdgeWalkablePosition(map, EdgeSide.Right);
-        map.entranceFromPrevMap = FindEdgeWalkablePosition(map, EdgeSide.Left);
+        var gm = GameManager.Instance;
+        bool fromPortal = gm != null && gm.playerData.hasPendingEntranceHint;
+
+        if (fromPortal)
+        {
+            // 이전 맵에서 나온 방향의 *반대편*에 입구 — 출구는 그 반대편(다음으로 이어지는 쪽)
+            EdgeSide enterFrom = gm.playerData.enterNewFieldFromEdge;
+            float alignT = gm.playerData.entranceAlignT;
+
+            map.entranceFromPrevMap = FindWalkableOnEdgeAligned(map, enterFrom, alignT);
+            if (map.entranceFromPrevMap == Vector2Int.zero)
+                map.entranceFromPrevMap = FindAnyWalkableNearEdge(map, enterFrom);
+
+            EdgeSide exitSide = FieldTransitionUtil.Opposite(enterFrom);
+            map.exitToNextMap = FindEdgePortalWalkable(map, exitSide);
+            if (map.exitToNextMap == Vector2Int.zero)
+                map.exitToNextMap = FindEdgeWalkablePosition(map, exitSide);
+            if (map.exitToNextMap == Vector2Int.zero)
+                map.exitToNextMap = FindAnyWalkableNearEdge(map, exitSide);
+        }
+        else
+        {
+            // 첫 입장: 출구/입구 기본(동→서) — 플레이어는 중앙 스폰, 입구는 장식·되돌아가기용
+            map.exitToNextMap = FindEdgePortalWalkable(map, EdgeSide.Right);
+            if (map.exitToNextMap == Vector2Int.zero)
+                map.exitToNextMap = FindEdgeWalkablePosition(map, EdgeSide.Right);
+            if (map.exitToNextMap == Vector2Int.zero)
+                map.exitToNextMap = FindAnyWalkableNearEdge(map, EdgeSide.Right);
+
+            map.entranceFromPrevMap = FindEdgePortalWalkable(map, EdgeSide.Left);
+            if (map.entranceFromPrevMap == Vector2Int.zero)
+                map.entranceFromPrevMap = FindEdgeWalkablePosition(map, EdgeSide.Left);
+            if (map.entranceFromPrevMap == Vector2Int.zero)
+                map.entranceFromPrevMap = FindAnyWalkableNearEdge(map, EdgeSide.Left);
+        }
 
         if (map.exitToNextMap != Vector2Int.zero)
             CreateRoadArea(map, map.exitToNextMap);
         if (map.entranceFromPrevMap != Vector2Int.zero)
             CreateRoadArea(map, map.entranceFromPrevMap);
+
+        if (logGeneration)
+        {
+            Debug.Log($"[FieldMapGenerator] 맵 연결 — 포털연동:{fromPortal}, 출구(다음): {map.exitToNextMap}, 입구(이전): {map.entranceFromPrevMap}");
+            if (map.exitToNextMap == Vector2Int.zero && fieldDefinition != null && fieldDefinition.hasNextFieldExit)
+                Debug.LogWarning("[FieldMapGenerator] 다음 필드로 나가는 출구 칸을 찾지 못했습니다.");
+        }
+    }
+
+    /// <summary>alignT: 해당 변을 따라 0~1 (좌우 변=세로 위치, 상하 변=가로 위치)</summary>
+    private Vector2Int FindWalkableOnEdgeAligned(MapData map, EdgeSide edge, float alignT)
+    {
+        alignT = Mathf.Clamp01(alignT);
+        int w = map.width;
+        int h = map.height;
+
+        switch (edge)
+        {
+            case EdgeSide.Left:
+            {
+                int targetY = h > 3 ? Mathf.Clamp(Mathf.RoundToInt(1 + alignT * (h - 3)), 1, h - 2) : h / 2;
+                for (int depth = 1; depth <= 10; depth++)
+                {
+                    int x = depth;
+                    if (x >= w - 1) break;
+                    for (int spread = 0; spread < h; spread++)
+                    {
+                        int yA = targetY + spread;
+                        if (yA >= 1 && yA < h - 1 && map.IsWalkable(x, yA))
+                            return new Vector2Int(x, yA);
+                        if (spread == 0) continue;
+                        int yB = targetY - spread;
+                        if (yB >= 1 && yB < h - 1 && map.IsWalkable(x, yB))
+                            return new Vector2Int(x, yB);
+                    }
+                }
+                break;
+            }
+            case EdgeSide.Right:
+            {
+                int targetY = h > 3 ? Mathf.Clamp(Mathf.RoundToInt(1 + alignT * (h - 3)), 1, h - 2) : h / 2;
+                for (int depth = 1; depth <= 10; depth++)
+                {
+                    int x = w - 1 - depth;
+                    if (x < 1) break;
+                    for (int spread = 0; spread < h; spread++)
+                    {
+                        int yA = targetY + spread;
+                        if (yA >= 1 && yA < h - 1 && map.IsWalkable(x, yA))
+                            return new Vector2Int(x, yA);
+                        if (spread == 0) continue;
+                        int yB = targetY - spread;
+                        if (yB >= 1 && yB < h - 1 && map.IsWalkable(x, yB))
+                            return new Vector2Int(x, yB);
+                    }
+                }
+                break;
+            }
+            case EdgeSide.Bottom:
+            {
+                int targetX = w > 3 ? Mathf.Clamp(Mathf.RoundToInt(1 + alignT * (w - 3)), 1, w - 2) : w / 2;
+                for (int depth = 1; depth <= 10; depth++)
+                {
+                    int y = depth;
+                    if (y >= h - 1) break;
+                    for (int spread = 0; spread < w; spread++)
+                    {
+                        int xA = targetX + spread;
+                        if (xA >= 1 && xA < w - 1 && map.IsWalkable(xA, y))
+                            return new Vector2Int(xA, y);
+                        if (spread == 0) continue;
+                        int xB = targetX - spread;
+                        if (xB >= 1 && xB < w - 1 && map.IsWalkable(xB, y))
+                            return new Vector2Int(xB, y);
+                    }
+                }
+                break;
+            }
+            case EdgeSide.Top:
+            {
+                int targetX = w > 3 ? Mathf.Clamp(Mathf.RoundToInt(1 + alignT * (w - 3)), 1, w - 2) : w / 2;
+                for (int depth = 1; depth <= 10; depth++)
+                {
+                    int y = h - 1 - depth;
+                    if (y < 1) break;
+                    for (int spread = 0; spread < w; spread++)
+                    {
+                        int xA = targetX + spread;
+                        if (xA >= 1 && xA < w - 1 && map.IsWalkable(xA, y))
+                            return new Vector2Int(xA, y);
+                        if (spread == 0) continue;
+                        int xB = targetX - spread;
+                        if (xB >= 1 && xB < w - 1 && map.IsWalkable(xB, y))
+                            return new Vector2Int(xB, y);
+                    }
+                }
+                break;
+            }
+        }
+
+        return Vector2Int.zero;
     }
 
     // ============================================
@@ -581,12 +771,16 @@ public class FieldMapGenerator : MonoBehaviour
                         Debug.Log($"[FieldMapGenerator] 플레이어 던전 입구로 복귀: {entrancePos}");
 
                     GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
+                    GameManager.Instance.playerData.hasPendingEntranceHint = false;
                     return;
                 }
             }
 
             Vector3 spawnWorld = gridBoard.CellToWorld(currentMap.playerSpawnPos);
             player.position = spawnWorld;
+
+            if (GameManager.Instance != null && GameManager.Instance.playerData.hasPendingEntranceHint)
+                GameManager.Instance.playerData.hasPendingEntranceHint = false;
 
             if (logGeneration)
                 Debug.Log($"[FieldMapGenerator] 플레이어 스폰: {currentMap.playerSpawnPos}");
@@ -614,8 +808,8 @@ public class FieldMapGenerator : MonoBehaviour
 
     private void SpawnMapConnectionsFromDefinition()
     {
-        // 다음 필드 출구
-        if (fieldDefinition.hasNextFieldExit && fieldDefinition.nextField != null && mapExitPrefab != null)
+        // 다음 필드 출구 (nextField는 이동 로직용 — 없어도 프리팹·위치만 있으면 오브젝트는 깔아서 찾기 쉽게 함)
+        if (fieldDefinition.hasNextFieldExit && mapExitPrefab != null)
         {
             if (currentMap.exitToNextMap != Vector2Int.zero)
             {
@@ -627,13 +821,25 @@ public class FieldMapGenerator : MonoBehaviour
                 if (trigger == null)
                     trigger = exitObj.AddComponent<MapExitTrigger>();
                 trigger.isNextMap = true;
+                EdgeSide ex = FieldTransitionUtil.InferClosestEdge(currentMap.exitToNextMap, currentMap.width, currentMap.height);
+                trigger.ConfigurePortal(ex, currentMap.exitToNextMap, currentMap.width, currentMap.height);
 
                 spawnedObjects.Add(exitObj);
 
                 if (logGeneration)
-                    Debug.Log($"[FieldMapGenerator] 다음 필드 출구 생성: -> {fieldDefinition.nextField.fieldName}");
+                {
+                    string dest = fieldDefinition.nextField != null ? fieldDefinition.nextField.fieldName : "(nextField 미지정 — GameManager 진행만)";
+                    Debug.Log($"[FieldMapGenerator] 다음 필드 출구 생성: -> {dest} @ cell {currentMap.exitToNextMap}");
+                }
+
+                if (fieldDefinition.nextField == null && logGeneration)
+                    Debug.LogWarning("[FieldMapGenerator] Field Definition의 Next Field 에셋을 지정해야 WorldProgress 기반 다음 필드 이동이 됩니다.");
             }
+            else if (logGeneration)
+                Debug.LogWarning("[FieldMapGenerator] 출구 셀을 찾지 못해 MapExit 프리팹을 스폰하지 못했습니다.");
         }
+        else if (fieldDefinition != null && fieldDefinition.hasNextFieldExit && mapExitPrefab == null && logGeneration)
+            Debug.LogWarning("[FieldMapGenerator] hasNextFieldExit 이지만 FieldMapGenerator의 Map Exit Prefab 이 비어 있습니다.");
 
         // 이전 필드 입구
         if (fieldDefinition.previousField != null && mapEntrancePrefab != null)
@@ -648,6 +854,8 @@ public class FieldMapGenerator : MonoBehaviour
                 if (trigger == null)
                     trigger = entranceObj.AddComponent<MapExitTrigger>();
                 trigger.isNextMap = false;
+                EdgeSide en = FieldTransitionUtil.InferClosestEdge(currentMap.entranceFromPrevMap, currentMap.width, currentMap.height);
+                trigger.ConfigurePortal(en, currentMap.entranceFromPrevMap, currentMap.width, currentMap.height);
 
                 spawnedObjects.Add(entranceObj);
 
@@ -674,6 +882,8 @@ public class FieldMapGenerator : MonoBehaviour
                 if (trigger == null)
                     trigger = exitObj.AddComponent<MapExitTrigger>();
                 trigger.isNextMap = true;
+                EdgeSide ex = FieldTransitionUtil.InferClosestEdge(currentMap.exitToNextMap, currentMap.width, currentMap.height);
+                trigger.ConfigurePortal(ex, currentMap.exitToNextMap, currentMap.width, currentMap.height);
 
                 spawnedObjects.Add(exitObj);
             }
@@ -691,6 +901,8 @@ public class FieldMapGenerator : MonoBehaviour
                 if (trigger == null)
                     trigger = entranceObj.AddComponent<MapExitTrigger>();
                 trigger.isNextMap = false;
+                EdgeSide en = FieldTransitionUtil.InferClosestEdge(currentMap.entranceFromPrevMap, currentMap.width, currentMap.height);
+                trigger.ConfigurePortal(en, currentMap.entranceFromPrevMap, currentMap.width, currentMap.height);
 
                 spawnedObjects.Add(entranceObj);
             }
@@ -712,6 +924,54 @@ public class FieldMapGenerator : MonoBehaviour
                 Destroy(obj);
         }
         spawnedObjects.Clear();
+    }
+
+    /// <summary>
+    /// 맵 둘레 안쪽 한 줄에서, 양옆(또는 위아래)이 벽인 한 칸 통로 — 가장자리 벽 사이 출구 느낌.
+    /// </summary>
+    private Vector2Int FindEdgePortalWalkable(MapData map, EdgeSide side)
+    {
+        switch (side)
+        {
+            case EdgeSide.Right:
+                for (int y = 2; y < map.height - 2; y++)
+                {
+                    int x = map.width - 2;
+                    if (!map.IsWalkable(x, y)) continue;
+                    if (map.GetTile(x, y - 1) == TileType.Wall && map.GetTile(x, y + 1) == TileType.Wall)
+                        return new Vector2Int(x, y);
+                }
+                break;
+            case EdgeSide.Left:
+                for (int y = 2; y < map.height - 2; y++)
+                {
+                    int x = 1;
+                    if (!map.IsWalkable(x, y)) continue;
+                    if (map.GetTile(x, y - 1) == TileType.Wall && map.GetTile(x, y + 1) == TileType.Wall)
+                        return new Vector2Int(x, y);
+                }
+                break;
+            case EdgeSide.Top:
+                for (int x = 2; x < map.width - 2; x++)
+                {
+                    int y = map.height - 2;
+                    if (!map.IsWalkable(x, y)) continue;
+                    if (map.GetTile(x - 1, y) == TileType.Wall && map.GetTile(x + 1, y) == TileType.Wall)
+                        return new Vector2Int(x, y);
+                }
+                break;
+            case EdgeSide.Bottom:
+                for (int x = 2; x < map.width - 2; x++)
+                {
+                    int y = 1;
+                    if (!map.IsWalkable(x, y)) continue;
+                    if (map.GetTile(x - 1, y) == TileType.Wall && map.GetTile(x + 1, y) == TileType.Wall)
+                        return new Vector2Int(x, y);
+                }
+                break;
+        }
+
+        return Vector2Int.zero;
     }
 
     private Vector2Int FindEdgeWalkablePosition(MapData map, EdgeSide side)
@@ -748,6 +1008,69 @@ public class FieldMapGenerator : MonoBehaviour
                 if (map.IsWalkable(checkX, checkY))
                     return new Vector2Int(checkX, checkY);
             }
+        }
+
+        return Vector2Int.zero;
+    }
+
+    /// <summary>
+    /// 바깥에서 안쪽으로 여러 줄을 훑어 walkable 칸을 찾습니다.
+    /// (기존 FindEdgeWalkablePosition은 한 줄만 봐서 그 열이 전부 벽이면 출구 좌표가 0이 됐음)
+    /// </summary>
+    private Vector2Int FindAnyWalkableNearEdge(MapData map, EdgeSide side)
+    {
+        int maxDepth = Mathf.Max(4, Mathf.Min(map.width, map.height) / 2);
+
+        switch (side)
+        {
+            case EdgeSide.Right:
+                for (int depth = 1; depth <= maxDepth; depth++)
+                {
+                    int x = map.width - 1 - depth;
+                    if (x < 1) break;
+                    for (int y = 1; y < map.height - 1; y++)
+                    {
+                        if (map.IsWalkable(x, y))
+                            return new Vector2Int(x, y);
+                    }
+                }
+                break;
+            case EdgeSide.Left:
+                for (int depth = 1; depth <= maxDepth; depth++)
+                {
+                    int x = depth;
+                    if (x >= map.width - 1) break;
+                    for (int y = 1; y < map.height - 1; y++)
+                    {
+                        if (map.IsWalkable(x, y))
+                            return new Vector2Int(x, y);
+                    }
+                }
+                break;
+            case EdgeSide.Top:
+                for (int depth = 1; depth <= maxDepth; depth++)
+                {
+                    int y = map.height - 1 - depth;
+                    if (y < 1) break;
+                    for (int x = 1; x < map.width - 1; x++)
+                    {
+                        if (map.IsWalkable(x, y))
+                            return new Vector2Int(x, y);
+                    }
+                }
+                break;
+            case EdgeSide.Bottom:
+                for (int depth = 1; depth <= maxDepth; depth++)
+                {
+                    int y = depth;
+                    if (y >= map.height - 1) break;
+                    for (int x = 1; x < map.width - 1; x++)
+                    {
+                        if (map.IsWalkable(x, y))
+                            return new Vector2Int(x, y);
+                    }
+                }
+                break;
         }
 
         return Vector2Int.zero;
