@@ -45,7 +45,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 64
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 11078c79d76bc884fb04d6bddc2c51be
-      internalID: 334695390
+      spriteID: bd1f8fc14cd69944b91a47c09488eebd
+      internalID: -1596461059
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6449c124a6635854082b361e70c2a99c
-      internalID: 1194324995
+      spriteID: cb402acb303179048ae5dd3252e64d02
+      internalID: -67336502
       vertices: []
       indices: 
       edges: []
@@ -175,8 +175,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Sardine_0: 334695390
-      Sardine_1: 1194324995
+      Sardine_0: -1596461059
+      Sardine_1: -67336502
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

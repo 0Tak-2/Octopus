@@ -33,10 +33,10 @@ public class FieldDefinition : ScriptableObject
     [Tooltip("CA iterations")]
     [Range(2, 8)] public int caIterations = 4;
 
-    [Tooltip("¿Ü°û º® µÎ²² (Åé´Ï ¹æÁö). 1~3 ±ÇÀå")]
+    [Tooltip("ï¿½Ü°ï¿½ ï¿½ï¿½ ï¿½Î²ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½). 1~3 ï¿½ï¿½ï¿½ï¿½")]
     [Range(1, 4)] public int borderThickness = 2;
 
-    [Tooltip("º® ½º¹«µù ÆÐ½º È½¼ö. ³ôÀ»¼ö·Ï ¸Å²ô·¯¿ì³ª ´ÜÁ¶·Î¿öÁü")]
+    [Tooltip("ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ð½ï¿½ È½ï¿½ï¿½. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Å²ï¿½ï¿½ï¿½ï¿½ì³ª ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½")]
     [Range(0, 4)] public int smoothPasses = 2;
 
     [Header("Dungeon Entrances")]
@@ -90,10 +90,10 @@ public class FieldDefinition : ScriptableObject
     [Tooltip("Has exit to next field?")]
     public bool hasNextFieldExit = true;
 
-    [Tooltip("´ÙÀ½ ÇÊµå ¿¡¼Â. WorldProgressManagerÀÇ allFields¿¡µµ °°Àº ¼ø¼­·Î µî·ÏÇØ¾ß ÀÌµ¿ÀÌ µ¿ÀÛÇÕ´Ï´Ù.")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ ï¿½ï¿½ï¿½ï¿½. WorldProgressManagerï¿½ï¿½ allFieldsï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.")]
     public FieldDefinition nextField;
 
-    [Tooltip("ÀÌÀü ÇÊµå ¿¡¼Â (µÇµ¹¾Æ°¡±â Ãâ±¸). allFields¿¡ µî·Ï ÇÊ¿ä.")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Çµï¿½ï¿½Æ°ï¿½ï¿½ï¿½ ï¿½â±¸). allFieldsï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½.")]
     public FieldDefinition previousField;
 
     [Header("Visuals")]

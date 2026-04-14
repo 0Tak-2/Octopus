@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 298ae1add8989644981d236c3f365d78
-      internalID: -1616067591
+      spriteID: 403778c3c40489448b148f0281b3ef35
+      internalID: 712538424
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 1a0d5477da388bb43a92b96b9e4a7061
-      internalID: -1370648786
+      spriteID: 9ea335760dbc27c4fbb0c76e4713ac70
+      internalID: -312202350
       vertices: []
       indices: 
       edges: []
@@ -179,8 +179,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 78680b24742497849986db50502daa3f
-      internalID: 956450292
+      spriteID: bc9f8138e120af04ea33fe57c1da44a9
+      internalID: -877418869
       vertices: []
       indices: 
       edges: []
@@ -200,8 +200,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 45362b869de3fbb43a910fc323d616d1
-      internalID: -1679843296
+      spriteID: 4e7e4d30157c21046a18dca6b408da6a
+      internalID: 851958064
       vertices: []
       indices: 
       edges: []
@@ -221,8 +221,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 435d011a29c182946a90cb32fff6b3c1
-      internalID: 86550983
+      spriteID: 002e83681e83e09478045574d7332900
+      internalID: 1047662879
       vertices: []
       indices: 
       edges: []
@@ -242,8 +242,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 97258662e85480e47b98229391888ee4
-      internalID: 1377377313
+      spriteID: e9bf1e52aa7e9164694f7184af69f903
+      internalID: -257006376
       vertices: []
       indices: 
       edges: []
@@ -259,12 +259,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      "\uD574\uCD08_0": -1616067591
-      "\uD574\uCD08_1": -1370648786
-      "\uD574\uCD08_2": 956450292
-      "\uD574\uCD08_3": -1679843296
-      "\uD574\uCD08_4": 86550983
-      "\uD574\uCD08_5": 1377377313
+      "\uD574\uCD08_0": 712538424
+      "\uD574\uCD08_1": -312202350
+      "\uD574\uCD08_2": -877418869
+      "\uD574\uCD08_3": 851958064
+      "\uD574\uCD08_4": 1047662879
+      "\uD574\uCD08_5": -257006376
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

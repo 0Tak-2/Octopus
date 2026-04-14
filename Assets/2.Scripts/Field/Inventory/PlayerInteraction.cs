@@ -9,6 +9,7 @@ public class PlayerInteraction : MonoBehaviour
     [Header("References")]
     public GridBoard gridBoard;
     public FieldTimeManager fieldTimeManager;
+    public FieldTurnCoordinator turnCoordinator;
 
     [Header("Interaction")]
     public float interactionRange = 1.5f;
@@ -20,6 +21,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
         if (fieldTimeManager == null) fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
     }
 
     [Header("Input")]
@@ -27,6 +29,9 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
+        if (turnCoordinator != null && turnCoordinator.IsBusy)
+            return;
+
         if (Input.GetKeyDown(interactKey))
         {
             TryInteract();
@@ -148,14 +153,7 @@ public class PlayerInteraction : MonoBehaviour
         // ������ �ݱ� (�÷��̾� ��ġ ����)
         item.Pickup(transform.position);
 
-        // 1�� �Ҹ�
-        if (fieldTimeManager != null)
-        {
-            fieldTimeManager.Advance(1);
-        }
-
-        // ���� �ݰ�
-        TriggerEnemyTurn();
+        CommitInteractionTurn();
     }
 
     /// <summary>
@@ -180,25 +178,26 @@ public class PlayerInteraction : MonoBehaviour
         // ä��
         harvestable.Harvest();
 
-        // 1�� �Ҹ�
-        if (fieldTimeManager != null)
-        {
-            fieldTimeManager.Advance(1);
-        }
-
-        // ���� �ݰ�
-        TriggerEnemyTurn();
+        CommitInteractionTurn();
     }
 
     /// <summary>
     /// �� �� �ߵ�
     /// </summary>
-    private void TriggerEnemyTurn()
+    private void CommitInteractionTurn()
     {
-        FieldMultiEnemyAttack multiAttack = FindObjectOfType<FieldMultiEnemyAttack>();
-        if (multiAttack != null)
+        if (turnCoordinator == null)
+            turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
+
+        if (turnCoordinator != null)
         {
-            multiAttack.OnPlayerTurnEnd();
+            turnCoordinator.TryCommitPlayerAction(1, true);
+        }
+        else
+        {
+            fieldTimeManager?.Advance(1);
+            FieldMultiEnemyAttack multiAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+            multiAttack?.OnPlayerTurnEnd();
         }
     }
 }

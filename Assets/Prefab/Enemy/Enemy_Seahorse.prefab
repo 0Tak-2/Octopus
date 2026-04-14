@@ -293,6 +293,7 @@ MonoBehaviour:
   droppedItemPrefab: {fileID: 3138420596523669153, guid: a98cb37e7eb99794abd8899ea70f101d, type: 3}
   dropSpreadRange: 0.3
   showDebugLogs: 1
+  gridBoard: {fileID: 0}
 --- !u!114 &4570938997504627133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -332,7 +333,7 @@ Animator:
   m_GameObject: {fileID: 9105843625278447542}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: fb065948acec6584792d6bafd2274377, type: 2}
+  m_Controller: {fileID: 9100000, guid: 1340301af35b4434582d998b79013b55, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

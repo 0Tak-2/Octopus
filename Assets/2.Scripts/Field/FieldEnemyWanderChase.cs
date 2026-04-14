@@ -120,7 +120,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
         if (occupancy.TryGetCurrentCell(transform, out var cell))
         {
             Vector3 correctPos = gridBoard.CellToWorld(cell);
-            if (Vector3.SqrMagnitude(transform.position - correctPos) > 0.01f)
+            float snapThreshold = Mathf.Max(0.1f, gridBoard.cellSize * 0.35f);
+            if (Vector3.SqrMagnitude(transform.position - correctPos) > snapThreshold * snapThreshold)
             {
                 transform.position = correctPos;
             }

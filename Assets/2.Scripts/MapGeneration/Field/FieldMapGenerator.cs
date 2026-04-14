@@ -38,15 +38,25 @@ public class FieldMapGenerator : MonoBehaviour
     public GameObject dungeonEntrancePrefab;
 
     [Header("Resource Prefabs")]
-    [Tooltip("해초 프리팹")]
+    [Tooltip("해초 프리팹들 (랜덤 스폰)")]
+    public GameObject[] seaweedPrefabs;
+    [Tooltip("해초 단일 프리팹 (배열 비었을 때 fallback)")]
     public GameObject seaweedPrefab;
-    [Tooltip("산호 프리팹")]
+    [Tooltip("산호 프리팹들 (랜덤 스폰)")]
+    public GameObject[] coralPrefabs;
+    [Tooltip("산호 단일 프리팹 (배열 비었을 때 fallback)")]
     public GameObject coralPrefab;
-    [Tooltip("암석 프리팹")]
+    [Tooltip("암석 프리팹들 (랜덤 스폰)")]
+    public GameObject[] rockPrefabs;
+    [Tooltip("암석 단일 프리팹 (배열 비었을 때 fallback)")]
     public GameObject rockPrefab;
-    [Tooltip("모래 프리팹")]
+    [Tooltip("모래 프리팹들 (랜덤 스폰)")]
+    public GameObject[] sandPrefabs;
+    [Tooltip("모래 단일 프리팹 (배열 비었을 때 fallback)")]
     public GameObject sandPrefab;
-    [Tooltip("해면 프리팹")]
+    [Tooltip("해면 프리팹들 (랜덤 스폰)")]
+    public GameObject[] spongePrefabs;
+    [Tooltip("해면 단일 프리팹 (배열 비었을 때 fallback)")]
     public GameObject spongePrefab;
 
     [Header("Runtime")]
@@ -58,6 +68,8 @@ public class FieldMapGenerator : MonoBehaviour
 
     // 스폰된 오브젝트 추적 (맵 재생성 시 정리용)
     private List<GameObject> spawnedObjects = new List<GameObject>();
+    // 자원 스폰 중 동일 셀 중복 방지
+    private readonly HashSet<Vector2Int> usedResourceCells = new HashSet<Vector2Int>();
 
     private void Start()
     {
@@ -607,13 +619,15 @@ public class FieldMapGenerator : MonoBehaviour
         if (fieldDefinition == null) return;
         if (gridBoard == null) return;
 
+        usedResourceCells.Clear();
+
         int totalResources = 0;
 
-        totalResources += SpawnResourceType(seaweedPrefab, fieldDefinition.seaweedCount, "Seaweed");
-        totalResources += SpawnResourceType(coralPrefab, fieldDefinition.coralCount, "Coral");
-        totalResources += SpawnResourceType(rockPrefab, fieldDefinition.rockCount, "Rock");
-        totalResources += SpawnResourceType(sandPrefab, fieldDefinition.sandCount, "Sand");
-        totalResources += SpawnResourceType(spongePrefab, fieldDefinition.spongeCount, "Sponge");
+        totalResources += SpawnResourceType(GetResourcePrefabPool(seaweedPrefabs, seaweedPrefab), fieldDefinition.seaweedCount, "Seaweed");
+        totalResources += SpawnResourceType(GetResourcePrefabPool(coralPrefabs, coralPrefab), fieldDefinition.coralCount, "Coral");
+        totalResources += SpawnResourceType(GetResourcePrefabPool(rockPrefabs, rockPrefab), fieldDefinition.rockCount, "Rock");
+        totalResources += SpawnResourceType(GetResourcePrefabPool(sandPrefabs, sandPrefab), fieldDefinition.sandCount, "Sand");
+        totalResources += SpawnResourceType(GetResourcePrefabPool(spongePrefabs, spongePrefab), fieldDefinition.spongeCount, "Sponge");
 
         if (logGeneration)
             Debug.Log($"[FieldMapGenerator] 자원 스폰 완료: 총 {totalResources}개");
@@ -622,26 +636,39 @@ public class FieldMapGenerator : MonoBehaviour
     /// <summary>
     /// 자원 타입별 스폰
     /// </summary>
-    private int SpawnResourceType(GameObject prefab, int count, string resourceName)
+    private int SpawnResourceType(GameObject[] prefabs, int count, string resourceName)
     {
-        if (prefab == null || count <= 0) return 0;
+        if (prefabs == null || prefabs.Length == 0 || count <= 0) return 0;
 
         int spawned = 0;
-        for (int i = 0; i < count; i++)
+        int attempts = 0;
+        int maxAttempts = Mathf.Max(30, count * 20);
+        while (spawned < count && attempts < maxAttempts)
         {
+            attempts++;
             Vector2Int pos = FindRandomWalkablePosition(currentMap, currentMap.playerSpawnPos, 2f);
             if (pos == Vector2Int.zero) continue;
+            if (usedResourceCells.Contains(pos)) continue;
+
+            GameObject prefab = GetRandomPrefab(prefabs);
+            if (prefab == null) continue;
 
             Vector3 worldPos = gridBoard.CellToWorld(pos);
             GameObject resource = Instantiate(prefab, worldPos, Quaternion.identity);
-            resource.name = $"{resourceName}_{pos.x}_{pos.y}";
+            resource.name = $"{resourceName}_{prefab.name}_{pos.x}_{pos.y}";
 
             spawnedObjects.Add(resource);
+            usedResourceCells.Add(pos);
             spawned++;
         }
 
         if (logGeneration && spawned > 0)
-            Debug.Log($"[FieldMapGenerator] {resourceName} 스폰: {spawned}개");
+        {
+            if (spawned < count)
+                Debug.LogWarning($"[FieldMapGenerator] {resourceName} 스폰 부족: {spawned}/{count} (빈 셀 부족 가능)");
+            else
+                Debug.Log($"[FieldMapGenerator] {resourceName} 스폰: {spawned}개");
+        }
 
         return spawned;
     }
@@ -1126,6 +1153,43 @@ public class FieldMapGenerator : MonoBehaviour
         }
 
         return Vector2Int.zero;
+    }
+
+    private GameObject[] GetResourcePrefabPool(GameObject[] prefabs, GameObject fallbackPrefab)
+    {
+        if (prefabs != null && prefabs.Length > 0)
+            return prefabs;
+
+        if (fallbackPrefab != null)
+            return new[] { fallbackPrefab };
+
+        return null;
+    }
+
+    private GameObject GetRandomPrefab(GameObject[] prefabs)
+    {
+        if (prefabs == null || prefabs.Length == 0)
+            return null;
+
+        int validCount = 0;
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] != null)
+                validCount++;
+        }
+
+        if (validCount == 0)
+            return null;
+
+        int target = Random.Range(0, validCount);
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] == null) continue;
+            if (target == 0) return prefabs[i];
+            target--;
+        }
+
+        return null;
     }
 }
 

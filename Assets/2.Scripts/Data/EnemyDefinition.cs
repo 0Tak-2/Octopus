@@ -37,7 +37,7 @@ public class EnemyDefinition : ScriptableObject
     public bool fieldRequireLoS = true;
 
     [Header("Aggro System")]
-    [Tooltip("ÇÊµå ÃßÀû ½Ã ÇÃ·¹ÀÌ¾î¿Í Chebyshev °Å¸®°¡ ÀÌ °ªÀ» ³ÑÀ¸¸é ¾î±×·Î ÇØÁ¦ (½Ã¾ß ¹Ý°æ°ú º°°³·Î ÃÖ´ë ÃßÀû °Å¸®)")]
+    [Tooltip("ï¿½Êµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ Chebyshev ï¿½Å¸ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½×·ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ã¾ï¿½ ï¿½Ý°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½)")]
     [Min(1)] public int aggroDropDistance = 15;
     [Tooltip("Ignore LoS when aggro")]
     public bool ignoreLoSWhenAggro = true;
@@ -131,10 +131,10 @@ public class EnemyDefinition : ScriptableObject
     // Color Module Drop (Phase 2)
     // =========================
     [Header("Color Module Drop")]
-    [Tooltip("µå¶øÇÒ »ö ¸ðµâ ¾ÆÀÌÅÛ (ItemData)")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ItemData)")]
     public ItemData dropColorModule;
 
-    [Tooltip("»ö ¸ðµâ µå¶ø È®·ü (0~1)")]
+    [Tooltip("ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ È®ï¿½ï¿½ (0~1)")]
     [Range(0f, 1f)] public float colorModuleDropChance = 0.15f;
 
     // =========================

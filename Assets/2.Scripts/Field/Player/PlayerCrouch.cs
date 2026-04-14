@@ -16,6 +16,7 @@ public class PlayerCrouch : MonoBehaviour
     private RestController _rest;
     private FieldTimeManager _fieldTime;
     private FieldMultiEnemyAttack _multiEnemy;
+    private FieldTurnCoordinator _turnCoordinator;
 
     private void Awake()
     {
@@ -24,11 +25,14 @@ public class PlayerCrouch : MonoBehaviour
             ?? FindObjectOfType<RestController>();
         _fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         _multiEnemy = FindObjectOfType<FieldMultiEnemyAttack>();
+        _turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
     }
 
     private void Update()
     {
         if (_rest != null && _rest.IsResting)
+            return;
+        if (_turnCoordinator != null && _turnCoordinator.IsBusy)
             return;
 
         bool pressed = Input.GetKeyDown(toggleKey)
@@ -45,14 +49,24 @@ public class PlayerCrouch : MonoBehaviour
 
         if (enteringCrouch)
         {
-            if (_fieldTime == null)
-                _fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
-            _fieldTime?.Advance(1);
+            if (_turnCoordinator == null)
+                _turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
 
-            if (_multiEnemy == null)
-                _multiEnemy = FindObjectOfType<FieldMultiEnemyAttack>();
-            if (_multiEnemy != null)
-                StartCoroutine(CoEnemyTurnEndNextFrame());
+            if (_turnCoordinator != null)
+            {
+                _turnCoordinator.TryCommitPlayerAction(1, true);
+            }
+            else
+            {
+                if (_fieldTime == null)
+                    _fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+                _fieldTime?.Advance(1);
+
+                if (_multiEnemy == null)
+                    _multiEnemy = FindObjectOfType<FieldMultiEnemyAttack>();
+                if (_multiEnemy != null)
+                    StartCoroutine(CoEnemyTurnEndNextFrame());
+            }
         }
     }
 

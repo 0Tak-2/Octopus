@@ -20,6 +20,7 @@ public class WatchTargetingController : MonoBehaviour
     public GridBoard grid;
     public FieldTimeManager fieldTime;
     public FieldMultiEnemyAttack multiEnemyAttack;
+    public FieldTurnCoordinator turnCoordinator;
 
     [Header("Keys")]
     public KeyCode targetingKey = KeyCode.Q;
@@ -67,6 +68,7 @@ public class WatchTargetingController : MonoBehaviour
         if (grid == null) grid = FindObjectOfType<GridBoard>();
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
     }
     private void FollowWatchTarget()
     {
@@ -118,6 +120,7 @@ public class WatchTargetingController : MonoBehaviour
         // 집중전투 중이면 무시
         var fcm = FocusedCombatManager.Instance;
         if (fcm != null && fcm.IsInFocusedCombat) return;
+        if (turnCoordinator != null && turnCoordinator.IsBusy && CurrentState != WatchState.Watching) return;
 
         switch (CurrentState)
         {
@@ -327,13 +330,21 @@ public class WatchTargetingController : MonoBehaviour
             if (showDebugLogs)
                 Debug.Log($"[WatchTargeting] 주시 턴 {_watchTurnCount}/{watchTurnsRequired}");
 
-            // 필드 시간 경과
-            if (fieldTime != null)
-                fieldTime.Advance(1);
+            // 필드 시간 경과 + 적들 행동
+            if (turnCoordinator == null)
+                turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
 
-            // 적들 행동
-            if (multiEnemyAttack != null)
-                multiEnemyAttack.OnPlayerTurnEnd();
+            if (turnCoordinator != null)
+            {
+                yield return turnCoordinator.CommitPlayerActionAndWait(1, true);
+            }
+            else
+            {
+                if (fieldTime != null)
+                    fieldTime.Advance(1);
+                if (multiEnemyAttack != null)
+                    multiEnemyAttack.OnPlayerTurnEnd();
+            }
 
             // 적 행동 완료 대기
             yield return new WaitForSeconds(turnDelay);

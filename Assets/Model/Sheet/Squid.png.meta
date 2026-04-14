@@ -45,7 +45,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 64
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 224d3fae6d9474442b735d4ce19c4b68
-      internalID: -732922008
+      spriteID: 26ed1ae5f0339234eb226ef265cc7727
+      internalID: -758522411
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9d542929c67462443a7f67a4555d5eb9
-      internalID: 1140193323
+      spriteID: 25d7dc976a9ec2d45969b0b644ae60f9
+      internalID: -1681031631
       vertices: []
       indices: 
       edges: []
@@ -175,8 +175,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Squid_0: -732922008
-      Squid_1: 1140193323
+      Squid_0: -758522411
+      Squid_1: -1681031631
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

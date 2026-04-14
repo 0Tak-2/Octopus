@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerGridMover : MonoBehaviour
@@ -10,6 +11,7 @@ public class PlayerGridMover : MonoBehaviour
     public RestController rest;
     public GridOccupancyRegistry occupancy;
     public FieldMultiEnemyAttack multiEnemyAttack;
+    public FieldTurnCoordinator turnCoordinator;
 
     [Header("Move")]
     public float moveDuration = 0.12f;
@@ -21,6 +23,16 @@ public class PlayerGridMover : MonoBehaviour
     [Header("Occupancy")]
     [Tooltip("점유 시스템이 있을 때, 점유된 셀로 이동을 막습니다.")]
     public bool blockMoveIntoOccupiedCell = true;
+
+    [Header("Move Visibility Assist")]
+    [Tooltip("앞에 있는 오브젝트 칸으로 진입할 때 이동 중 플레이어를 보이게 보정합니다.")]
+    public bool keepPlayerVisibleWhileMovingIntoObjectCell = true;
+    [Range(0.2f, 1f)]
+    [Tooltip("오브젝트 칸에 도착해 플레이어가 내부에 있을 때 적용할 알파")]
+    public float frontObjectMoveAlpha = 0.55f;
+    [Min(0)]
+    [Tooltip("이동 중 플레이어 sortingOrder 보정치")]
+    public int movingPlayerSortingBoost = 200;
 
     public Vector2Int CurrentCell { get; private set; }
     /// <summary>true이면 WASD 이동 차단 (주시 시스템 등에서 사용)</summary>
@@ -56,6 +68,13 @@ public class PlayerGridMover : MonoBehaviour
     }
 
     private bool _isMoving;
+    private SpriteRenderer[] _playerSpriteRenderers;
+    private int[] _basePlayerSortingOrders;
+    private bool _playerSortingBoostApplied;
+    private readonly List<SpriteRenderer> _moveOcclusionTargets = new List<SpriteRenderer>();
+    private readonly List<SpriteRenderer> _arrivedCellOccluders = new List<SpriteRenderer>();
+    private readonly List<Color> _arrivedCellBaseColors = new List<Color>();
+    private readonly List<Harvestable> _cellHarvestables = new List<Harvestable>();
 
     private void Awake()
     {
@@ -65,6 +84,8 @@ public class PlayerGridMover : MonoBehaviour
         if (rest == null) rest = FindObjectOfType<RestController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
         if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
+        CachePlayerSortingRenderers();
 
         Debug.Log("[PlayerGridMover] Awake - Grid: " + (grid != null ? grid.name : "NULL"));
     }
@@ -89,6 +110,9 @@ public class PlayerGridMover : MonoBehaviour
     private void OnDisable()
     {
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        EndMoveVisibilityAssist();
+        ClearArrivedCellTransparency();
 
         if (occupancy != null)
             occupancy.Release(transform);
@@ -116,6 +140,7 @@ public class PlayerGridMover : MonoBehaviour
         rest = FindObjectOfType<RestController>();
         occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
         multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+        turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
 
         Debug.Log($"[PlayerGridMover] RefreshReferences - Grid: {(grid != null ? grid.name : "NULL")}");
 
@@ -137,6 +162,8 @@ public class PlayerGridMover : MonoBehaviour
 
             Debug.Log($"[PlayerGridMover] Synced CurrentCell: {CurrentCell}");
         }
+
+        ApplyArrivedCellTransparency(CurrentCell);
     }
 
     private void Start()
@@ -154,6 +181,8 @@ public class PlayerGridMover : MonoBehaviour
 
             Debug.Log("[PlayerGridMover] Start - CurrentCell: " + CurrentCell);
         }
+
+        ApplyArrivedCellTransparency(CurrentCell);
     }
 
     private void Update()
@@ -164,15 +193,18 @@ public class PlayerGridMover : MonoBehaviour
         if (_isMoving) return;
         if (grid == null) return;
         if (lockMovement) return;
+        if (turnCoordinator != null && turnCoordinator.IsBusy) return;
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            fieldTime?.Advance(1);
-
-            // ✅ 대기 시에도 주변 적들이 공격!
-            if (multiEnemyAttack != null)
+            if (turnCoordinator != null)
             {
-                multiEnemyAttack.OnPlayerTurnEnd();
+                turnCoordinator.TryCommitPlayerAction(1, true);
+            }
+            else
+            {
+                fieldTime?.Advance(1);
+                multiEnemyAttack?.OnPlayerTurnEnd();
             }
 
             return;
@@ -227,6 +259,9 @@ public class PlayerGridMover : MonoBehaviour
 
         Debug.Log("[PlayerGridMover] TryMove to " + target);
 
+        if (turnCoordinator != null && turnCoordinator.IsBusy)
+            return;
+
         if (!grid.InBounds(target))
         {
             Debug.Log("[PlayerGridMover] Out of bounds!");
@@ -264,6 +299,8 @@ public class PlayerGridMover : MonoBehaviour
         }
 
         int cost = GetMoveTimeCost();
+        BeginMoveVisibilityAssist(target);
+
         // ✅ 이동 완료 후 시간 진행하도록 수정
         StartCoroutine(MoveRoutine(target, cost));
     }
@@ -288,16 +325,182 @@ public class PlayerGridMover : MonoBehaviour
         transform.position = end;
         CurrentCell = targetCell;
 
+        TryActivateTouchedCoralGlow(CurrentCell);
+        ApplyArrivedCellTransparency(CurrentCell);
+        EndMoveVisibilityAssist();
+
         _isMoving = false;
 
-        // ✅ 이동 완료 후 시간 진행!
-        Debug.Log($"[FieldTime] Player move complete, advancing time by {timeCost}");
-        fieldTime?.Advance(timeCost);
-
-        // ✅ 주변 모든 적이 공격!
-        if (multiEnemyAttack != null)
+        // ✅ 이동 완료 후 턴 처리 (시간 진행 + 적 턴)
+        if (turnCoordinator != null)
         {
-            multiEnemyAttack.OnPlayerTurnEnd();
+            yield return turnCoordinator.CommitPlayerActionAndWait(timeCost, true);
+        }
+        else
+        {
+            Debug.Log($"[FieldTime] Player move complete, advancing time by {timeCost}");
+            fieldTime?.Advance(timeCost);
+            multiEnemyAttack?.OnPlayerTurnEnd();
+        }
+    }
+
+    private void CachePlayerSortingRenderers()
+    {
+        _playerSpriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        if (_playerSpriteRenderers == null)
+            return;
+
+        _basePlayerSortingOrders = new int[_playerSpriteRenderers.Length];
+        for (int i = 0; i < _playerSpriteRenderers.Length; i++)
+        {
+            if (_playerSpriteRenderers[i] == null) continue;
+            _basePlayerSortingOrders[i] = _playerSpriteRenderers[i].sortingOrder;
+        }
+    }
+
+    private void BeginMoveVisibilityAssist(Vector2Int targetCell)
+    {
+        EndMoveVisibilityAssist();
+
+        if (!keepPlayerVisibleWhileMovingIntoObjectCell || grid == null)
+            return;
+
+        // 현재 칸도 숨김(반투명 적용 중)이고 다음 칸도 숨김 오브젝트 칸이면
+        // 이동 중 플레이어를 앞으로 끌어올리지 않고 계속 숨김 상태를 유지한다.
+        bool movingHiddenToHidden = _arrivedCellOccluders.Count > 0;
+
+        CollectCellOccluderRenderers(targetCell, _moveOcclusionTargets);
+        if (_moveOcclusionTargets.Count == 0)
+            return;
+
+        if (movingHiddenToHidden)
+            return;
+
+        ApplyPlayerSortingBoost();
+    }
+
+    private void EndMoveVisibilityAssist()
+    {
+        _moveOcclusionTargets.Clear();
+
+        RevertPlayerSortingBoost();
+    }
+
+    private void ApplyPlayerSortingBoost()
+    {
+        if (_playerSortingBoostApplied)
+            return;
+
+        if (_playerSpriteRenderers == null || _basePlayerSortingOrders == null || _playerSpriteRenderers.Length == 0)
+            CachePlayerSortingRenderers();
+
+        if (_playerSpriteRenderers == null || _basePlayerSortingOrders == null)
+            return;
+
+        for (int i = 0; i < _playerSpriteRenderers.Length; i++)
+        {
+            if (_playerSpriteRenderers[i] == null) continue;
+            _playerSpriteRenderers[i].sortingOrder = _basePlayerSortingOrders[i] + movingPlayerSortingBoost;
+        }
+
+        _playerSortingBoostApplied = true;
+    }
+
+    private void RevertPlayerSortingBoost()
+    {
+        if (!_playerSortingBoostApplied) return;
+        if (_playerSpriteRenderers == null || _basePlayerSortingOrders == null) return;
+
+        for (int i = 0; i < _playerSpriteRenderers.Length; i++)
+        {
+            if (_playerSpriteRenderers[i] == null) continue;
+            _playerSpriteRenderers[i].sortingOrder = _basePlayerSortingOrders[i];
+        }
+
+        _playerSortingBoostApplied = false;
+    }
+
+    private void ApplyArrivedCellTransparency(Vector2Int cell)
+    {
+        ClearArrivedCellTransparency();
+
+        if (!keepPlayerVisibleWhileMovingIntoObjectCell || grid == null)
+            return;
+
+        CollectCellOccluderRenderers(cell, _arrivedCellOccluders);
+        if (_arrivedCellOccluders.Count == 0)
+            return;
+
+        float targetAlpha = Mathf.Clamp01(frontObjectMoveAlpha);
+        for (int i = 0; i < _arrivedCellOccluders.Count; i++)
+        {
+            SpriteRenderer sr = _arrivedCellOccluders[i];
+            if (sr == null) continue;
+
+            _arrivedCellBaseColors.Add(sr.color);
+            Color c = sr.color;
+            c.a = targetAlpha;
+            sr.color = c;
+        }
+    }
+
+    private void ClearArrivedCellTransparency()
+    {
+        int restoreCount = Mathf.Min(_arrivedCellOccluders.Count, _arrivedCellBaseColors.Count);
+        for (int i = 0; i < restoreCount; i++)
+        {
+            SpriteRenderer sr = _arrivedCellOccluders[i];
+            if (sr == null) continue;
+            sr.color = _arrivedCellBaseColors[i];
+        }
+
+        _arrivedCellOccluders.Clear();
+        _arrivedCellBaseColors.Clear();
+    }
+
+    private void CollectCellOccluderRenderers(Vector2Int cell, List<SpriteRenderer> results)
+    {
+        results.Clear();
+        if (grid == null) return;
+
+        SpriteRenderer[] renderers = FindObjectsOfType<SpriteRenderer>();
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            SpriteRenderer sr = renderers[i];
+            if (sr == null || !sr.gameObject.activeInHierarchy)
+                continue;
+
+            // 플레이어 본인 렌더러는 제외
+            if (sr.transform.IsChildOf(transform))
+                continue;
+
+            // 환경 오브젝트(채집물/셀 차단물)만 가시성 보정 대상으로 사용
+            if (sr.GetComponentInParent<Harvestable>() == null &&
+                sr.GetComponentInParent<GridCellBlocker>() == null)
+                continue;
+
+            if (grid.WorldToCell(sr.transform.position) != cell)
+                continue;
+
+            if (!results.Contains(sr))
+                results.Add(sr);
+        }
+    }
+
+    private void TryActivateTouchedCoralGlow(Vector2Int cell)
+    {
+        if (grid == null) return;
+        if (FieldVisionSystem.Instance == null) return;
+
+        Harvestable.GetHarvestablesAtCell(grid, cell, _cellHarvestables);
+        for (int i = 0; i < _cellHarvestables.Count; i++)
+        {
+            Harvestable h = _cellHarvestables[i];
+            if (h == null || h.isHarvested) continue;
+            if (h.itemID != 2) continue; // coral only
+
+            FieldVisionSystem.Instance.ActivateTouchedCoralGlow(cell);
+            break;
         }
     }
 }

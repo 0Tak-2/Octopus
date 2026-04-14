@@ -27,10 +27,18 @@ public class FieldVisionSystem : MonoBehaviour
     [Range(0f, 1f)] public float coverDetectionPenalty = 0.90f;
     [Range(0f, 1f)] public float crouchDetectionPenalty = 0.35f;
 
+    [Header("Touched Coral Glow")]
+    [Tooltip("플레이어가 건드린 산호만 일정 턴 동안 주변 시야를 제공합니다.")]
+    public bool enableTouchedCoralGlow = true;
+    [Range(0, 2)] public int touchedCoralGlowRange = 1;
+    [Range(1, 99)] public int touchedCoralGlowTurns = 15;
+
     [Header("Debug")]
     public bool showDebugLogs = false;
 
     private HashSet<Vector2Int> _coverCells = new HashSet<Vector2Int>();
+    private readonly Dictionary<Vector2Int, int> _touchedCoralGlowRemainTurns = new Dictionary<Vector2Int, int>();
+    private FieldTimeManager _fieldTime;
 
     private void Awake()
     {
@@ -45,8 +53,15 @@ public class FieldVisionSystem : MonoBehaviour
         if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
         ResolvePlayerCrouch();
         RefreshCoverCells();
+        ResolveFieldTime();
 
         Debug.Log($"[VisionSystem] Init - playerVision={playerVisionRange}(crouch+{crouchPlayerVisionBonus}), enemyDetect={enemyDetectionRange}, cover={_coverCells.Count}");
+    }
+
+    private void OnDestroy()
+    {
+        if (_fieldTime != null)
+            _fieldTime.OnTimeAdvanced -= OnFieldTimeAdvanced;
     }
 
     private PlayerCrouch ResolvePlayerCrouch()
@@ -82,6 +97,39 @@ public class FieldVisionSystem : MonoBehaviour
     }
 
     public int GetBasePlayerVisionRange() => Mathf.Max(0, playerVisionRange);
+
+    private void ResolveFieldTime()
+    {
+        _fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (_fieldTime != null)
+            _fieldTime.OnTimeAdvanced += OnFieldTimeAdvanced;
+    }
+
+    private void OnFieldTimeAdvanced(int delta, int newTotalTime)
+    {
+        if (_touchedCoralGlowRemainTurns.Count == 0) return;
+
+        bool changed = false;
+        var keys = new List<Vector2Int>(_touchedCoralGlowRemainTurns.Keys);
+        for (int i = 0; i < keys.Count; i++)
+        {
+            Vector2Int cell = keys[i];
+            int remain = _touchedCoralGlowRemainTurns[cell] - Mathf.Max(0, delta);
+            if (remain <= 0)
+            {
+                _touchedCoralGlowRemainTurns.Remove(cell);
+                changed = true;
+            }
+            else
+            {
+                _touchedCoralGlowRemainTurns[cell] = remain;
+                changed = true;
+            }
+        }
+
+        if (changed && FogOfWarRenderer.Instance != null)
+            FogOfWarRenderer.Instance.ForceRefresh();
+    }
 
     public void RefreshCoverCells()
     {
@@ -132,7 +180,9 @@ public class FieldVisionSystem : MonoBehaviour
 
     public HashSet<Vector2Int> GetPlayerVisibleCells(Vector2Int playerCell)
     {
-        return GetVisibleCells(playerCell, GetEffectivePlayerVisionRange());
+        HashSet<Vector2Int> visible = GetVisibleCells(playerCell, GetEffectivePlayerVisionRange());
+        AddTouchedCoralGlowVisibleCells(visible);
+        return visible;
     }
 
     public HashSet<Vector2Int> GetVisibleCells(Vector2Int center, int range)
@@ -156,6 +206,53 @@ public class FieldVisionSystem : MonoBehaviour
         }
 
         return visible;
+    }
+
+    private void AddTouchedCoralGlowVisibleCells(HashSet<Vector2Int> visible)
+    {
+        if (!enableTouchedCoralGlow) return;
+        if (gridBoard == null) return;
+        if (_touchedCoralGlowRemainTurns.Count == 0) return;
+
+        int glowRange = Mathf.Max(0, touchedCoralGlowRange);
+        foreach (var pair in _touchedCoralGlowRemainTurns)
+        {
+            Vector2Int coralCell = pair.Key;
+            for (int dx = -glowRange; dx <= glowRange; dx++)
+            {
+                for (int dy = -glowRange; dy <= glowRange; dy++)
+                {
+                    if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) > glowRange)
+                        continue;
+
+                    Vector2Int c = new Vector2Int(coralCell.x + dx, coralCell.y + dy);
+                    if (!gridBoard.InBounds(c))
+                        continue;
+
+                    visible.Add(c);
+                }
+            }
+        }
+    }
+
+    public void ActivateTouchedCoralGlow(Vector2Int coralCell)
+    {
+        if (!enableTouchedCoralGlow) return;
+
+        int turns = Mathf.Max(1, touchedCoralGlowTurns);
+        _touchedCoralGlowRemainTurns[coralCell] = turns;
+
+        if (FogOfWarRenderer.Instance != null)
+            FogOfWarRenderer.Instance.ForceRefresh();
+    }
+
+    public void ClearTouchedCoralGlowAt(Vector2Int coralCell)
+    {
+        if (_touchedCoralGlowRemainTurns.Remove(coralCell))
+        {
+            if (FogOfWarRenderer.Instance != null)
+                FogOfWarRenderer.Instance.ForceRefresh();
+        }
     }
 
     public bool TryDetectPlayer(Vector2Int enemyCell, Vector2Int playerCell)

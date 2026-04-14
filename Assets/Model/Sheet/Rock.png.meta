@@ -45,10 +45,10 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 32
+  spritePixelsToUnits: 48
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e9a705d10eddc6440943304c65dd99cb
-      internalID: 5818224
+      spriteID: dd8eb0df3e147ec4b9d1c85035bb92af
+      internalID: 1777979302
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4df4c167271cc69498bdbf45076c3e3b
-      internalID: 291565755
+      spriteID: 10eadf4221a21d249b543c5e043c5b45
+      internalID: 1871642722
       vertices: []
       indices: 
       edges: []
@@ -179,8 +179,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5c1767d65827d8b4990ae1058f7b1ccf
-      internalID: 1157824945
+      spriteID: 8e5598161e666d64ca07b451aaa32507
+      internalID: 547681231
       vertices: []
       indices: 
       edges: []
@@ -200,8 +200,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3a56184b5d21d7544ab70f61b953e732
-      internalID: -1406768019
+      spriteID: 5d7077ba6f3e8934bad63f9b3931a7c9
+      internalID: -2113124733
       vertices: []
       indices: 
       edges: []
@@ -217,10 +217,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Rock_0: 5818224
-      Rock_1: 291565755
-      Rock_2: 1157824945
-      Rock_3: -1406768019
+      Rock_0: 1777979302
+      Rock_1: 1871642722
+      Rock_2: 547681231
+      Rock_3: -2113124733
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

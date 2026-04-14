@@ -27,6 +27,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     public bool showDebugLogs = true;
 
     private bool _isProcessing = false;
+    public bool IsResolvingEnemyTurn => _isProcessing;
 
     private void Awake()
     {
@@ -147,8 +148,8 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         else
             enemyCell = gridBoard.WorldToCell(enemy.transform.position);
 
-        // ✅ 공격 전에 transform.position을 occupancy 셀로 동기화
-        enemy.transform.position = gridBoard.CellToWorld(enemyCell);
+        // 공격 전 위치가 크게 어긋난 경우에만 보정 (연출 끊김 방지)
+        SnapRootIfDrifted(enemy.transform, enemyCell);
 
         Vector2Int playerCell = gridBoard.WorldToCell(player.position);
 
@@ -227,12 +228,6 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         {
             playerStats.TakeDamage(damage);
 
-            // 피격 효과 (흔들림 + 데미지 텍스트)
-            if (hitEffectManager != null && player != null)
-            {
-                hitEffectManager.ShowHitEffect(player, damage);
-            }
-
             if (showDebugLogs)
                 Debug.Log($"[MultiEnemyAttack] Player HP: {playerStats.hp}/{playerStats.maxHP}");
         }
@@ -286,7 +281,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
             if (enemy == null || enemy.currentHP <= 0) continue;
             if (occ.TryGetCurrentCell(enemy.transform, out var cell))
             {
-                enemy.transform.position = gridBoard.CellToWorld(cell);
+                SnapRootIfDrifted(enemy.transform, cell);
             }
         }
     }
@@ -295,16 +290,21 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     {
         if (enemyTransform == null) yield break;
 
-        Vector3 startPos = gridBoard.CellToWorld(fromCell);
-        Vector3 targetPos = gridBoard.CellToWorld(toCell);
+        Transform visual = FieldVisualMotionUtil.ResolveVisualRoot(enemyTransform);
+        if (visual == null) yield break;
+
+        Vector3 startPos = visual.position;
+        Vector3 fromWorld = gridBoard.CellToWorld(fromCell);
+        Vector3 toWorld = gridBoard.CellToWorld(toCell);
+        Vector3 targetPos = startPos + (toWorld - fromWorld) * 0.7f;
 
         // 전진
         float t = 0f;
         while (t < 1f)
         {
-            if (enemyTransform == null) yield break;
+            if (visual == null) yield break;
             t += Time.deltaTime / dashDuration;
-            enemyTransform.position = Vector3.Lerp(startPos, targetPos, t);
+            visual.position = Vector3.Lerp(startPos, targetPos, t);
             yield return null;
         }
 
@@ -312,14 +312,14 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         t = 0f;
         while (t < 1f)
         {
-            if (enemyTransform == null) yield break;
+            if (visual == null) yield break;
             t += Time.deltaTime / dashDuration;
-            enemyTransform.position = Vector3.Lerp(targetPos, startPos, t);
+            visual.position = Vector3.Lerp(targetPos, startPos, t);
             yield return null;
         }
 
-        if (enemyTransform != null)
-            enemyTransform.position = startPos;
+        if (visual != null)
+            visual.position = startPos;
     }
 
     /// <summary>
@@ -357,5 +357,15 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     private int Chebyshev(Vector2Int a, Vector2Int b)
     {
         return Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
+    }
+
+    private void SnapRootIfDrifted(Transform root, Vector2Int cell)
+    {
+        if (root == null || gridBoard == null) return;
+
+        Vector3 expected = gridBoard.CellToWorld(cell);
+        float threshold = Mathf.Max(0.1f, gridBoard.cellSize * 0.45f);
+        if (Vector3.SqrMagnitude(root.position - expected) > threshold * threshold)
+            root.position = expected;
     }
 }

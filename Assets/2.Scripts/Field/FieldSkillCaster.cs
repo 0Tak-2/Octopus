@@ -9,6 +9,7 @@ public class FieldSkillCaster : MonoBehaviour
     public GridBoard gridBoard;
     public FieldTimeManager fieldTimeManager;
     public FieldSkillLoadout loadout;
+    public FieldTurnCoordinator turnCoordinator;
 
     [Header("Targeting")]
     public Camera worldCamera;
@@ -67,6 +68,7 @@ public class FieldSkillCaster : MonoBehaviour
         if (gridBoard == null) gridBoard = FindObjectOfType<GridBoard>();
         if (fieldTimeManager == null) fieldTimeManager = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (loadout == null) loadout = GetComponent<FieldSkillLoadout>();
+        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
 
         for (int i = 1; i <= 4; i++)
         {
@@ -115,6 +117,7 @@ public class FieldSkillCaster : MonoBehaviour
     private void Update()
     {
         if (gridBoard == null || fieldTimeManager == null || loadout == null) return;
+        if (turnCoordinator != null && turnCoordinator.IsBusy) return;
 
         // 1~4 = 슬롯 선택 + 무장
         if (Input.GetKeyDown(KeyCode.Alpha1)) SelectAndArm(1);
@@ -245,14 +248,19 @@ public class FieldSkillCaster : MonoBehaviour
         if (cd > 0) _cooldownSkipNextTick[_selectedSlot] = 1;
         OnCooldownChanged?.Invoke();
 
-        // Time 1 소비
-        fieldTimeManager.Advance(1);
+        // Time 1 소비 + 적 턴 처리
+        if (turnCoordinator == null)
+            turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
 
-        // ✅ 적들 반격!
-        FieldMultiEnemyAttack multiAttack = FindObjectOfType<FieldMultiEnemyAttack>();
-        if (multiAttack != null)
+        if (turnCoordinator != null)
         {
-            multiAttack.OnPlayerTurnEnd();
+            yield return turnCoordinator.CommitPlayerActionAndWait(1, true);
+        }
+        else
+        {
+            fieldTimeManager.Advance(1);
+            FieldMultiEnemyAttack multiAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+            multiAttack?.OnPlayerTurnEnd();
         }
 
         // 시전 성공 후 자동 무장 해제(추천 UX)

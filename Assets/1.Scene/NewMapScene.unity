@@ -14456,10 +14456,35 @@ MonoBehaviour:
   mapExitPrefab: {fileID: 126308564115085285, guid: b8ca26a61f9ed394a9450553779b4279, type: 3}
   mapEntrancePrefab: {fileID: 126308564115085285, guid: b8ca26a61f9ed394a9450553779b4279, type: 3}
   dungeonEntrancePrefab: {fileID: 5344730364721224667, guid: 31f5152c35056334f848b42dd5ea5aed, type: 3}
+  seaweedPrefabs:
+  - {fileID: 3445738312349064485, guid: edb8f975a318b3b408f539c8f7c47b88, type: 3}
+  - {fileID: 3445738312349064485, guid: ab6266c8a404cac479823d924cf11c57, type: 3}
+  - {fileID: 3445738312349064485, guid: 2ccbb3fca171737468eabf9594b8cf9c, type: 3}
+  - {fileID: 3445738312349064485, guid: d0f635b2b65bd6b4891e1ba9a99902a8, type: 3}
   seaweedPrefab: {fileID: 3445738312349064485, guid: a1e93aa8a8a305647bb29fcb897c4cef, type: 3}
+  coralPrefabs:
+  - {fileID: 3445738312349064485, guid: 4d8b8dbde40578c48ac157e6486eaf9e, type: 3}
+  - {fileID: 3445738312349064485, guid: 4a55904de2eb0cb41a6062f34407a787, type: 3}
+  - {fileID: 3445738312349064485, guid: ad947ebcc8b161f4e8dec0bc7130a96b, type: 3}
+  - {fileID: 3445738312349064485, guid: 3744620e87edf274a9d18b02a67b8968, type: 3}
+  - {fileID: 3445738312349064485, guid: 348521d79fcccd0469b2209e8f2e98fb, type: 3}
+  - {fileID: 3445738312349064485, guid: 0404fac84fd391f40a85be92346a2d95, type: 3}
+  - {fileID: 3445738312349064485, guid: 27fd4b4694eac3242bbc7513f21de716, type: 3}
+  - {fileID: 3445738312349064485, guid: 2972be172435ee849bb5a77a71415592, type: 3}
+  - {fileID: 3445738312349064485, guid: 51e634ec35541a64b92d7f8012400346, type: 3}
+  - {fileID: 3445738312349064485, guid: 97dc047efdb7c6a43be00b57ee5e4fcb, type: 3}
   coralPrefab: {fileID: 3445738312349064485, guid: 4d8b8dbde40578c48ac157e6486eaf9e, type: 3}
-  rockPrefab: {fileID: 394236172151961479, guid: 0bf0457aac48ddf4d8048f7cf3a37aa4, type: 3}
+  rockPrefabs:
+  - {fileID: 394236172151961479, guid: b855aaa4ec663294cabef0d842fd44fa, type: 3}
+  - {fileID: 394236172151961479, guid: 5d3974072205d5d48aaebe89705366a5, type: 3}
+  - {fileID: 394236172151961479, guid: 358d1de3e44781d4ca3d0cf41c829e5c, type: 3}
+  - {fileID: 394236172151961479, guid: 09730a7eb990aaa43ac1ec879687b73a, type: 3}
+  rockPrefab: {fileID: 394236172151961479, guid: b855aaa4ec663294cabef0d842fd44fa, type: 3}
+  sandPrefabs: []
   sandPrefab: {fileID: 9038712878340295496, guid: 5cbf4d8e3f7010542ad9c25e68300c43, type: 3}
+  spongePrefabs:
+  - {fileID: 3445738312349064485, guid: 2abbb90c0e1f3ae46863f8a2beb29953, type: 3}
+  - {fileID: 3445738312349064485, guid: a1f80d98f4af12748bd5a297c8c325e4, type: 3}
   spongePrefab: {fileID: 3445738312349064485, guid: 2abbb90c0e1f3ae46863f8a2beb29953, type: 3}
   currentMap:
     width: 23
@@ -26112,6 +26137,9 @@ MonoBehaviour:
     maxHunger: 100
     lastFieldPosition: {x: 0, y: 0}
     dungeonEntrancePosition: {x: 0, y: 0}
+    hasPendingEntranceHint: 0
+    enterNewFieldFromEdge: 0
+    entranceAlignT: 0.5
     currentDungeonId: 
     returnToMapIndex: 0
   inventoryData: []
@@ -26177,7 +26205,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000030517578}
+  m_AnchoredPosition: {x: -0.000030517578, y: 0.000030517578}
   m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1585893452
@@ -27442,7 +27470,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 71405312}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.999872
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -33249,6 +33277,10 @@ PrefabInstance:
     - target: {fileID: 4171715228404938419, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 7986038573847737538, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
+      propertyPath: m_SortingOrder
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8433644000671292430, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: fieldTime

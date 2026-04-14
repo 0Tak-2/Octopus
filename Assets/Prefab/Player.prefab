@@ -469,7 +469,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!95 &48181562596813846
@@ -482,7 +482,7 @@ Animator:
   m_GameObject: {fileID: 4171715228404938419}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: b19231bb02b401b4589e32cbc7b29fc3, type: 2}
+  m_Controller: {fileID: 9100000, guid: 39d030eeb84488f46b8a8f958e97356d, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -513,8 +513,9 @@ MonoBehaviour:
   multiEnemyAttack: {fileID: 0}
   moveDuration: 0.3
   baseMoveTimeCost: 1
-  crouchExtraTimeCost: 1
+  moveTimeCostWhenCrouching: 2
   blockMoveIntoOccupiedCell: 1
+  lockMovement: 0
 --- !u!114 &6847789210950096170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,6 +529,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleKey: 99
+  alternateToggleKey: 304
 --- !u!114 &3519355663358756076
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -656,6 +658,7 @@ MonoBehaviour:
   fieldTimeManager: {fileID: 0}
   interactionRange: 1.5
   showDebugLogs: 1
+  interactKey: 101
 --- !u!114 &5847144708179470147
 MonoBehaviour:
   m_ObjectHideFlags: 0

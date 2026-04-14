@@ -4,27 +4,27 @@ using TMPro;
 using System.Collections.Generic;
 
 /// <summary>
-/// ÀÎº¥Åä¸® UI (°³¼± ¹öÀü)
+/// ï¿½Îºï¿½ï¿½ä¸® UI (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 /// </summary>
 public class InventoryUI : MonoBehaviour
 {
     [Header("UI Elements")]
-    public Transform slotsParent; // ½½·Ô ±×¸®µå ºÎ¸ð
-    public GameObject itemSlotPrefab; // ¾ÆÀÌÅÛ ½½·Ô ÇÁ¸®ÆÕ
+    public Transform slotsParent; // ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ ï¿½Î¸ï¿½
+    public GameObject itemSlotPrefab; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    [Header("»ó¼¼ Á¤º¸ ÆÐ³Î (¼±ÅÃ)")]
+    [Header("ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ð³ï¿½ (ï¿½ï¿½ï¿½ï¿½)")]
     public GameObject detailPanel;
     public TextMeshProUGUI detailItemName;
     public TextMeshProUGUI detailDescription;
     public Image detailIcon;
 
-    [Header("ÅøÆÁ (¼±ÅÃ)")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)")]
     public GameObject tooltip;
     public TextMeshProUGUI tooltipText;
 
-    [Header("Á¦ÀÛ UI (¼±ÅÃ)")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ UI (ï¿½ï¿½ï¿½ï¿½)")]
     public CraftingUI craftingUI;
-    public Button craftButton; // Á¦ÀÛ ¹öÆ°
+    public Button craftButton; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 
     private List<InventorySlot> itemSlots = new List<InventorySlot>();
 
@@ -36,7 +36,7 @@ public class InventoryUI : MonoBehaviour
         if (tooltip != null)
             tooltip.SetActive(false);
 
-        // Á¦ÀÛ ¹öÆ° ÀÚµ¿ ¿¬°á
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ° ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
         if (craftButton != null)
         {
             craftButton.onClick.RemoveAllListeners();
@@ -49,7 +49,7 @@ public class InventoryUI : MonoBehaviour
     {
         Debug.Log("[InventoryUI] RefreshUI called!");
 
-        // ±âÁ¸ ½½·Ô Á¦°Å
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         foreach (var slot in itemSlots)
         {
             if (slot != null && slot.gameObject != null)
@@ -131,8 +131,8 @@ public class InventoryUI : MonoBehaviour
         }
         else
         {
-            detailItemName.text = item.itemName;       // Æú¹é
-            detailDescription.text = item.description; // Æú¹é
+            detailItemName.text = item.itemName;       // ï¿½ï¿½ï¿½ï¿½
+            detailDescription.text = item.description; // ï¿½ï¿½ï¿½ï¿½
         }
 
         if (detailIcon != null && item.icon != null)
@@ -157,7 +157,7 @@ public class InventoryUI : MonoBehaviour
         tooltip.SetActive(true);
         tooltipText.text = text;
 
-        // ¸¶¿ì½º ¿·À¸·Î À§Ä¡ (½½·Ô À§°¡ ¾Æ´Ñ!)
+        // ï¿½ï¿½ï¿½ì½º ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½!)
         Vector3 mousePos = Input.mousePosition;
         tooltip.transform.position = mousePos + new Vector3(10f, 10f, 0f);
     }
@@ -169,7 +169,7 @@ public class InventoryUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Á¦ÀÛ UI ¿­±â
+    /// ï¿½ï¿½ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public void OpenCrafting()
     {

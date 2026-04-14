@@ -45,7 +45,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 64
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 95362470becc1e141b9dfcb4935c3b79
-      internalID: 164895938
+      spriteID: 42932d968513d4242b61b33db3194462
+      internalID: -423354131
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: b30cfc4cd7ff6ed458ef5c83a66e963d
-      internalID: 821898745
+      spriteID: ab206efcb6d5fd34aa756ba62ea78a63
+      internalID: -334982975
       vertices: []
       indices: 
       edges: []
@@ -179,8 +179,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 600328fba9489ba4bb1dcb640de1ac34
-      internalID: 2061396515
+      spriteID: 034755179dd4e5e48a4d9cb0fafafc34
+      internalID: -1552644682
       vertices: []
       indices: 
       edges: []
@@ -200,260 +200,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 76c53e993ef648545a9f81acb1d1af4a
-      internalID: 1007233698
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_4
-      rect:
-        serializedVersion: 2
-        x: 256
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 777bf816762d20c419b6b70ece99a5ef
-      internalID: -333148187
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_5
-      rect:
-        serializedVersion: 2
-        x: 320
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 402a1f7d2cbf30f45b3c6f7bd961b591
-      internalID: 649493330
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_6
-      rect:
-        serializedVersion: 2
-        x: 384
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: d63fb4facd36b7145bc0122884650684
-      internalID: -1636381476
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_7
-      rect:
-        serializedVersion: 2
-        x: 448
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: cda599826a62d0c4896475dee0231b0b
-      internalID: 1162984924
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_8
-      rect:
-        serializedVersion: 2
-        x: 512
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: f7d6eb147f3897242b6fffdfc8de9747
-      internalID: 784120898
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_9
-      rect:
-        serializedVersion: 2
-        x: 576
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: ad20e802e913ce04583f154805d95622
-      internalID: -1343863019
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_10
-      rect:
-        serializedVersion: 2
-        x: 640
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 731734da58527bf42826ce6c610a88c3
-      internalID: 311976562
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_11
-      rect:
-        serializedVersion: 2
-        x: 704
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 7ea683954298815468f68d1baec3990e
-      internalID: 1845849595
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_12
-      rect:
-        serializedVersion: 2
-        x: 768
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 2a49c105bf876b340b77ad3edb02b7d8
-      internalID: 93971940
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_13
-      rect:
-        serializedVersion: 2
-        x: 832
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 11ffef3ed869d404a9559129a4edfc38
-      internalID: -624546360
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_14
-      rect:
-        serializedVersion: 2
-        x: 896
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: bbe1f585e58b5234eb568bb4ef939813
-      internalID: 2008009609
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: JellyFish_15
-      rect:
-        serializedVersion: 2
-        x: 960
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 7e238d0e95a1cb441a9d4661f5c3af41
-      internalID: 577212736
+      spriteID: d104d31cd59e1b74494aa9f5b7ba2115
+      internalID: -96918597
       vertices: []
       indices: 
       edges: []
@@ -469,22 +217,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      JellyFish_0: 164895938
-      JellyFish_1: 821898745
-      JellyFish_10: 311976562
-      JellyFish_11: 1845849595
-      JellyFish_12: 93971940
-      JellyFish_13: -624546360
-      JellyFish_14: 2008009609
-      JellyFish_15: 577212736
-      JellyFish_2: 2061396515
-      JellyFish_3: 1007233698
-      JellyFish_4: -333148187
-      JellyFish_5: 649493330
-      JellyFish_6: -1636381476
-      JellyFish_7: 1162984924
-      JellyFish_8: 784120898
-      JellyFish_9: -1343863019
+      JellyFish_0: -423354131
+      JellyFish_1: -334982975
+      JellyFish_2: -1552644682
+      JellyFish_3: -96918597
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

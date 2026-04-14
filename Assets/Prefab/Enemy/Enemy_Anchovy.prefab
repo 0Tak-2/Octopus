@@ -293,6 +293,7 @@ MonoBehaviour:
   droppedItemPrefab: {fileID: 3138420596523669153, guid: a98cb37e7eb99794abd8899ea70f101d, type: 3}
   dropSpreadRange: 0.3
   showDebugLogs: 1
+  gridBoard: {fileID: 0}
 --- !u!114 &4570938997504627133
 MonoBehaviour:
   m_ObjectHideFlags: 0

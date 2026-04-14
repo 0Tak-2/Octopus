@@ -45,7 +45,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 64
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: bc3533bb79dcd0c43a338f6b2bcc7792
-      internalID: -1646951891
+      spriteID: 480f06387ea9d5b4c9e2ca27372691c2
+      internalID: 1684054236
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 537d081bdcb8d7149b32f81686be1e08
-      internalID: 1342413593
+      spriteID: 7208e4219ea517f4a8da8e13e871f4da
+      internalID: 1854071790
       vertices: []
       indices: 
       edges: []
@@ -175,8 +175,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Anchovy_0: -1646951891
-      Anchovy_1: 1342413593
+      Anchovy_0: 1684054236
+      Anchovy_1: 1854071790
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
