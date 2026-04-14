@@ -73,7 +73,10 @@ public class DungeonController : MonoBehaviour
     // 던전 ID (GameManager에서 가져옴)
     private string dungeonId;
 
-    private void Start()
+    /// <summary>
+    /// ModeManager.EnterDungeon 에서만 호출. 같은 씬에서 던전 루트가 켜진 뒤 실행된다.
+    /// </summary>
+    public void Initialize(string dungeonIdOverride)
     {
         // Player 찾기
         if (player == null)
@@ -83,43 +86,37 @@ public class DungeonController : MonoBehaviour
                 player = playerObj.transform;
         }
 
-        // GridBoard 찾기
+        // GridBoard 찾기 (던전 루트 활성화 후 필드보다 우선)
         if (gridBoard == null)
             gridBoard = FindObjectOfType<GridBoard>();
+
+        dungeonId = !string.IsNullOrEmpty(dungeonIdOverride)
+            ? dungeonIdOverride
+            : (GameManager.Instance != null ? GameManager.Instance.playerData.currentDungeonId : "");
+
+        if (string.IsNullOrEmpty(dungeonId))
+        {
+            Debug.LogError("[DungeonController] dungeonId 가 비어 있습니다.");
+            return;
+        }
+
+        if (GameManager.Instance != null && GameManager.Instance.playerData.currentDungeonId != dungeonId)
+            GameManager.Instance.playerData.currentDungeonId = dungeonId;
 
         // WorldProgressManager에서 현재 던전 자동 가져오기
         if (dungeonDefinition == null && WorldProgressManager.Instance != null)
         {
             var currentDungeon = WorldProgressManager.Instance.GetCurrentDungeon();
             if (currentDungeon != null)
-            {
                 dungeonDefinition = currentDungeon;
-                Debug.Log($"[DungeonController] WorldProgressManager에서 던전 가져옴: {dungeonDefinition.dungeonName}");
-            }
         }
 
-        // GameManager에서 던전 ID로 찾기 (fallback)
-        if (dungeonDefinition == null && GameManager.Instance != null)
+        // GameManager ID로 찾기
+        if (dungeonDefinition == null && WorldProgressManager.Instance != null)
         {
-            string dId = GameManager.Instance.playerData.currentDungeonId;
-            if (!string.IsNullOrEmpty(dId) && WorldProgressManager.Instance != null)
-            {
-                var dungeon = WorldProgressManager.Instance.GetDungeonByID(dId);
-                if (dungeon != null)
-                {
-                    dungeonDefinition = dungeon;
-                    Debug.Log($"[DungeonController] GameManager ID로 던전 찾음: {dungeonDefinition.dungeonName}");
-                }
-            }
-        }
-
-        // WorldProgressManager에도 현재 던전 동기화
-        if (dungeonDefinition != null && WorldProgressManager.Instance != null)
-        {
-            if (string.IsNullOrEmpty(WorldProgressManager.Instance.CurrentDungeonID))
-            {
-                WorldProgressManager.Instance.EnterDungeon(dungeonDefinition);
-            }
+            var dungeon = WorldProgressManager.Instance.GetDungeonByID(dungeonId);
+            if (dungeon != null)
+                dungeonDefinition = dungeon;
         }
 
         if (dungeonDefinition == null)
@@ -140,52 +137,69 @@ public class DungeonController : MonoBehaviour
             return;
         }
 
-        // ✅ GameManager에서 던전 정보 가져오기
+        // GameManager에서 던전 세이브 로드
         if (GameManager.Instance != null)
         {
-            dungeonId = GameManager.Instance.playerData.currentDungeonId;
+            GameManager.Instance.currentDungeonData = GameManager.Instance.GetOrCreateDungeonData(dungeonId);
 
-            // 저장된 던전 데이터 로드
             var savedData = GameManager.Instance.currentDungeonData;
             if (savedData != null && savedData.dungeonId == dungeonId)
             {
-                currentFloor = savedData.currentFloor;
-                maxFloors = savedData.maxFloors;
+                if (savedData.currentFloor >= 1)
+                    currentFloor = savedData.currentFloor;
 
-                // ✅ 저장된 시드 복원
+                if (savedData.maxFloors > 0)
+                    maxFloors = savedData.maxFloors;
+
                 for (int i = 0; i < savedData.floorSeeds.Count; i++)
-                {
                     floorSeeds[i + 1] = savedData.floorSeeds[i];
-                }
 
                 if (logGeneration)
                     Debug.Log($"[DungeonController] 저장된 던전 복원: {dungeonId}, {currentFloor}/{maxFloors}층, 시드 {savedData.floorSeeds.Count}개");
             }
         }
 
+        if (currentFloor < 1)
+            currentFloor = 1;
+
         // 던전 층수 결정 (처음 입장 시에만)
-        if (maxFloors == 0)
+        if (maxFloors <= 0)
         {
             maxFloors = Random.Range(dungeonDefinition.minFloors, dungeonDefinition.maxFloors + 1);
 
-            // ✅ GameManager에 maxFloors 저장
             if (GameManager.Instance?.currentDungeonData != null)
-            {
                 GameManager.Instance.currentDungeonData.maxFloors = maxFloors;
-            }
         }
 
-        if (logGeneration)
-            Debug.Log($"[DungeonController] {dungeonDefinition.dungeonName} 시작 (총 {maxFloors}층)");
+        if (WorldProgressManager.Instance != null)
+            WorldProgressManager.Instance.SyncDungeonProgress(dungeonDefinition, currentFloor);
 
-        // 항상 1층부터 새로 생성 (로그라이크 특성: 던전 재입장 시 초기화)
-        currentFloor = 1;
+        if (logGeneration)
+            Debug.Log($"[DungeonController] {dungeonDefinition.dungeonName} 시작 (총 {maxFloors}층, 입장 층 {currentFloor})");
+
+        allFloors.Clear();
+        LoadOrGenerateFloor(currentFloor);
+
+        GameManager.Instance?.RestorePlayerStats();
+    }
+
+    /// <summary>
+    /// 필드로 나갈 때 던전 오브젝트·런타임 상태 정리 (세이브는 ModeManager 가 먼저 호출)
+    /// </summary>
+    public void Cleanup()
+    {
+        CleanupFloor();
+
+        bossInstance = null;
+        stairsInstance = null;
+        upStairsInstance = null;
+        exitInstance = null;
+
         allFloors.Clear();
         floorSeeds.Clear();
-        GenerateFloor(1);
-
-        // 플레이어 데이터 복원
-        GameManager.Instance?.RestorePlayerStats();
+        currentFloorData = null;
+        bossWasSpawned = false;
+        dungeonCleared = false;
     }
 
     /// <summary>
@@ -276,6 +290,8 @@ public class DungeonController : MonoBehaviour
         // ✅ GameManager에 현재 층 저장
         SaveCurrentFloorToGameManager();
 
+        RefreshDungeonFogAfterFloorReady();
+
         if (logGeneration)
             Debug.Log($"[DungeonController] {floorNumber}층 생성 완료 (방 {currentFloorData.rooms.Count}개)");
     }
@@ -306,6 +322,8 @@ public class DungeonController : MonoBehaviour
 
         // 아이템 마커 생성
         SpawnItemMarkers();
+
+        RefreshDungeonFogAfterFloorReady();
 
         if (logGeneration)
             Debug.Log($"[DungeonController] {floorNumber}층 복원 완료");
@@ -692,6 +710,9 @@ public class DungeonController : MonoBehaviour
         // 다음 층으로
         _cameFromBelow = true;
         LoadOrGenerateFloor(currentFloor + 1);
+
+        if (dungeonDefinition != null && WorldProgressManager.Instance != null)
+            WorldProgressManager.Instance.SyncDungeonProgress(dungeonDefinition, currentFloor);
     }
 
     /// <summary>
@@ -711,11 +732,30 @@ public class DungeonController : MonoBehaviour
         // 이전 층으로
         _cameFromBelow = false;
         LoadOrGenerateFloor(currentFloor - 1);
+
+        if (dungeonDefinition != null && WorldProgressManager.Instance != null)
+            WorldProgressManager.Instance.SyncDungeonProgress(dungeonDefinition, currentFloor);
     }
 
     // =========================================================
     // 기존 메서드들 (수정 없음)
     // =========================================================
+
+    /// <summary>층 맵·플레이어 스폰 후 — 던전ID+층별 Fog 탐험 캐시·시야 그리드 동기화 (계단 이동 시에도 호출됨)</summary>
+    private void RefreshDungeonFogAfterFloorReady()
+    {
+        if (string.IsNullOrEmpty(dungeonId) || gridBoard == null) return;
+
+        string fogKey = $"{dungeonId}_F{currentFloor}";
+        if (FogOfWarRenderer.Instance != null)
+            FogOfWarRenderer.Instance.BindRuntimeGrid(gridBoard, "_Dungeon", fogKey);
+
+        if (FieldVisionSystem.Instance != null)
+        {
+            FieldVisionSystem.Instance.BindGridBoard(gridBoard);
+            FieldVisionSystem.Instance.SetDungeonVisionBoost(true);
+        }
+    }
 
     private void AssignEliteRoom()
     {
@@ -744,6 +784,10 @@ public class DungeonController : MonoBehaviour
     {
         if (mapRenderer != null)
         {
+            // 인스펙터 실수로 MapRenderer.gridBoard 가 필드용이면 타일은 던전인데 이동 판정만 어긋남
+            if (gridBoard != null)
+                mapRenderer.gridBoard = gridBoard;
+
             MapData mapData = new MapData(floor.width, floor.height);
             for (int x = 0; x < floor.width; x++)
             {
@@ -760,8 +804,7 @@ public class DungeonController : MonoBehaviour
 
             mapRenderer.RenderMap(mapData);
         }
-
-        if (gridBoard != null)
+        else if (gridBoard != null)
         {
             gridBoard.width = floor.width;
             gridBoard.height = floor.height;

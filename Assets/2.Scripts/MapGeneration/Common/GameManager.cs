@@ -58,7 +58,6 @@ public class GameManager : MonoBehaviour
     // =========================================================
     [Header("Scene Names")]
     public string fieldSceneName = "NewMapScene";
-    public string dungeonSceneName = "DungeonScene";
 
     [Header("Debug")]
     public bool logSceneTransitions = true;
@@ -410,29 +409,31 @@ public class GameManager : MonoBehaviour
         SavePlayerStats();
         SaveInventory();
 
-        // 필드에 있으면 필드 상태도 저장
-        string sceneName = SceneManager.GetActiveScene().name;
-        if (sceneName == fieldSceneName || sceneName.Contains("Field") || sceneName.Contains("Map"))
-        {
+        // 필드에 있을 때만 필드 적/맵 상태 저장 (던전 단일 씬에서는 이름만으로는 구분 안 됨)
+        if (ShouldSaveFieldState())
             SaveFieldState();
-        }
+    }
+
+    /// <summary>필드 모드일 때만 SaveFieldState 호출해야 함 (GridBoard가 필드 기준일 때)</summary>
+    public bool ShouldSaveFieldState()
+    {
+        if (ModeManager.Instance != null)
+            return ModeManager.Instance.CurrentMode == ModeManager.GameplayMode.Field;
+
+        string sceneName = SceneManager.GetActiveScene().name;
+        return sceneName == fieldSceneName || sceneName.Contains("Field") || sceneName.Contains("Map");
     }
 
     public void EnterDungeon(string dungeonId)
     {
-        // 모든 상태 저장
-        SaveAllCurrentState();
+        ModeManager mm = ModeManager.Instance ?? FindObjectOfType<ModeManager>();
+        if (mm != null)
+        {
+            mm.EnterDungeon(dungeonId);
+            return;
+        }
 
-        playerData.currentDungeonId = dungeonId;
-        playerData.returnToMapIndex = currentMapIndex;
-
-        // ✅ 저장된 던전 데이터가 있으면 로드, 없으면 새로 생성
-        currentDungeonData = GetOrCreateDungeonData(dungeonId);
-
-        if (logSceneTransitions)
-            Debug.Log($"[GameManager] 던전 입장: {dungeonId}, 저장된 층: {currentDungeonData.currentFloor}");
-
-        SceneManager.LoadScene(dungeonSceneName);
+        Debug.LogError("[GameManager] ModeManager 가 씬에 없습니다. NewMapScene에 ModeManager를 배치하세요.");
     }
 
     /// <summary>
@@ -481,28 +482,43 @@ public class GameManager : MonoBehaviour
 
     public void ExitDungeon()
     {
-        SavePlayerStats();
-        SaveInventory();
-
-        // ✅ 현재 던전 데이터 저장
-        if (currentDungeonData != null)
+        ModeManager mm = ModeManager.Instance ?? FindObjectOfType<ModeManager>();
+        if (mm != null)
         {
-            SaveDungeonData(currentDungeonData);
+            mm.ExitToField();
+            return;
         }
 
-        if (logSceneTransitions)
-            Debug.Log($"[GameManager] 필드로 복귀");
+        Debug.LogError("[GameManager] ModeManager 가 씬에 없습니다.");
+    }
 
-        SceneManager.LoadScene(fieldSceneName);
+    /// <summary>필드마다 같은 dungeonID 를 쓸 수 있으므로 GetCurrentMapKey() 와 묶어서 저장</summary>
+    public string BuildDungeonClearanceKey(string dungeonId)
+    {
+        if (string.IsNullOrEmpty(dungeonId)) return "";
+        return $"{GetCurrentMapKey()}|{dungeonId}";
+    }
+
+    public bool IsDungeonClearedOnCurrentField(string dungeonId)
+    {
+        if (string.IsNullOrEmpty(dungeonId)) return false;
+        return clearedDungeons.Contains(BuildDungeonClearanceKey(dungeonId));
+    }
+
+    public void RegisterDungeonClearedOnCurrentField(string dungeonId)
+    {
+        string key = BuildDungeonClearanceKey(dungeonId);
+        if (string.IsNullOrEmpty(key)) return;
+        if (!clearedDungeons.Contains(key))
+            clearedDungeons.Add(key);
     }
 
     public void ExitDungeonSuccess(string dungeonId)
     {
-        if (!clearedDungeons.Contains(dungeonId))
-            clearedDungeons.Add(dungeonId);
+        RegisterDungeonClearedOnCurrentField(dungeonId);
 
         if (logSceneTransitions)
-            Debug.Log($"[GameManager] 던전 클리어: {dungeonId}");
+            Debug.Log($"[GameManager] 던전 클리어: {dungeonId} (키={BuildDungeonClearanceKey(dungeonId)})");
 
         ExitDungeon();
     }
@@ -568,6 +584,50 @@ public class GameManager : MonoBehaviour
 
         SceneManager.LoadScene(fieldSceneName);
     }
+
+    // =========================================================
+    // 필드 맵 새 시드 (같은 필드 정의로 레이아웃만 다시)
+    // =========================================================
+
+    /// <summary>
+    /// <b>현재 진행 중인 필드</b>만 새 랜덤 시드로 다시 생성합니다. 저장된 통로(FieldLayout PlayerPrefs)도 지웁니다.
+    /// 기본은 씬 재로드(권장). reloadScene=false면 플레이 중 같은 씬에서 FieldMapGenerator만 다시 돌립니다.
+    /// </summary>
+    public void RerollCurrentFieldMapNewSeed(bool reloadScene = true)
+    {
+        SyncFieldProgressFromWorld();
+        string key = GetCurrentMapKey();
+        FieldLayoutDiskStore.ClearKey(key);
+        fieldMapDataList.RemoveAll(e => e.mapKey == key);
+        GetOrCreateFieldMapData(key);
+
+        string sn = SceneManager.GetActiveScene().name;
+        FogOfWarRenderer.ClearExploredCacheForField(sn);
+
+        if (logDataOperations)
+            Debug.Log($"[GameManager] 필드 맵 새 시드: {key} → Seed={GetFieldMapSeed()}");
+
+        if (reloadScene)
+        {
+            SceneManager.LoadScene(sn);
+            return;
+        }
+
+        var gen = FindObjectOfType<FieldMapGenerator>();
+        if (gen != null)
+            gen.ForceRegenerateFieldMap();
+        else
+            Debug.LogWarning("[GameManager] FieldMapGenerator 없음. 씬 재로드(RerollCurrentFieldMapNewSeed(true))를 쓰세요.");
+    }
+
+#if UNITY_EDITOR
+    [ContextMenu("Dev: Reroll current field seed + reload scene")]
+    private void DevRerollCurrentFieldSeed()
+    {
+        if (!Application.isPlaying) return;
+        RerollCurrentFieldMapNewSeed(true);
+    }
+#endif
 
     // =========================================================
     // 게임 리셋

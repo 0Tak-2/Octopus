@@ -82,12 +82,12 @@ public class DungeonEntranceInteract : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm == null) return;
 
-        if (gm.clearedDungeons.Contains(dungeonId))
+        if (gm.IsDungeonClearedOnCurrentField(dungeonId))
         {
             alreadyCleared = true;
 
             if (logInteraction)
-                Debug.Log($"[DungeonEntrance] 이미 클리어한 던전: {dungeonId}");
+                Debug.Log($"[DungeonEntrance] 이미 클리어한 던전(현재 필드): {dungeonId}");
 
             // 시각적 표시 (선택)
             var spriteRenderer = GetComponent<SpriteRenderer>();
@@ -101,6 +101,12 @@ public class DungeonEntranceInteract : MonoBehaviour
     /// </summary>
     private void OnPlayerInteract()
     {
+        if (string.IsNullOrEmpty(dungeonId))
+        {
+            Debug.LogError("[DungeonEntrance] dungeonId 가 비어 있습니다. FieldDefinition.dungeons·던전 입구 스폰을 확인하세요.");
+            return;
+        }
+
         if (logInteraction)
             Debug.Log($"[DungeonEntrance] 던전 입장: {dungeonId}");
 
@@ -111,17 +117,33 @@ public class DungeonEntranceInteract : MonoBehaviour
             return;
         }
 
-        // ✅ 던전 입구 위치 저장 (나올 때 여기로 복귀)
-        GridBoard gridBoard = FindObjectOfType<GridBoard>();
+        GridBoard gridBoard = FindActiveFieldGridBoard();
         if (gridBoard != null)
         {
             gm.playerData.dungeonEntrancePosition = gridBoard.WorldToCell(transform.position);
             if (logInteraction)
                 Debug.Log($"[DungeonEntrance] 입구 위치 저장: {gm.playerData.dungeonEntrancePosition}");
         }
+        else if (logInteraction)
+            Debug.LogWarning("[DungeonEntrance] 활성 필드 GridBoard 를 찾지 못해 입구 셀을 저장하지 못했습니다.");
 
-        // 던전 씬으로 전환
         gm.EnterDungeon(dungeonId);
+    }
+
+    private static GridBoard FindActiveFieldGridBoard()
+    {
+        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null && ModeManager.Instance.fieldRoot.activeInHierarchy)
+        {
+            var gb = ModeManager.Instance.fieldRoot.GetComponentInChildren<GridBoard>(false);
+            if (gb != null && gb.isActiveAndEnabled) return gb;
+        }
+
+        foreach (var gb in FindObjectsOfType<GridBoard>())
+        {
+            if (gb != null && gb.gameObject.activeInHierarchy) return gb;
+        }
+
+        return null;
     }
 
     /// <summary>

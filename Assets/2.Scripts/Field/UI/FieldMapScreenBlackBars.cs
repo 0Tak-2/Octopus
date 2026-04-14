@@ -45,6 +45,12 @@ public class FieldMapScreenBlackBars : MonoBehaviour
         }
     }
 
+    /// <summary>필드↔던전 전환 시 활성 맵의 GridBoard (FindObjectOfType 오동작 방지, ModeManager)</summary>
+    public void BindGridBoard(GridBoard board)
+    {
+        gridBoard = board;
+    }
+
     private void LateUpdate()
     {
         if (gridBoard == null)
@@ -57,11 +63,11 @@ public class FieldMapScreenBlackBars : MonoBehaviour
         if (w <= 0 || h <= 0)
             return;
 
-        float half = GetHalfCellSize();
-        Vector3 bl = gridBoard.CellToWorld(new Vector2Int(0, 0)) + new Vector3(-half, -half, 0f);
-        Vector3 br = gridBoard.CellToWorld(new Vector2Int(w - 1, 0)) + new Vector3(half, -half, 0f);
-        Vector3 tl = gridBoard.CellToWorld(new Vector2Int(0, h - 1)) + new Vector3(-half, half, 0f);
-        Vector3 tr = gridBoard.CellToWorld(new Vector2Int(w - 1, h - 1)) + new Vector3(half, half, 0f);
+        gridBoard.GetCellHalfExtentsWorld(out float hx, out float hy);
+        Vector3 bl = gridBoard.CellToWorld(new Vector2Int(0, 0)) + new Vector3(-hx, -hy, 0f);
+        Vector3 br = gridBoard.CellToWorld(new Vector2Int(w - 1, 0)) + new Vector3(hx, -hy, 0f);
+        Vector3 tl = gridBoard.CellToWorld(new Vector2Int(0, h - 1)) + new Vector3(-hx, hy, 0f);
+        Vector3 tr = gridBoard.CellToWorld(new Vector2Int(w - 1, h - 1)) + new Vector3(hx, hy, 0f);
 
         float minSx = float.PositiveInfinity, maxSx = float.NegativeInfinity;
         float minSy = float.PositiveInfinity, maxSy = float.NegativeInfinity;
@@ -115,14 +121,6 @@ public class FieldMapScreenBlackBars : MonoBehaviour
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = max - min;
         rt.anchoredPosition = (min + max) * 0.5f;
-    }
-
-    private float GetHalfCellSize()
-    {
-        var ug = gridBoard != null ? gridBoard.GetComponent<Grid>() : null;
-        if (ug != null)
-            return ug.cellSize.x * 0.5f;
-        return gridBoard.cellSize * 0.5f;
     }
 
     private void EnsureCanvasAndBars()

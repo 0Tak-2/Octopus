@@ -81,6 +81,43 @@ public class GridBoard : MonoBehaviour
         if (blocksVision) _blockedVision.Remove(cell);
     }
 
+    /// <summary>타일맵과 동일한 월드 단위 셀 크기 (Unity Grid 우선)</summary>
+    public float GetEffectiveCellWorldSize()
+    {
+        var g = _unityGrid != null ? _unityGrid : GetComponent<Grid>();
+        if (g != null)
+            return Mathf.Max(Mathf.Abs(g.cellSize.x), Mathf.Abs(g.cellSize.y));
+        return cellSize;
+    }
+
+    /// <summary>셀 중심에서 모서리까지 월드 거리 (FieldMapScreenBlackBars·Fog 정렬용, X/Y 분리)</summary>
+    public void GetCellHalfExtentsWorld(out float halfX, out float halfY)
+    {
+        var g = _unityGrid != null ? _unityGrid : GetComponent<Grid>();
+        if (g != null)
+        {
+            Vector3 c00 = g.GetCellCenterWorld(new Vector3Int(0, 0, 0));
+            Vector3 c10 = g.GetCellCenterWorld(new Vector3Int(1, 0, 0));
+            Vector3 c01 = g.GetCellCenterWorld(new Vector3Int(0, 1, 0));
+            halfX = Mathf.Abs(c10.x - c00.x) * 0.5f;
+            halfY = Mathf.Abs(c01.y - c00.y) * 0.5f;
+            if (halfX < 0.0001f && halfY < 0.0001f)
+            {
+                float u = GetEffectiveCellWorldSize() * 0.5f;
+                halfX = halfY = u;
+            }
+            else
+            {
+                if (halfX < 0.0001f) halfX = Mathf.Max(halfY, GetEffectiveCellWorldSize() * 0.5f);
+                if (halfY < 0.0001f) halfY = Mathf.Max(halfX, GetEffectiveCellWorldSize() * 0.5f);
+            }
+
+            return;
+        }
+
+        halfX = halfY = cellSize * 0.5f;
+    }
+
     public Vector3 CellToWorld(Vector2Int cell)
     {
         if (_unityGrid != null)

@@ -20,6 +20,14 @@ public class FieldVisionSystem : MonoBehaviour
 
     [Min(0)] public int crouchPlayerVisionBonus = 1;
 
+    [Header("던전 전용 시야 (ModeManager)")]
+    [Tooltip("던전 입장 시에만 적용(체비셰프 칸). 0이면 필드의 Player Vision 과 동일. 1 이상이면 그 값으로 고정 — 필드보다 작게 하면 시야·안개가 좁아져 어두운 분위기")]
+    [Min(0)]
+    public int dungeonPlayerVisionRange = 0;
+
+    private int _visionRangeBeforeDungeon;
+    private bool _dungeonVisionOverrideActive;
+
     [Header("Enemy Detection")]
     public int enemyDetectionRange = 5;
 
@@ -56,6 +64,35 @@ public class FieldVisionSystem : MonoBehaviour
         ResolveFieldTime();
 
         Debug.Log($"[VisionSystem] Init - playerVision={playerVisionRange}(crouch+{crouchPlayerVisionBonus}), enemyDetect={enemyDetectionRange}, cover={_coverCells.Count}");
+    }
+
+    /// <summary>필드 ↔ 던전 전환 시 활성 GridBoard 로 맞춤 (ModeManager)</summary>
+    public void BindGridBoard(GridBoard board)
+    {
+        gridBoard = board;
+        _coverCells.Clear();
+        _touchedCoralGlowRemainTurns.Clear();
+        if (board != null)
+            RefreshCoverCells();
+    }
+
+    /// <summary>던전에서만 <see cref="dungeonPlayerVisionRange"/> 로 시야를 덮어쓴다. 0이면 필드와 동일한 칸 수 유지 (ModeManager)</summary>
+    public void SetDungeonVisionBoost(bool active)
+    {
+        if (active)
+        {
+            if (_dungeonVisionOverrideActive) return;
+            _visionRangeBeforeDungeon = playerVisionRange;
+            if (dungeonPlayerVisionRange > 0)
+                playerVisionRange = dungeonPlayerVisionRange;
+            _dungeonVisionOverrideActive = true;
+        }
+        else
+        {
+            if (!_dungeonVisionOverrideActive) return;
+            playerVisionRange = _visionRangeBeforeDungeon;
+            _dungeonVisionOverrideActive = false;
+        }
     }
 
     private void OnDestroy()
@@ -141,7 +178,7 @@ public class FieldVisionSystem : MonoBehaviour
 
         foreach (var h in harvestables)
         {
-            if (h == null || h.isHarvested) continue;
+            if (h == null || h.isHarvested || !h.gameObject.activeInHierarchy) continue;
 
             if (h.itemID == 1 || h.itemID == 2)
             {

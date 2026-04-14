@@ -127,6 +127,14 @@ public class PlayerGridMover : MonoBehaviour
         StartCoroutine(RefreshReferencesDelayed());
     }
 
+    /// <summary>
+    /// 같은 씬에서 필드로 복귀할 때 (ModeManager). 씬 로드 없이 GridBoard 등을 다시 맞춤.
+    /// </summary>
+    public void NotifyReferencesNeedRefresh()
+    {
+        StartCoroutine(RefreshReferencesDelayed());
+    }
+
     private System.Collections.IEnumerator RefreshReferencesDelayed()
     {
         // 다른 Start()들이 실행될 때까지 대기

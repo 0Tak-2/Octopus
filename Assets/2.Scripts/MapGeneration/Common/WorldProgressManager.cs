@@ -21,7 +21,6 @@ public class WorldProgressManager : MonoBehaviour
     
     [Header("Scene Names")]
     public string fieldSceneName = "GameScene";
-    public string dungeonSceneName = "DungeonScene";
     
     [Header("Debug")]
     public bool showDebugLogs = true;
@@ -100,6 +99,23 @@ public class WorldProgressManager : MonoBehaviour
         OnFieldChanged?.Invoke(allFields[fieldIndex]);
         SceneManager.LoadScene(ResolveFieldSceneName());
     }
+
+    /// <summary>
+    /// DungeonController 등에서 던전 ID·층만 동기화 (씬 로드 없음)
+    /// </summary>
+    public void SyncDungeonProgress(DungeonDefinition dungeon, int oneBasedFloor)
+    {
+        if (dungeon == null) return;
+
+        currentDungeonID = dungeon.dungeonID;
+        currentDungeonFloor = Mathf.Max(0, oneBasedFloor - 1);
+
+        SaveProgress();
+        OnDungeonFloorChanged?.Invoke(dungeon, currentDungeonFloor);
+
+        if (showDebugLogs)
+            Debug.Log($"[WorldProgress] 던전 동기화: {dungeon.dungeonName}, 층={oneBasedFloor}");
+    }
     
     /// <summary>
     /// Go to next field
@@ -171,15 +187,8 @@ public class WorldProgressManager : MonoBehaviour
             Debug.LogError("[WorldProgress] Dungeon is null!");
             return;
         }
-        
-        currentDungeonID = dungeon.dungeonID;
-        currentDungeonFloor = 0;
-        
-        if (showDebugLogs)
-            Debug.Log($"[WorldProgress] Entering dungeon: {dungeon.dungeonName}");
-        
-        OnDungeonFloorChanged?.Invoke(dungeon, 0);
-        SceneManager.LoadScene(dungeonSceneName);
+
+        SyncDungeonProgress(dungeon, 1);
     }
     
     /// <summary>
@@ -188,12 +197,11 @@ public class WorldProgressManager : MonoBehaviour
     public void GoToNextFloor()
     {
         currentDungeonFloor++;
-        
+
         if (showDebugLogs)
             Debug.Log($"[WorldProgress] Going to floor {currentDungeonFloor + 1}");
-        
-        // Reload dungeon scene to generate new floor
-        SceneManager.LoadScene(dungeonSceneName);
+
+        // 층 전환은 DungeonController 가 같은 씬에서 처리
     }
     
     /// <summary>
@@ -203,11 +211,12 @@ public class WorldProgressManager : MonoBehaviour
     {
         if (showDebugLogs)
             Debug.Log($"[WorldProgress] Exiting dungeon, returning to Field {currentFieldIndex + 1}");
-        
+
         currentDungeonID = "";
         currentDungeonFloor = 0;
-        
-        SceneManager.LoadScene(ResolveFieldSceneName());
+
+        SaveProgress();
+        // 필드 복귀는 GameManager / ModeManager 가 처리
     }
 
     private string ResolveFieldSceneName()

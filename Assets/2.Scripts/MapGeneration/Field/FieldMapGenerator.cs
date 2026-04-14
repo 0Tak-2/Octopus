@@ -26,6 +26,9 @@ public class FieldMapGenerator : MonoBehaviour
     [Tooltip("플레이어")]
     public Transform player;
 
+    [Tooltip("스폰한 적·자원·입구·출구의 부모. 비우면 gridBoard.transform (필드 루트 비활성화 시 함께 숨김)")]
+    public Transform runtimeSpawnParent;
+
     [Header("Exit/Entrance")]
     [Tooltip("다음 필드 출구 프리팹")]
     public GameObject mapExitPrefab;
@@ -66,20 +69,34 @@ public class FieldMapGenerator : MonoBehaviour
     [Header("Debug")]
     public bool logGeneration = true;
 
+    private void AttachSpawnToField(GameObject go)
+    {
+        if (go == null) return;
+        Transform parent = runtimeSpawnParent != null ? runtimeSpawnParent : (gridBoard != null ? gridBoard.transform : null);
+        if (parent != null)
+            go.transform.SetParent(parent, true);
+    }
+
     // 스폰된 오브젝트 추적 (맵 재생성 시 정리용)
     private List<GameObject> spawnedObjects = new List<GameObject>();
     // 자원 스폰 중 동일 셀 중복 방지
     private readonly HashSet<Vector2Int> usedResourceCells = new HashSet<Vector2Int>();
 
+    [SerializeField, Tooltip("같은 씬에서 필드 맵을 중복 생성하지 않도록")]
+    private bool _fieldMapGeneratedOnce;
+
     private void Start()
     {
-        // 던전 씬에서는 필드맵 생성하지 않음
-        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        if (sceneName == "DungeonScene")
-        {
-            Debug.Log("[FieldMapGenerator] 던전 씬이므로 맵 생성 스킵");
+        TryGenerateInitialFieldMap();
+    }
+
+    /// <summary>
+    /// 게임 시작 시 한 번만 맵 생성. 던전 복귀 후에는 FieldRoot 만 켜지므로 재호출되지 않음.
+    /// </summary>
+    public void TryGenerateInitialFieldMap()
+    {
+        if (_fieldMapGeneratedOnce)
             return;
-        }
 
         // 인스펙터에 예전 필드가 박혀 있어도 항상 진행도의 현재 필드 사용 (필드2 맵·시드가 바뀌도록)
         if (WorldProgressManager.Instance != null && WorldProgressManager.Instance.CurrentField != null)
@@ -98,8 +115,17 @@ public class FieldMapGenerator : MonoBehaviour
         if (GameManager.Instance != null)
             GameManager.Instance.SyncFieldProgressFromWorld();
 
-        // 게임 시작 시 자동 생성
+        _fieldMapGeneratedOnce = true;
         GenerateMap();
+    }
+
+    /// <summary>
+    /// 현재 필드 시드(GameManager)로 맵만 다시 생성. RerollCurrentFieldMapNewSeed(reloadScene:false) 와 함께 쓰임.
+    /// </summary>
+    public void ForceRegenerateFieldMap()
+    {
+        _fieldMapGeneratedOnce = false;
+        TryGenerateInitialFieldMap();
     }
 
     /// <summary>
@@ -600,6 +626,7 @@ public class FieldMapGenerator : MonoBehaviour
             GameObject prefab = prefabs[Random.Range(0, prefabs.Length)];
             GameObject enemy = Instantiate(prefab, worldPos, Quaternion.identity);
             enemy.name = $"{category}_{prefab.name}_{pos.x}_{pos.y}";
+            AttachSpawnToField(enemy);
 
             spawnedObjects.Add(enemy);
 
@@ -656,6 +683,7 @@ public class FieldMapGenerator : MonoBehaviour
             Vector3 worldPos = gridBoard.CellToWorld(pos);
             GameObject resource = Instantiate(prefab, worldPos, Quaternion.identity);
             resource.name = $"{resourceName}_{prefab.name}_{pos.x}_{pos.y}";
+            AttachSpawnToField(resource);
 
             spawnedObjects.Add(resource);
             usedResourceCells.Add(pos);
@@ -717,12 +745,18 @@ public class FieldMapGenerator : MonoBehaviour
         {
             DungeonDefinition dungeon = fieldDefinition.dungeons[i];
             if (dungeon == null) continue;
+            if (string.IsNullOrEmpty(dungeon.dungeonID))
+            {
+                if (logGeneration)
+                    Debug.LogWarning($"[FieldMapGenerator] 던전 정의 '{dungeon.dungeonName}' 의 dungeonID 가 비어 있습니다. 입장이 안 될 수 있습니다.");
+            }
 
             Vector2Int pos = currentMap.dungeonEntrances[i];
             Vector3 worldPos = gridBoard.CellToWorld(pos);
 
             GameObject entrance = Instantiate(entrancePrefab, worldPos, Quaternion.identity);
             entrance.name = $"DungeonEntrance_{dungeon.dungeonID}";
+            AttachSpawnToField(entrance);
 
             // DungeonEntranceInteract 설정
             var interact = entrance.GetComponent<DungeonEntranceInteract>();
@@ -748,6 +782,7 @@ public class FieldMapGenerator : MonoBehaviour
             Vector3 worldPos = gridBoard.CellToWorld(pos);
             GameObject entrance = Instantiate(config.dungeonEntrancePrefab, worldPos, Quaternion.identity);
             entrance.name = $"DungeonEntrance_{pos.x}_{pos.y}";
+            AttachSpawnToField(entrance);
 
             var interact = entrance.GetComponent<DungeonEntranceInteract>();
             if (interact == null)
@@ -773,6 +808,7 @@ public class FieldMapGenerator : MonoBehaviour
             Vector3 worldPos = gridBoard.CellToWorld(pos);
             GameObject enemy = Instantiate(config.enemyPrefab, worldPos, Quaternion.identity);
             enemy.name = $"Enemy_{pos.x}_{pos.y}";
+            AttachSpawnToField(enemy);
             spawnedObjects.Add(enemy);
         }
     }
@@ -843,6 +879,7 @@ public class FieldMapGenerator : MonoBehaviour
                 Vector3 exitWorld = gridBoard.CellToWorld(currentMap.exitToNextMap);
                 GameObject exitObj = Instantiate(mapExitPrefab, exitWorld, Quaternion.identity);
                 exitObj.name = "MapExit_ToNext";
+                AttachSpawnToField(exitObj);
 
                 var trigger = exitObj.GetComponent<MapExitTrigger>();
                 if (trigger == null)
@@ -876,6 +913,7 @@ public class FieldMapGenerator : MonoBehaviour
                 Vector3 entranceWorld = gridBoard.CellToWorld(currentMap.entranceFromPrevMap);
                 GameObject entranceObj = Instantiate(mapEntrancePrefab, entranceWorld, Quaternion.identity);
                 entranceObj.name = "MapEntrance_FromPrev";
+                AttachSpawnToField(entranceObj);
 
                 var trigger = entranceObj.GetComponent<MapExitTrigger>();
                 if (trigger == null)
@@ -904,6 +942,7 @@ public class FieldMapGenerator : MonoBehaviour
                 Vector3 exitWorld = gridBoard.CellToWorld(currentMap.exitToNextMap);
                 GameObject exitObj = Instantiate(mapExitPrefab, exitWorld, Quaternion.identity);
                 exitObj.name = "MapExit_ToNext";
+                AttachSpawnToField(exitObj);
 
                 var trigger = exitObj.GetComponent<MapExitTrigger>();
                 if (trigger == null)
@@ -923,6 +962,7 @@ public class FieldMapGenerator : MonoBehaviour
                 Vector3 entranceWorld = gridBoard.CellToWorld(currentMap.entranceFromPrevMap);
                 GameObject entranceObj = Instantiate(mapEntrancePrefab, entranceWorld, Quaternion.identity);
                 entranceObj.name = "MapEntrance_FromPrev";
+                AttachSpawnToField(entranceObj);
 
                 var trigger = entranceObj.GetComponent<MapExitTrigger>();
                 if (trigger == null)

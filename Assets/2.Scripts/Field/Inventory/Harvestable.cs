@@ -122,7 +122,7 @@ public class Harvestable : MonoBehaviour
             }
         }
 
-        // ¾öÆó/½Ã¾ß »óÅÂ Á¤¸®
+        // ï¿½ï¿½ï¿½ï¿½/ï¿½Ã¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (FieldVisionSystem.Instance != null)
         {
             if (itemID == 1 || itemID == 2)
