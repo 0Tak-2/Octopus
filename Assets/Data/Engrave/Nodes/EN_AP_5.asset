@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d93edf6e84a0c4846b56f7cec0bd78b0, type: 3}
+  m_Name: EN_AP_5
+  m_EditorClassIdentifier: 
+  nodeId: 
+  displayName: "\uC774\uB3D9 \uD6A8\uC728"
+  description: 
+  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  category: 4
+  tier: 0
+  maxPoints: 3
+  prerequisites: []
+  effectType: 
+  effectValuePerPoint: 0

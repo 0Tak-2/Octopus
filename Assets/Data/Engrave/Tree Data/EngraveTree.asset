@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02a75fe9a165cb5499c9774660b7e913, type: 3}
+  m_Name: EngraveTree
+  m_EditorClassIdentifier: 
+  allNodes:
+  - {fileID: 11400000, guid: 9150e6bd16fdf5f4b9912426b82ee7dd, type: 2}
+  - {fileID: 11400000, guid: b2ec1e33d9113b24482d344d51ae3a8b, type: 2}
+  - {fileID: 11400000, guid: 650f4d739928b6b489143fffa5f3671a, type: 2}
+  - {fileID: 11400000, guid: e9f50816dba8abf43a0a97bf9928793c, type: 2}
+  - {fileID: 11400000, guid: fae1ff8ee5ca84d4ab15060c21011490, type: 2}
+  - {fileID: 11400000, guid: ea66d449b77f0af42bd88e9f6b988743, type: 2}
+  - {fileID: 11400000, guid: 62166feb3be47d84282fe4d289ba8e6f, type: 2}
+  - {fileID: 11400000, guid: ab13bd2a983236b40b554c4be3e2fb56, type: 2}
+  - {fileID: 11400000, guid: 9a93649b5ad5d05479070604daef0928, type: 2}
+  - {fileID: 11400000, guid: 56b534bc5b0c7084bbf29fea493846ec, type: 2}
+  - {fileID: 11400000, guid: d0fbee454f6b47d47b7c2c9c5b084958, type: 2}
+  - {fileID: 11400000, guid: 16a07d6ace16c9c4fb869d042918b5e1, type: 2}
+  - {fileID: 11400000, guid: 723e5fa3cc6b0b84eb68e4da61dacf55, type: 2}
+  - {fileID: 11400000, guid: e644f7b96046c50438374751da9aa232, type: 2}
+  - {fileID: 11400000, guid: ef68b624086550449b650387c47096c2, type: 2}
+  - {fileID: 11400000, guid: fd7f450076edd1146869f5cb39c7f002, type: 2}
+  - {fileID: 11400000, guid: 18d9a2156717d7c4a878d3dfeb4d9148, type: 2}
+  - {fileID: 11400000, guid: 557567383ee49814683fa660e1d26841, type: 2}
+  - {fileID: 11400000, guid: 33cb826d79933f045a630b3b69190e0a, type: 2}
+  - {fileID: 11400000, guid: 6a4a63885f38ea846bdea91e6c91ec42, type: 2}
+  - {fileID: 11400000, guid: 49fd83dbd17622347a6e07de428558b1, type: 2}
+  - {fileID: 11400000, guid: 76eb27428425f7c4a858f6f4473224ae, type: 2}
+  - {fileID: 11400000, guid: 16e9163cec59873468081d52c049580f, type: 2}
+  - {fileID: 11400000, guid: 9150e6bd16fdf5f4b9912426b82ee7dd, type: 2}
+  - {fileID: 11400000, guid: b2ec1e33d9113b24482d344d51ae3a8b, type: 2}
+  - {fileID: 11400000, guid: 650f4d739928b6b489143fffa5f3671a, type: 2}
+  - {fileID: 11400000, guid: e9f50816dba8abf43a0a97bf9928793c, type: 2}
+  - {fileID: 11400000, guid: fae1ff8ee5ca84d4ab15060c21011490, type: 2}
+  - {fileID: 11400000, guid: ea66d449b77f0af42bd88e9f6b988743, type: 2}
+  - {fileID: 11400000, guid: f820ece19e2451c43931baac4daadcc7, type: 2}
+  advancedUnlockThreshold: 5
