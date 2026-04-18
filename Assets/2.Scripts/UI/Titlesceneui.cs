@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 public class TitleSceneUI : MonoBehaviour
 {
@@ -15,6 +14,9 @@ public class TitleSceneUI : MonoBehaviour
     [Header("이어하기 비활성 표시")]
     [SerializeField] private CanvasGroup continueCanvasGroup;
 
+    [Header("각인 버튼 (계정 최초 Lv2 전 잠금, 선택)")]
+    [SerializeField] private CanvasGroup engraveCanvasGroup;
+
     [Header("각인 트리 UI")]
     [SerializeField] private EngraveTreeUI engraveTreeUI;
 
@@ -24,9 +26,19 @@ public class TitleSceneUI : MonoBehaviour
     [Header("씬 이름")]
     [SerializeField] private string gameSceneName = "NewMapScene";
 
+    private void OnEnable()
+    {
+        EngraveAccountUnlock.OnMenuUnlocked += ApplyEngraveMenuLockState;
+        ApplyEngraveMenuLockState();
+    }
+
+    private void OnDisable()
+    {
+        EngraveAccountUnlock.OnMenuUnlocked -= ApplyEngraveMenuLockState;
+    }
+
     private void Start()
     {
-        // 버튼 바인딩
         if (newGameButton != null)
             newGameButton.onClick.AddListener(OnNewGame);
 
@@ -42,29 +54,36 @@ public class TitleSceneUI : MonoBehaviour
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuit);
 
-        // 이어하기 비활성화 (아직 세이브/로드 미구현)
         SetContinueEnabled(false);
 
-        // 설정 패널 숨김
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+
+        ApplyEngraveMenuLockState();
     }
 
-    // =========================================================
-    // 버튼 핸들러
-    // =========================================================
+    private void ApplyEngraveMenuLockState()
+    {
+        bool unlocked = EngraveAccountUnlock.IsMenuUnlocked;
+
+        if (engraveButton != null)
+            engraveButton.interactable = unlocked;
+
+        if (engraveCanvasGroup != null)
+        {
+            engraveCanvasGroup.alpha = unlocked ? 1f : 0.35f;
+            engraveCanvasGroup.interactable = unlocked;
+            engraveCanvasGroup.blocksRaycasts = unlocked;
+        }
+    }
 
     private void OnNewGame()
     {
-        // TODO: 기존 세이브 데이터 초기화 로직 필요 시 여기에 추가
         SceneManager.LoadScene(gameSceneName);
     }
 
     private void OnContinue()
     {
-        // 세이브/로드 구현 후 활성화
-        // SaveManager.Instance.Load();
-        // SceneManager.LoadScene(gameSceneName);
     }
 
     private void OnSettings()
@@ -75,6 +94,9 @@ public class TitleSceneUI : MonoBehaviour
 
     private void OnEngrave()
     {
+        if (!EngraveAccountUnlock.IsMenuUnlocked)
+            return;
+
         if (engraveTreeUI != null)
             engraveTreeUI.Open();
     }
@@ -88,14 +110,6 @@ public class TitleSceneUI : MonoBehaviour
 #endif
     }
 
-    // =========================================================
-    // 이어하기 활성/비활성
-    // =========================================================
-
-    /// <summary>
-    /// 세이브 데이터 존재 여부에 따라 이어하기 버튼 활성화.
-    /// 세이브/로드 구현 후 Start()에서 호출.
-    /// </summary>
     public void SetContinueEnabled(bool enabled)
     {
         if (continueButton != null)

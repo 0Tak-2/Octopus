@@ -1914,7 +1914,10 @@ public class FocusedCombatManager : MonoBehaviour
             }
 
             if (es.fieldInstance != null)
+            {
                 es.fieldInstance.currentHP = 0;
+                es.fieldInstance.TryRegisterDefeatRewards();
+            }
         }
 
         // ▼▼▼ 추가 ▼▼▼

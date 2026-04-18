@@ -24,16 +24,10 @@ public class EngraveTreeUI : MonoBehaviour
     [SerializeField] private Button resetConfirmYes;
     [SerializeField] private Button resetConfirmNo;
 
-    // 내부
     private bool isInitialized;
-
-    // =========================================================
-    // 라이프사이클
-    // =========================================================
 
     private void Start()
     {
-        // 버튼 바인딩
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
@@ -46,11 +40,25 @@ public class EngraveTreeUI : MonoBehaviour
         if (resetConfirmNo != null)
             resetConfirmNo.onClick.AddListener(HideResetConfirm);
 
-        // 초기화 확인 팝업 숨김
         if (resetConfirmPopup != null)
             resetConfirmPopup.SetActive(false);
+    }
 
-       
+    private void Update()
+    {
+        if (!Input.GetKeyDown(KeyCode.Escape))
+            return;
+
+        if (!IsOpen)
+            return;
+
+        if (resetConfirmPopup != null && resetConfirmPopup.activeSelf)
+        {
+            HideResetConfirm();
+            return;
+        }
+
+        Close();
     }
 
     private void OnEnable()
@@ -71,16 +79,14 @@ public class EngraveTreeUI : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // 열기 / 닫기
-    // =========================================================
-
     /// <summary>
-    /// 각인 트리 UI 열기.
-    /// 시작 화면 [각인] 버튼이나 인게임 ESC 메뉴 [각인] 버튼에서 호출.
+    /// 각인 트리 UI 열기. 타이틀 [각인] 또는 인게임에서 호출.
     /// </summary>
     public void Open()
     {
+        if (!EngraveAccountUnlock.IsMenuUnlocked)
+            return;
+
         if (!isInitialized)
             InitializeTree();
 
@@ -108,10 +114,6 @@ public class EngraveTreeUI : MonoBehaviour
 
     public bool IsOpen => treePanel != null && treePanel.activeSelf;
 
-    // =========================================================
-    // 초기화
-    // =========================================================
-
     private void InitializeTree()
     {
         var manager = EngraveManager.Instance;
@@ -129,12 +131,11 @@ public class EngraveTreeUI : MonoBehaviour
             var cat = categories[i];
             var nodes = treeData.GetNodesByCategory(cat);
 
-            // 기본 노드 먼저, 고급 노드는 맨 끝으로 정렬
             nodes.Sort((a, b) =>
             {
                 if (a.tier != b.tier)
                     return a.tier == EngraveNodeTier.Basic ? -1 : 1;
-                return 0; // 같은 tier 안에서는 allNodes 리스트 원래 순서 유지
+                return 0;
             });
 
             var color = EngraveCategoryUI.GetDefaultCategoryColor(cat);
@@ -144,23 +145,17 @@ public class EngraveTreeUI : MonoBehaviour
         isInitialized = true;
     }
 
-    // =========================================================
-    // 갱신
-    // =========================================================
-
     private void RefreshAll()
     {
         var manager = EngraveManager.Instance;
         if (manager == null) return;
 
-        // 상단 포인트 표시
         if (metaPointsText != null)
             metaPointsText.text = $"보유 포인트: {manager.AvailableMetaPoints}";
 
         if (totalInvestedText != null)
             totalInvestedText.text = $"투자 완료: {manager.TotalInvestedPoints}";
 
-        // 각 카테고리 컬럼 갱신
         foreach (var col in categoryColumns)
         {
             col.Refresh();
@@ -172,10 +167,6 @@ public class EngraveTreeUI : MonoBehaviour
         if (metaPointsText != null)
             metaPointsText.text = $"보유 포인트: {newAmount}";
     }
-
-    // =========================================================
-    // 초기화(리셋) 확인 팝업
-    // =========================================================
 
     private void ShowResetConfirm()
     {

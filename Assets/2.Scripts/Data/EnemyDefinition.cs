@@ -26,6 +26,10 @@ public class EnemyDefinition : ScriptableObject
     [Min(1)] public int attackRange = 1;
     [Min(0)] public int attackDamage = 1;
 
+    [Header("Meta / Character XP (처치 1회)")]
+    [Min(0)] public int metaXpValue = 10;
+    [Min(0)] public int characterXpValue = 12;
+
     [Header("Behavior")]
     public EnemyAIType aiType = EnemyAIType.AI1_MeleeChase;
     public bool useDashAttackMotion = true;

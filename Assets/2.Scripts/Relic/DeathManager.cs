@@ -76,6 +76,9 @@ public class DeathManager : MonoBehaviour
     {
         _currentRunStats = new RunStatistics();
         _currentRunStats.runStartTime = Time.time;
+
+        if (CharacterLevelProgression.Instance != null)
+            CharacterLevelProgression.Instance.ResetRunProgress();
         
         if (showDebugLogs)
             Debug.Log("[DeathManager] Run statistics reset");
