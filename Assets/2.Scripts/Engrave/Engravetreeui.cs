@@ -5,21 +5,21 @@ using System.Collections.Generic;
 
 public class EngraveTreeUI : MonoBehaviour
 {
-    [Header("ÆÐ³Î")]
+    [Header("ï¿½Ð³ï¿½")]
     [SerializeField] private GameObject treePanel;
 
-    [Header("»ó´Ü Á¤º¸")]
+    [Header("ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     [SerializeField] private TextMeshProUGUI metaPointsText;
     [SerializeField] private TextMeshProUGUI totalInvestedText;
 
-    [Header("Ä«Å×°í¸® ÄÃ·³ (ÁÂ¡æ¿ì ¼ø¼­: Ã¼·Â, °ø°Ý, Çã±â/ÇÇ·Îµµ, ¹æ¾î, AP)")]
+    [Header("Ä«ï¿½×°ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ (ï¿½Â¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: Ã¼ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½/ï¿½Ç·Îµï¿½, ï¿½ï¿½ï¿½, AP)")]
     [SerializeField] private List<EngraveCategoryUI> categoryColumns = new List<EngraveCategoryUI>();
 
-    [Header("¹öÆ°")]
+    [Header("ï¿½ï¿½Æ°")]
     [SerializeField] private Button closeButton;
     [SerializeField] private Button resetButton;
 
-    [Header("ÃÊ±âÈ­ È®ÀÎ ÆË¾÷")]
+    [Header("ï¿½Ê±ï¿½È­ È®ï¿½ï¿½ ï¿½Ë¾ï¿½")]
     [SerializeField] private GameObject resetConfirmPopup;
     [SerializeField] private Button resetConfirmYes;
     [SerializeField] private Button resetConfirmNo;
@@ -80,7 +80,7 @@ public class EngraveTreeUI : MonoBehaviour
     }
 
     /// <summary>
-    /// °¢ÀÎ Æ®¸® UI ¿­±â. Å¸ÀÌÆ² [°¢ÀÎ] ¶Ç´Â ÀÎ°ÔÀÓ¿¡¼­ È£Ãâ.
+    /// ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½. Å¸ï¿½ï¿½Æ² [ï¿½ï¿½ï¿½ï¿½] ï¿½Ç´ï¿½ ï¿½Î°ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ È£ï¿½ï¿½.
     /// </summary>
     public void Open()
     {
@@ -119,7 +119,7 @@ public class EngraveTreeUI : MonoBehaviour
         var manager = EngraveManager.Instance;
         if (manager == null || manager.TreeData == null)
         {
-            Debug.LogError("[EngraveTreeUI] EngraveManager ¶Ç´Â TreeData°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogError("[EngraveTreeUI] EngraveManager ï¿½Ç´ï¿½ TreeDataï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
             return;
         }
 
@@ -151,10 +151,10 @@ public class EngraveTreeUI : MonoBehaviour
         if (manager == null) return;
 
         if (metaPointsText != null)
-            metaPointsText.text = $"º¸À¯ Æ÷ÀÎÆ®: {manager.AvailableMetaPoints}";
+            metaPointsText.text = $"ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®: {manager.AvailableMetaPoints}";
 
         if (totalInvestedText != null)
-            totalInvestedText.text = $"ÅõÀÚ ¿Ï·á: {manager.TotalInvestedPoints}";
+            totalInvestedText.text = $"ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½: {manager.TotalInvestedPoints}";
 
         foreach (var col in categoryColumns)
         {
@@ -165,7 +165,7 @@ public class EngraveTreeUI : MonoBehaviour
     private void OnMetaPointsChanged(int newAmount)
     {
         if (metaPointsText != null)
-            metaPointsText.text = $"º¸À¯ Æ÷ÀÎÆ®: {newAmount}";
+            metaPointsText.text = $"ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®: {newAmount}";
     }
 
     private void ShowResetConfirm()

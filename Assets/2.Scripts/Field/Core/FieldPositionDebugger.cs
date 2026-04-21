@@ -11,7 +11,7 @@ public class EnemyPositionDebugger : MonoBehaviour
     public float checkInterval = 1f;
     [Tooltip("Chebyshev �Ÿ� 1 ���ϴ� �̵� ����/�ǹ� ������ ����. ���� ���� ����ġ�� Error�� ������.")]
     public bool ignoreAdjacentCellMismatch = true;
-    public bool autoFix = true; // true�� ����ġ �� Occupancy �������� ��ġ ����ȭ
+    public bool autoFix = false; // 진단 목적으로 기본 OFF. 예전에는 true 였지만 적 위치 초기화 이슈 가능성이 있어 꺼둔다.
 
     private float _timer;
 

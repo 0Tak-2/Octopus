@@ -4,26 +4,26 @@ using UnityEngine.SceneManagement;
 
 public class TitleSceneUI : MonoBehaviour
 {
-    [Header("¹öÆ°")]
+    [Header("ï¿½ï¿½Æ°")]
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button continueButton;
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button engraveButton;
     [SerializeField] private Button quitButton;
 
-    [Header("ÀÌ¾îÇÏ±â ºñÈ°¼º Ç¥½Ã")]
+    [Header("ï¿½Ì¾ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½È°ï¿½ï¿½ Ç¥ï¿½ï¿½")]
     [SerializeField] private CanvasGroup continueCanvasGroup;
 
-    [Header("°¢ÀÎ ¹öÆ° (°èÁ¤ ÃÖÃÊ Lv2 Àü Àá±Ý, ¼±ÅÃ)")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ° (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Lv2 ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½)")]
     [SerializeField] private CanvasGroup engraveCanvasGroup;
 
-    [Header("°¢ÀÎ Æ®¸® UI")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ UI")]
     [SerializeField] private EngraveTreeUI engraveTreeUI;
 
-    [Header("¼³Á¤ ÆÐ³Î (³ªÁß¿¡ ±¸Çö)")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½Ð³ï¿½ (ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½ï¿½ï¿½ï¿½)")]
     [SerializeField] private GameObject settingsPanel;
 
-    [Header("¾À ÀÌ¸§")]
+    [Header("ï¿½ï¿½ ï¿½Ì¸ï¿½")]
     [SerializeField] private string gameSceneName = "NewMapScene";
 
     private void OnEnable()

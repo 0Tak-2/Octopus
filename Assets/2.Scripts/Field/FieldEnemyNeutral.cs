@@ -140,6 +140,7 @@ public class FieldEnemyNeutral : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return;
         if (occupancy == null || gridBoard == null) return;
 
         if (occupancy.TryGetCurrentCell(transform, out var cell))
@@ -162,6 +163,7 @@ public class FieldEnemyNeutral : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return;
         if (gridBoard == null) return;
 
         Vector2Int myCell = GetMyCell();
@@ -272,6 +274,9 @@ public class FieldEnemyNeutral : MonoBehaviour
 
         Vector3 a = gridBoard.CellToWorld(fromCell);
         Vector3 b = gridBoard.CellToWorld(toCell);
+
+        // [DIAG] 중립 AI 실제 이동 확인용.
+        Debug.Log($"[AI-DIAG] {name} Neutral StepMove {fromCell} -> {toCell}");
 
         float dur = Mathf.Max(0.001f, stepMoveDuration);
         float t = 0f;

@@ -309,12 +309,11 @@ public class GameManager : MonoBehaviour
         string mapKey = GetCurrentMapKey();
         var mapData = GetOrCreateFieldMapData(mapKey);
 
-        // 적 상태 저장
+        // 적 상태 저장 (필드 루트만 — 던전 적 제외)
         mapData.enemies.Clear();
-        GridBoard gridBoard = FindObjectOfType<GridBoard>();
+        GridBoard gridBoard = GetFieldGridBoardForState();
 
-        EnemyInstance[] enemies = FindObjectsOfType<EnemyInstance>(true); // 비활성화된 것도 포함
-        foreach (var enemy in enemies)
+        foreach (var enemy in GetFieldEnemyInstances())
         {
             if (enemy.definition == null) continue;
 
@@ -322,12 +321,14 @@ public class GameManager : MonoBehaviour
                 ? gridBoard.WorldToCell(enemy.transform.position)
                 : Vector2Int.zero;
 
+            int instId = enemy.gameObject.GetInstanceID();
             mapData.enemies.Add(new EnemyStateSave(
                 $"Enemy_{pos.x}_{pos.y}",
                 enemy.definition.name,
                 pos,
                 enemy.currentHP,
-                enemy.currentHP <= 0 || !enemy.gameObject.activeSelf
+                enemy.currentHP <= 0 || !enemy.gameObject.activeSelf,
+                instId
             ));
         }
 
@@ -350,32 +351,52 @@ public class GameManager : MonoBehaviour
         }
 
         var mapData = entry.data;
-        GridBoard gridBoard = FindObjectOfType<GridBoard>();
+        GridBoard gridBoard = GetFieldGridBoardForState();
 
-        // 적 상태 복원
-        EnemyInstance[] enemies = FindObjectsOfType<EnemyInstance>(true);
-        foreach (var enemy in enemies)
+        var byInstanceId = new Dictionary<int, EnemyStateSave>();
+        foreach (var s in mapData.enemies)
+        {
+            if (s.unityInstanceId != 0)
+                byInstanceId[s.unityInstanceId] = s;
+        }
+
+        // 적 상태 복원: 인스턴스 ID 우선 (이동한 적도 동일 개체로 매칭), 없으면 레거시 위치 ID
+        foreach (var enemy in GetFieldEnemyInstances())
         {
             if (enemy.definition == null) continue;
 
-            Vector2Int pos = gridBoard != null
-                ? gridBoard.WorldToCell(enemy.transform.position)
-                : Vector2Int.zero;
-
-            string enemyId = $"Enemy_{pos.x}_{pos.y}";
-            var savedState = mapData.enemies.Find(x => x.uniqueId == enemyId);
-
-            if (savedState != null)
+            int oid = enemy.gameObject.GetInstanceID();
+            EnemyStateSave saved = null;
+            if (!byInstanceId.TryGetValue(oid, out saved))
             {
-                if (savedState.isDead)
+                Vector2Int pos = gridBoard != null
+                    ? gridBoard.WorldToCell(enemy.transform.position)
+                    : Vector2Int.zero;
+                string enemyId = $"Enemy_{pos.x}_{pos.y}";
+                saved = mapData.enemies.Find(x => x.uniqueId == enemyId && x.unityInstanceId == 0);
+            }
+
+            if (saved == null)
+                continue;
+
+            if (saved.isDead)
+            {
+                enemy.gameObject.SetActive(false);
+                continue;
+            }
+
+            enemy.gameObject.SetActive(true);
+            enemy.currentHP = saved.currentHP;
+            enemy.Clamp();
+
+            if (gridBoard != null && gridBoard.InBounds(saved.gridPosition))
+            {
+                enemy.transform.position = gridBoard.CellToWorld(saved.gridPosition);
+                var occ = GridOccupancyRegistry.Instance;
+                if (occ != null)
                 {
-                    // 죽은 적은 비활성화
-                    enemy.gameObject.SetActive(false);
-                }
-                else
-                {
-                    // HP 복원
-                    enemy.currentHP = savedState.currentHP;
+                    occ.Release(enemy.transform);
+                    occ.TryOccupy(enemy.transform, saved.gridPosition);
                 }
             }
         }
@@ -385,6 +406,22 @@ public class GameManager : MonoBehaviour
 
         if (logDataOperations)
             Debug.Log($"[GameManager] 필드 상태 복원: {mapKey}");
+    }
+
+    /// <summary>필드 모드 저장/복원 시 사용할 GridBoard (던전 격자와 혼동 방지)</summary>
+    private static GridBoard GetFieldGridBoardForState()
+    {
+        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
+            return FieldMapGenerator.ResolveGameplayGrid(ModeManager.Instance.fieldRoot);
+
+        return FieldMapGenerator.ResolveGameplayGrid(null);
+    }
+
+    private static EnemyInstance[] GetFieldEnemyInstances()
+    {
+        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
+            return ModeManager.Instance.fieldRoot.GetComponentsInChildren<EnemyInstance>(true);
+        return Object.FindObjectsOfType<EnemyInstance>(true);
     }
 
     /// <summary>

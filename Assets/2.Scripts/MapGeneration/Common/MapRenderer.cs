@@ -121,18 +121,30 @@ public class MapRenderer : MonoBehaviour
         gridBoard.blockedVisionCells.Clear();
 
         int wallCount = 0;
+        int wallTilemapCount = 0;
+        int visualWallOnlyCount = 0;
         for (int x = 0; x < mapData.width; x++)
         {
             for (int y = 0; y < mapData.height; y++)
             {
                 TileType tileType = mapData.GetTile(x, y);
+                Vector3Int cellPos = new Vector3Int(x, y, 0);
 
-                if (tileType == TileType.Wall || tileType == TileType.Tree)
+                bool isDataWall = tileType == TileType.Wall || tileType == TileType.Tree;
+                bool hasVisualWall = wallTilemap != null && wallTilemap.HasTile(cellPos);
+                if (hasVisualWall) wallTilemapCount++;
+
+                // 핵심: "보이는 벽"과 "이동 판정"이 다르면 유저가 벽을 통과하는 것처럼 느낀다.
+                // 그래서 던전/필드 공통으로 wall tilemap 기준도 함께 막는다.
+                if (isDataWall || hasVisualWall)
                 {
-                    Vector2Int cellPos = new Vector2Int(x, y);
-                    gridBoard.blockedMoveCells.Add(cellPos);
-                    gridBoard.blockedVisionCells.Add(cellPos);
+                    Vector2Int cell = new Vector2Int(x, y);
+                    gridBoard.blockedMoveCells.Add(cell);
+                    gridBoard.blockedVisionCells.Add(cell);
                     wallCount++;
+
+                    if (!isDataWall && hasVisualWall)
+                        visualWallOnlyCount++;
                 }
             }
         }
@@ -142,6 +154,7 @@ public class MapRenderer : MonoBehaviour
         if (logRendering)
         {
             Debug.Log("[MapRenderer] GridBoard updated: " + wallCount + " walls registered");
+            Debug.Log("[MapRenderer] wallTilemap cells: " + wallTilemapCount + ", visual-only blocked: " + visualWallOnlyCount);
             Debug.Log("[MapRenderer] blockedMoveCells.Count = " + gridBoard.blockedMoveCells.Count);
         }
     }

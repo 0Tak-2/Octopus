@@ -115,6 +115,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return; // 얼음땡 동안은 LateUpdate 스냅도 건너뛴다
         if (occupancy == null || gridBoard == null) return;
 
         if (occupancy.TryGetCurrentCell(transform, out var cell))
@@ -139,6 +140,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return; // 던전 입장 스냅샷 이후에는 AI 정지 (얼음땡)
         if (gridBoard == null || player == null) return;
 
         Vector2Int myCell = GetMyCell();
@@ -330,6 +332,9 @@ public class FieldEnemyWanderChase : MonoBehaviour
         _moving = true;
         Vector3 a = gridBoard.CellToWorld(fromCell);
         Vector3 b = gridBoard.CellToWorld(toCell);
+
+        // [DIAG] 적이 실제로 루트 transform 이동을 시작했는지 확인용 로그.
+        Debug.Log($"[AI-DIAG] {name} StepMove {fromCell} -> {toCell} (state={state})");
 
         float dur = Mathf.Max(0.001f, stepMoveDuration);
         float t = 0f;

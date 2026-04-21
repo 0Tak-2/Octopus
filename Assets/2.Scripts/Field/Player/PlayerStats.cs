@@ -12,9 +12,17 @@ public class PlayerStats : MonoBehaviour
     public int relicMaxHPBonus = 0;      // 유물에서 오는 보너스
     
     /// <summary>
-    /// 최종 최대 HP (기본 + 장비 + 유물)
+    /// 최종 최대 HP (기본 + 장비 + 유물 + 각인%)
     /// </summary>
-    public int maxHP => baseMaxHP + equipmentMaxHPBonus + relicMaxHPBonus;
+    public int maxHP
+    {
+        get
+        {
+            int baseValue = baseMaxHP + equipmentMaxHPBonus + relicMaxHPBonus;
+            float mul = 1f + _engrave.maxHpPercent;
+            return Mathf.Max(1, Mathf.RoundToInt(baseValue * mul));
+        }
+    }
 
     [Header("Current Values")]
     public int hp = 100;
@@ -62,11 +70,11 @@ public class PlayerStats : MonoBehaviour
     // ============================================
     // 최종 스탯 계산 (읽기 전용)
     // ============================================
-    public int ATK => Mathf.Max(1, Mathf.RoundToInt((baseATK + bonusATK) * (1f + colorModuleATKPercent)));
-    public int DEF => Mathf.Max(0, baseDEF + bonusDEF);
-    public float EVA => Mathf.Clamp01(baseEVA + bonusEVA + colorModuleEVAPercent - colorModuleEVAPenalty);
-    public float CRIT => Mathf.Clamp01(baseCRIT + bonusCRIT);
-    public float CRIT_DMG => Mathf.Max(1f, baseCRIT_DMG + bonusCRIT_DMG + colorModuleCRIT_DMGPercent);
+    public int ATK => Mathf.Max(1, Mathf.RoundToInt((baseATK + bonusATK) * (1f + colorModuleATKPercent + _engrave.attackPercent)));
+    public int DEF => Mathf.Max(0, baseDEF + bonusDEF + _engrave.defenseFlat);
+    public float EVA => Mathf.Clamp01(baseEVA + bonusEVA + colorModuleEVAPercent - colorModuleEVAPenalty + _engrave.evasionBonus);
+    public float CRIT => Mathf.Clamp01(baseCRIT + bonusCRIT + _engrave.critChanceBonus);
+    public float CRIT_DMG => Mathf.Max(1f, baseCRIT_DMG + bonusCRIT_DMG + colorModuleCRIT_DMGPercent + _engrave.critDamagePercent);
     
     /// <summary>
     /// 회복 효율 (검정 중첩 디버프 적용)
@@ -80,6 +88,7 @@ public class PlayerStats : MonoBehaviour
 
     private FieldTimeManager _fieldTime;
     private int _nextDrainAtTime = 5;
+    private EngraveAppliedStats _engrave;
 
     private void Awake()
     {
@@ -108,8 +117,10 @@ public class PlayerStats : MonoBehaviour
     {
         while (newTotalTime >= _nextDrainAtTime)
         {
-            fatigue -= Mathf.Max(0, fatigueDrainPerInterval);
-            hunger -= Mathf.Max(0, hungerDrainPerInterval);
+            int fatigueDrain = Mathf.Max(0, Mathf.RoundToInt(fatigueDrainPerInterval * (1f - _engrave.fatigueDrainReductionPercent)));
+            int hungerDrain = Mathf.Max(0, Mathf.RoundToInt(hungerDrainPerInterval * (1f - _engrave.hungerDrainReductionPercent)));
+            fatigue -= fatigueDrain;
+            hunger -= hungerDrain;
             ClampAll();
 
             _nextDrainAtTime += drainIntervalTime;
@@ -128,7 +139,7 @@ public class PlayerStats : MonoBehaviour
     /// </summary>
     public void RestRecover(int fatigueGainPerTick)
     {
-        int gain = Mathf.Max(0, fatigueGainPerTick);
+        int gain = Mathf.Max(0, Mathf.RoundToInt(fatigueGainPerTick * (1f + _engrave.restRecoveryPercent)));
 
         int fatigueBefore = fatigue;
         fatigue = Mathf.Min(maxFatigue, fatigue + gain);
@@ -149,6 +160,7 @@ public class PlayerStats : MonoBehaviour
     {
         // 방어력 계산: 받는 피해 = 원본 피해 - DEF (최소 1)
         int finalDamage = Mathf.Max(1, rawDamage - DEF);
+        finalDamage = Mathf.Max(1, Mathf.RoundToInt(finalDamage * (1f - _engrave.damageTakenReductionPercent)));
         
         hp -= finalDamage;
         ClampAll();
@@ -170,7 +182,7 @@ public class PlayerStats : MonoBehaviour
     /// </summary>
     public void TakeDamageRaw(int damage)
     {
-        int finalDamage = Mathf.Max(0, damage);
+        int finalDamage = Mathf.Max(0, Mathf.RoundToInt(damage * (1f - _engrave.damageTakenReductionPercent)));
         hp -= finalDamage;
         ClampAll();
         
@@ -201,4 +213,14 @@ public class PlayerStats : MonoBehaviour
 
     public bool IsStarving => hunger <= 0;
     public bool IsExhausted => fatigue <= 0;
+
+    public float EngraveDamageTakenReduction => _engrave.damageTakenReductionPercent;
+    public float EngraveCritDamageTakenReduction => _engrave.critDamageTakenReductionPercent;
+
+    /// <summary>각인 계산값을 적용. EngraveEffectRuntime에서 호출.</summary>
+    public void ApplyEngraveModifiers(EngraveAppliedStats modifiers)
+    {
+        _engrave = modifiers;
+        ClampAll();
+    }
 }

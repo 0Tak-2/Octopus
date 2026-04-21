@@ -825,7 +825,7 @@ public class FieldMapGenerator : MonoBehaviour
             {
                 Vector2Int entrancePos = GameManager.Instance.playerData.dungeonEntrancePosition;
 
-                if (entrancePos != Vector2Int.zero)
+                if (GameManager.Instance.playerData.hasDungeonReturnPosition && gridBoard.InBounds(entrancePos))
                 {
                     Vector3 entranceWorld = gridBoard.CellToWorld(entrancePos);
                     player.position = entranceWorld;
@@ -834,6 +834,7 @@ public class FieldMapGenerator : MonoBehaviour
                         Debug.Log($"[FieldMapGenerator] 플레이어 던전 입구로 복귀: {entrancePos}");
 
                     GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
+                    GameManager.Instance.playerData.hasDungeonReturnPosition = false;
                     GameManager.Instance.playerData.hasPendingEntranceHint = false;
                     return;
                 }
@@ -1230,6 +1231,27 @@ public class FieldMapGenerator : MonoBehaviour
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// 필드 적·저장/복원·시야가 같은 격자를 쓰도록 <see cref="FieldMapGenerator"/>에 연결된 <see cref="GridBoard"/>를 우선한다.
+    /// 씬에 GridBoard가 여러 개일 때 <c>GetComponentInChildren</c> 첫 요소와 <c>FindObjectOfType</c> 결과가 달라지는 문제를 막는다.
+    /// </summary>
+    public static GridBoard ResolveGameplayGrid(GameObject fieldRoot)
+    {
+        if (fieldRoot != null)
+        {
+            var gen = fieldRoot.GetComponentInChildren<FieldMapGenerator>(true);
+            if (gen != null && gen.gridBoard != null)
+                return gen.gridBoard;
+            return fieldRoot.GetComponentInChildren<GridBoard>(true);
+        }
+
+        var loose = Object.FindObjectOfType<FieldMapGenerator>();
+        if (loose != null && loose.gridBoard != null)
+            return loose.gridBoard;
+
+        return Object.FindObjectOfType<GridBoard>();
     }
 }
 

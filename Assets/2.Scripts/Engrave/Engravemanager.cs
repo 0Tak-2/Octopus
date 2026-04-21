@@ -8,7 +8,7 @@ public class EngraveManager : MonoBehaviour
 
     [SerializeField] private EngraveTreeData treeData;
 
-    // nodeId(¶Ç´Â GetStableNodeId) -> ÅõÀÚÇÑ Æ÷ÀÎÆ® ¼ö
+    // nodeId(ï¿½Ç´ï¿½ GetStableNodeId) -> ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½
     private Dictionary<string, int> investedPoints = new Dictionary<string, int>();
     private int availableMetaPoints;
 
@@ -204,7 +204,7 @@ public class EngraveManager : MonoBehaviour
         MigrateLegacyEmptyNodeIdSave();
     }
 
-    /// <summary>±¸¹öÀü: ¸ðµç ³ëµå°¡ ºó nodeId·Î °°Àº Å°¿¡ ½×ÀÎ ÀúÀåºÐ Á¦°Å ÈÄ ¸ÞÅ¸ Æ÷ÀÎÆ® È¯ºÒ.</summary>
+    /// <summary>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ ï¿½ï¿½å°¡ ï¿½ï¿½ nodeIdï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Å¸ ï¿½ï¿½ï¿½ï¿½Æ® È¯ï¿½ï¿½.</summary>
     private void MigrateLegacyEmptyNodeIdSave()
     {
         string legacyJson = PlayerPrefs.GetString(SAVE_KEY_INVESTED, "");

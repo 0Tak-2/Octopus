@@ -194,6 +194,76 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &211251597
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 211251599}
+  - component: {fileID: 211251598}
+  - component: {fileID: 211251600}
+  m_Layer: 0
+  m_Name: MetaProgression
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &211251598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 211251597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9353cdd3dfb74a145a608da3ad14b611, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  metaXpPerEngravePoint: 100
+  progressThresholds:
+  - 2
+  - 5
+  - 10
+  progressMultipliers:
+  - 1
+  - 1.15
+  - 1.35
+  - 1.55
+  bonusXpMultiplier: 0
+  logEachKill: 0
+--- !u!4 &211251599
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 211251597}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 977.82715, y: 544.45746, z: -0.07640176}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &211251600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 211251597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba13516e6d7852c4a9b202e5f7e1a204, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toggleKey: 290
 --- !u!1 &260080525
 GameObject:
   m_ObjectHideFlags: 0
@@ -1473,6 +1543,7 @@ MonoBehaviour:
   engraveButton: {fileID: 1149189437}
   quitButton: {fileID: 783651909}
   continueCanvasGroup: {fileID: 260080527}
+  engraveCanvasGroup: {fileID: 0}
   engraveTreeUI: {fileID: 1034586114}
   settingsPanel: {fileID: 742872862}
   gameSceneName: NewMapScene
@@ -2994,3 +3065,4 @@ SceneRoots:
   - {fileID: 811606445}
   - {fileID: 1387297654}
   - {fileID: 806602042}
+  - {fileID: 211251599}

@@ -159,6 +159,7 @@ public class FieldEnemyPassive : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return;
         if (occupancy == null || gridBoard == null) return;
 
         if (occupancy.TryGetCurrentCell(transform, out var cell))
@@ -181,6 +182,7 @@ public class FieldEnemyPassive : MonoBehaviour
     {
         if (_enemy != null && _enemy.currentHP <= 0) return;
         if (_moving) return;
+        if (FieldFreezeController.IsLocked) return;
         if (gridBoard == null) return;
 
         Vector2Int myCell = GetMyCell();
@@ -359,6 +361,9 @@ public class FieldEnemyPassive : MonoBehaviour
 
         Vector3 a = gridBoard.CellToWorld(fromCell);
         Vector3 b = gridBoard.CellToWorld(toCell);
+
+        // [DIAG] 소극 AI 실제 이동 확인용.
+        Debug.Log($"[AI-DIAG] {name} Passive StepMove {fromCell} -> {toCell}");
 
         float dur = Mathf.Max(0.001f, stepMoveDuration);
         float t = 0f;

@@ -20,6 +20,7 @@ public class PlayerSaveData
     [Header("Position")]
     public Vector2Int lastFieldPosition;      // 필드에서 마지막 위치
     public Vector2Int dungeonEntrancePosition; // 던전 입구 위치 (나올 때 여기로)
+    public bool hasDungeonReturnPosition;     // 던전 복귀 좌표 유효 플래그
 
     [Header("Field portal (다음 씬 입구 배치)")]
     [Tooltip("이전 맵에서 나온 방향·정렬로 다음 맵 입구를 잡을 때 사용")]
@@ -61,21 +62,24 @@ public class InventoryItemSave
 [Serializable]
 public class EnemyStateSave
 {
-    public string uniqueId;           // 고유 식별자 (위치 기반)
+    public string uniqueId;           // 고유 식별자 (레거시: 위치 기반)
     public string definitionName;     // EnemyDefinition SO 이름
     public Vector2Int gridPosition;   // 그리드 위치
     public int currentHP;             // 현재 HP
     public bool isDead;               // 죽었는지 여부
+    /// <summary>Unity GameObject.GetInstanceID() — 던전 왕복 시 위치 매칭용 (0이면 레거시 세이브)</summary>
+    public int unityInstanceId;
 
     public EnemyStateSave() { }
 
-    public EnemyStateSave(string id, string defName, Vector2Int pos, int hp, bool dead)
+    public EnemyStateSave(string id, string defName, Vector2Int pos, int hp, bool dead, int instanceId = 0)
     {
         uniqueId = id;
         definitionName = defName;
         gridPosition = pos;
         currentHP = hp;
         isDead = dead;
+        unityInstanceId = instanceId;
     }
 }
 

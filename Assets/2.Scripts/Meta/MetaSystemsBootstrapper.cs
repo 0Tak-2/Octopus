@@ -14,13 +14,20 @@ public static class MetaSystemsBootstrapper
         if (!Application.isPlaying)
             return;
 
-        if (Object.FindObjectOfType<MetaProgression>() != null)
-            return;
+        var meta = Object.FindObjectOfType<MetaProgression>();
+        if (meta == null)
+        {
+            var go = new GameObject(RootName);
+            Object.DontDestroyOnLoad(go);
+            meta = go.AddComponent<MetaProgression>();
+        }
 
-        var go = new GameObject(RootName);
-        Object.DontDestroyOnLoad(go);
-        go.AddComponent<MetaProgression>();
-        go.AddComponent<CharacterLevelProgression>();
-        go.AddComponent<MetaXpDebugHUD>();
+        var host = meta.gameObject;
+        if (host.GetComponent<CharacterLevelProgression>() == null)
+            host.AddComponent<CharacterLevelProgression>();
+        if (host.GetComponent<MetaXpDebugHUD>() == null)
+            host.AddComponent<MetaXpDebugHUD>();
+        if (host.GetComponent<EngraveEffectRuntime>() == null)
+            host.AddComponent<EngraveEffectRuntime>();
     }
 }

@@ -13,6 +13,12 @@ public class StatusEffectManager : MonoBehaviour
     
     // 스턴 적용자 추적 (동일 적 1턴 1회 체크)
     private HashSet<Transform> _stunnedByThisTurn = new HashSet<Transform>();
+    private PlayerStats _ownerPlayerStats;
+
+    private void Awake()
+    {
+        _ownerPlayerStats = GetComponent<PlayerStats>();
+    }
     
     /// <summary>
     /// 현재 활성화된 상태이상 목록 (읽기 전용)
@@ -62,15 +68,16 @@ public class StatusEffectManager : MonoBehaviour
     /// </summary>
     public void ApplyBleeding()
     {
+        int duration = AdjustDurationForOwner(StatusEffectConstants.BLEEDING_DURATION);
         var existing = GetEffect(StatusEffectType.Bleeding);
         if (existing != null)
         {
-            existing.RefreshDuration(StatusEffectConstants.BLEEDING_DURATION);
+            existing.RefreshDuration(duration);
             if (showDebugLogs) Debug.Log($"[StatusEffect] {gameObject.name}: 출혈 지속시간 갱신 ({existing.remainingTurns}턴)");
         }
         else
         {
-            _effects.Add(new StatusEffect(StatusEffectType.Bleeding, StatusEffectConstants.BLEEDING_DURATION));
+            _effects.Add(new StatusEffect(StatusEffectType.Bleeding, duration));
             if (showDebugLogs) Debug.Log($"[StatusEffect] {gameObject.name}: 출혈 부여!");
         }
     }
@@ -100,6 +107,8 @@ public class StatusEffectManager : MonoBehaviour
     /// <returns>성공 여부</returns>
     public bool TryApplyStun(Transform appliedBy)
     {
+        int duration = AdjustDurationForOwner(StatusEffectConstants.STUN_DURATION);
+
         // 동일 적이 이번 턴에 이미 스턴을 걸었으면 실패
         if (appliedBy != null && _stunnedByThisTurn.Contains(appliedBy))
         {
@@ -111,11 +120,11 @@ public class StatusEffectManager : MonoBehaviour
         var existing = GetEffect(StatusEffectType.Stun);
         if (existing != null)
         {
-            existing.RefreshDuration(StatusEffectConstants.STUN_DURATION);
+            existing.RefreshDuration(duration);
         }
         else
         {
-            _effects.Add(new StatusEffect(StatusEffectType.Stun, StatusEffectConstants.STUN_DURATION, 1, appliedBy));
+            _effects.Add(new StatusEffect(StatusEffectType.Stun, duration, 1, appliedBy));
         }
         
         if (appliedBy != null)
@@ -150,6 +159,11 @@ public class StatusEffectManager : MonoBehaviour
         if (bleeding != null)
         {
             bleedDamage = StatusEffectConstants.BLEEDING_DAMAGE;
+            if (_ownerPlayerStats != null)
+            {
+                float resist = EngraveEffectRuntime.GetPlayerDotResistPercent();
+                bleedDamage = Mathf.Max(0, Mathf.RoundToInt(bleedDamage * (1f - resist)));
+            }
             if (showDebugLogs) Debug.Log($"[StatusEffect] {gameObject.name}: 출혈 피해 {bleedDamage}");
         }
         
@@ -209,5 +223,14 @@ public class StatusEffectManager : MonoBehaviour
     public void RemoveEffect(StatusEffectType type)
     {
         _effects.RemoveAll(e => e.type == type);
+    }
+
+    private int AdjustDurationForOwner(int baseDuration)
+    {
+        if (_ownerPlayerStats == null || baseDuration <= 0)
+            return baseDuration;
+
+        float reduce = EngraveEffectRuntime.GetPlayerStatusDurationReductionPercent();
+        return Mathf.Max(1, Mathf.RoundToInt(baseDuration * (1f - reduce)));
     }
 }

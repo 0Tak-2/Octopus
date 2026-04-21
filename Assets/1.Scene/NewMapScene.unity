@@ -346,6 +346,7 @@ MonoBehaviour:
   targetCanvas: {fileID: 0}
   barColor: {r: 0, g: 0, b: 0, a: 1}
   canvasSortOrder: 500
+  keepBehindOtherUi: 1
   setCameraClearToSolidBlack: 1
 --- !u!1 &59226170
 GameObject:
@@ -15301,7 +15302,7 @@ MonoBehaviour:
   enableDebug: 1
   checkInterval: 1
   ignoreAdjacentCellMismatch: 1
-  autoFix: 1
+  autoFix: 0
 --- !u!4 &950388593
 Transform:
   m_ObjectHideFlags: 0
@@ -20434,6 +20435,7 @@ MonoBehaviour:
     maxHunger: 100
     lastFieldPosition: {x: 0, y: 0}
     dungeonEntrancePosition: {x: 0, y: 0}
+    hasDungeonReturnPosition: 0
     hasPendingEntranceHint: 0
     enterNewFieldFromEdge: 0
     entranceAlignT: 0.5
@@ -24513,7 +24515,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4384181668556372988, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.00002803964
+      value: 0.0000041276962
       objectReference: {fileID: 0}
     - target: {fileID: 4426573653597341738, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchorMax.y

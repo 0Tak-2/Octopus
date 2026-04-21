@@ -117,10 +117,18 @@ public class DungeonEntranceInteract : MonoBehaviour
             return;
         }
 
+        // 얼음땡 스냅샷을 "가장 이른 시점"에 확정한다. 이후 페이드 아웃 / Save 루틴 /
+        // GridBoard 재바인딩 등에 의해 적 transform 이 덮어써져도 스냅샷(셀 기반) 은 불변.
+        if (ModeManager.Instance != null)
+            FieldFreezeController.EarlyCapture(ModeManager.Instance.fieldRoot, ModeManager.Instance.dungeonRoot);
+        else
+            FieldFreezeController.EarlyCapture(null, null);
+
         GridBoard gridBoard = FindActiveFieldGridBoard();
         if (gridBoard != null)
         {
             gm.playerData.dungeonEntrancePosition = gridBoard.WorldToCell(transform.position);
+            gm.playerData.hasDungeonReturnPosition = true;
             if (logInteraction)
                 Debug.Log($"[DungeonEntrance] 입구 위치 저장: {gm.playerData.dungeonEntrancePosition}");
         }
@@ -134,7 +142,7 @@ public class DungeonEntranceInteract : MonoBehaviour
     {
         if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null && ModeManager.Instance.fieldRoot.activeInHierarchy)
         {
-            var gb = ModeManager.Instance.fieldRoot.GetComponentInChildren<GridBoard>(false);
+            var gb = FieldMapGenerator.ResolveGameplayGrid(ModeManager.Instance.fieldRoot);
             if (gb != null && gb.isActiveAndEnabled) return gb;
         }
 

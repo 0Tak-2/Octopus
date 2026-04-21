@@ -134,6 +134,7 @@ public class FocusedCombatManager : MonoBehaviour
     private StatusEffectManager _playerStatusEffects;
     private StatusEffectManager _enemyStatusEffects;
     private PlayerStats _playerStats;
+    private int _engraveShieldHP;
     
     public StatusEffectManager PlayerStatusEffects => _playerStatusEffects;
     public StatusEffectManager EnemyStatusEffects => _enemyStatusEffects;
@@ -544,11 +545,19 @@ public class FocusedCombatManager : MonoBehaviour
             State.enemyHP = Mathf.Max(1, GetEnemyMaxHP());
         }
 
-        // ============ AP 초기화 ============
-        State.startAP = startAP;
-        State.maxAP = maxAP;
-        State.currentAP = Mathf.Clamp(startAP, 0, maxAP);
+        // ============ AP 초기화 (+ 각인 보정) ============
+        int engraveStartAp = EngraveEffectRuntime.GetStartApBonusInt();
+        int engraveMaxAp = EngraveEffectRuntime.GetMaxApBonusInt();
+        int engraveInitialAp = EngraveEffectRuntime.GetInitialCombatApBonusInt();
+
+        State.startAP = Mathf.Max(0, startAP + engraveStartAp);
+        State.maxAP = Mathf.Max(State.startAP, maxAP + engraveMaxAp);
+        State.currentAP = Mathf.Clamp(State.startAP + engraveInitialAp, 0, State.maxAP);
         State.freeMovesUsedThisTurn = 0;
+
+        int shieldBase = EngraveEffectRuntime.GetStartShieldFlat();
+        float shieldEff = EngraveEffectRuntime.GetStartShieldEfficiencyPercent();
+        _engraveShieldHP = Mathf.Max(0, Mathf.RoundToInt(shieldBase * (1f + shieldEff)));
 
         // ============ 이동 시스템 ============
         Movement = new CombatMovementService(
@@ -772,7 +781,15 @@ public class FocusedCombatManager : MonoBehaviour
         State.isBusy = false;
 
         if (!initialStart)
+        {
             State.currentAP = Mathf.Min(State.currentAP + 1, State.maxAP);
+            float extraChance = EngraveEffectRuntime.GetTurnStartApRegenChance();
+            if (extraChance > 0f && Random.value < extraChance)
+            {
+                State.currentAP = Mathf.Min(State.currentAP + 1, State.maxAP);
+                if (vfx != null) vfx.ShowPopup(_playerToken, "각인 AP +1");
+            }
+        }
 
         if (hud != null) hud.RefreshAll();
 
@@ -1265,7 +1282,9 @@ public class FocusedCombatManager : MonoBehaviour
             return false;
         }
 
-        State.playerHP = Mathf.Max(0, State.playerHP - dmg);
+        int applied = ApplyDamageToPlayerWithShield(dmg);
+        if (applied <= 0 && vfx != null && _playerToken != null)
+            vfx.ShowPopup(_playerToken, "보호막");
         SyncPlayerStatsHpFromCombatState();
         StartCoroutine(vfx.HitPulse(_playerToken));
 
@@ -1310,6 +1329,14 @@ public class FocusedCombatManager : MonoBehaviour
     {
         int delta = Mathf.Max(0, amount);
         if (delta <= 0) return;
+
+        float reduceChance = EngraveEffectRuntime.GetApCostReduceChance();
+        if (reduceChance > 0f && delta > 0 && Random.value < reduceChance)
+        {
+            delta = Mathf.Max(0, delta - 1);
+            if (vfx != null && _playerToken != null)
+                vfx.ShowPopup(_playerToken, "각인 AP-1");
+        }
 
         State.currentAP = Mathf.Max(0, State.currentAP - delta);
 
@@ -1671,6 +1698,12 @@ public class FocusedCombatManager : MonoBehaviour
             );
             attackMultiplier *= passiveMultiplier;
         }
+        float targetDamageMultiplier = 1f;
+        if (GetEnemyAIType() == EnemyAIType.AI4_Boss)
+            targetDamageMultiplier += EngraveEffectRuntime.GetBossDamagePercent();
+        else
+            targetDamageMultiplier += EngraveEffectRuntime.GetNormalDamagePercent();
+
         // 전투 공식으로 계산
         var result = CombatCalculator.CalculatePlayerAttack(
             _playerStats,
@@ -1679,7 +1712,8 @@ public class FocusedCombatManager : MonoBehaviour
             GetEnemyDEF(),
             enemyEVA,
             forceCrit,
-            attackMultiplier
+            attackMultiplier,
+            targetDamageMultiplier
         );
         
         if (result.isEvaded)
@@ -1746,7 +1780,14 @@ public class FocusedCombatManager : MonoBehaviour
         }
         
         // 피해 적용
-        State.playerHP = Mathf.Max(0, State.playerHP - result.finalDamage);
+        if (result.isCritical)
+        {
+            float critReduce = EngraveEffectRuntime.GetPlayerCritDamageTakenReductionPercent();
+            result.finalDamage = Mathf.Max(1, Mathf.RoundToInt(result.finalDamage * (1f - critReduce)));
+        }
+
+        int applied = ApplyDamageToPlayerWithShield(result.finalDamage);
+        result.finalDamage = applied;
         SyncPlayerStatsHpFromCombatState();
         StartCoroutine(vfx.HitPulse(_playerToken));
         
@@ -1765,7 +1806,7 @@ public class FocusedCombatManager : MonoBehaviour
             int bleedDmg = _playerStatusEffects.OnTurnEnd();
             if (bleedDmg > 0)
             {
-                State.playerHP = Mathf.Max(0, State.playerHP - bleedDmg);
+                bleedDmg = ApplyDamageToPlayerWithShield(bleedDmg);
                 SyncPlayerStatsHpFromCombatState();
                 if (vfx != null) vfx.ShowPopup(_playerToken, $"출혈 -{bleedDmg}");
                 RefreshUI();
@@ -1931,6 +1972,15 @@ public class FocusedCombatManager : MonoBehaviour
         }
         // ▲▲▲ 추가 ▲▲▲
 
+        float refundChance = EngraveEffectRuntime.GetKillApRefundChance();
+        if (refundChance > 0f && Random.value < refundChance)
+        {
+            State.currentAP = Mathf.Min(State.currentAP + 1, State.maxAP);
+            if (vfx != null && _playerToken != null)
+                vfx.ShowPopup(_playerToken, "각인 AP 환급");
+            RefreshUI();
+        }
+
         if (AreAllEnemiesDead())
         {
             ExitFocusedCombat();
@@ -1955,6 +2005,23 @@ public class FocusedCombatManager : MonoBehaviour
         foreach (var es in _enemyStates)
             if (!es.isDead) return false;
         return true;
+    }
+
+    private int ApplyDamageToPlayerWithShield(int incomingDamage)
+    {
+        int dmg = Mathf.Max(0, incomingDamage);
+        if (dmg <= 0)
+            return 0;
+
+        if (_engraveShieldHP > 0)
+        {
+            int absorbed = Mathf.Min(_engraveShieldHP, dmg);
+            _engraveShieldHP -= absorbed;
+            dmg -= absorbed;
+        }
+
+        State.playerHP = Mathf.Max(0, State.playerHP - dmg);
+        return dmg;
     }
 
     /// <summary>모든 살아있는 적의 셀 목록</summary>

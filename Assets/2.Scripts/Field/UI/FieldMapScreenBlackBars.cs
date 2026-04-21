@@ -17,7 +17,9 @@ public class FieldMapScreenBlackBars : MonoBehaviour
     [Header("Style")]
     [SerializeField] private Color barColor = Color.black;
     [Tooltip("Canvas sorting order (높을수록 위)")]
-    [SerializeField] private int canvasSortOrder = 500;
+    [SerializeField] private int canvasSortOrder = -10;
+    [Tooltip("자동으로 다른 UI Canvas보다 아래 정렬해, 검은 바가 UI를 가리지 않게 함")]
+    [SerializeField] private bool keepBehindOtherUi = true;
 
     [Header("Camera clear (선택)")]
     [SerializeField] private bool setCameraClearToSolidBlack = true;
@@ -57,6 +59,8 @@ public class FieldMapScreenBlackBars : MonoBehaviour
             gridBoard = FindObjectOfType<GridBoard>();
         if (gridBoard == null || worldCamera == null)
             return;
+
+        EnsureCanvasSortOrder();
 
         int w = gridBoard.width;
         int h = gridBoard.height;
@@ -133,7 +137,7 @@ public class FieldMapScreenBlackBars : MonoBehaviour
         }
 
         targetCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        targetCanvas.sortingOrder = canvasSortOrder;
+        EnsureCanvasSortOrder();
         if (GetComponent<GraphicRaycaster>() == null)
             gameObject.AddComponent<GraphicRaycaster>();
 
@@ -161,5 +165,32 @@ public class FieldMapScreenBlackBars : MonoBehaviour
         img.color = barColor;
         img.raycastTarget = false;
         return rt;
+    }
+
+    private void EnsureCanvasSortOrder()
+    {
+        if (targetCanvas == null) return;
+
+        int desired = canvasSortOrder;
+        if (keepBehindOtherUi)
+        {
+            int minOther = int.MaxValue;
+            Canvas[] all = FindObjectsOfType<Canvas>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                Canvas c = all[i];
+                if (c == null || c == targetCanvas) continue;
+                if (!c.isActiveAndEnabled) continue;
+                if (c.renderMode != RenderMode.ScreenSpaceOverlay) continue;
+                if (c.sortingOrder < minOther)
+                    minOther = c.sortingOrder;
+            }
+
+            if (minOther != int.MaxValue)
+                desired = Mathf.Min(desired, minOther - 1);
+        }
+
+        if (targetCanvas.sortingOrder != desired)
+            targetCanvas.sortingOrder = desired;
     }
 }

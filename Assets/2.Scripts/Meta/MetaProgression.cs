@@ -170,5 +170,34 @@ public class MetaProgression : MonoBehaviour
         PlayerPrefs.Save();
         Debug.Log("[MetaProgression] Account engrave menu unlocked (debug).");
     }
+
+    [ContextMenu("Debug/Reset all engrave progression (account + run)")]
+    private void EditorResetAllEngraveProgression()
+    {
+        // Account flags
+        PlayerPrefs.DeleteKey("Account_EngraveMenuUnlocked");
+        PlayerPrefs.DeleteKey("Account_FirstReachedLv2");
+
+        // Meta XP bank
+        _unspentMetaXp = 0f;
+        PlayerPrefs.DeleteKey(PrefsUnspent);
+
+        // Engrave tree / points
+        if (EngraveManager.Instance != null)
+            EngraveManager.Instance.DeleteAllSaveData();
+        else
+        {
+            PlayerPrefs.DeleteKey("Engrave_InvestedPoints");
+            PlayerPrefs.DeleteKey("Engrave_MetaPoints");
+        }
+
+        // Run-level progression
+        if (CharacterLevelProgression.Instance != null)
+            CharacterLevelProgression.Instance.ResetRunProgress();
+
+        PlayerPrefs.Save();
+        OnUnspentMetaXpChanged?.Invoke(_unspentMetaXp);
+        Debug.Log("[MetaProgression] Reset complete: account unlock, meta xp, engrave points, and run level.");
+    }
 #endif
 }

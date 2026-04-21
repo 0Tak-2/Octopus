@@ -105,6 +105,10 @@ public class ModeManager : MonoBehaviour
                 Debug.Log($"[ModeManager] 던전 입장 준비: {dungeonId}, 저장 층={GameManager.Instance.currentDungeonData.currentFloor}");
         }
 
+        // 얼음땡 스냅샷: 현재 필드 적 위치를 그대로 잠가 두고 GameObject 도 즉시 비활성화한다.
+        // (fieldRoot 하위가 아닌 위치에 적이 스폰되어 있어도 여기서 강제로 멈춘다.)
+        FieldFreezeController.Capture(fieldRoot, dungeonRoot);
+
         if (fieldRoot != null)
             fieldRoot.SetActive(false);
 
@@ -188,7 +192,7 @@ public class ModeManager : MonoBehaviour
 
         ApplyCameraForField();
 
-        GridBoard fieldGrid = fieldRoot != null ? fieldRoot.GetComponentInChildren<GridBoard>(true) : null;
+        GridBoard fieldGrid = FieldMapGenerator.ResolveGameplayGrid(fieldRoot);
         if (FieldVisionSystem.Instance != null)
             FieldVisionSystem.Instance.SetDungeonVisionBoost(false);
 
@@ -204,12 +208,65 @@ public class ModeManager : MonoBehaviour
         {
             GameManager.Instance.RestorePlayerStats();
             GameManager.Instance.RestoreInventory();
-            GameManager.Instance.RestoreFieldState();
         }
+
+        // 얼음땡 해제: 저장된 "셀" 좌표 기반 복원(RestoreFieldState)은 GridBoard 불일치로 위치가 튀는
+        // 문제가 있어 사용하지 않는다. 던전 입장 직전에 잠가 둔 월드 좌표를 그대로 복원한다.
+        FieldFreezeController.Apply(fieldRoot, fieldGrid);
+
+        // AI들의 gridBoard 참조를 필드 격자로 재바인딩(점유는 Apply에서 이미 재등록됨).
+        FieldDungeonReturnSync.Apply(fieldGrid, fieldRoot);
+
+        TryRestorePlayerToDungeonEntrance(fieldGrid);
 
         WorldProgressManager.Instance?.ExitDungeon();
 
         BindScreenBlackBars(fieldGrid);
+    }
+
+    /// <summary>
+    /// 같은 씬 모드 전환(던전→필드)에서는 FieldMapGenerator.SpawnPlayer가 다시 호출되지 않으므로
+    /// 여기서 던전 입구 복귀 좌표를 즉시 적용한다.
+    /// </summary>
+    private void TryRestorePlayerToDungeonEntrance(GridBoard fieldGrid)
+    {
+        if (fieldGrid == null || GameManager.Instance == null)
+            return;
+
+        var pd = GameManager.Instance.playerData;
+        if (!pd.hasDungeonReturnPosition)
+            return;
+
+        Vector2Int targetCell = pd.dungeonEntrancePosition;
+        if (!fieldGrid.InBounds(targetCell))
+        {
+            if (GameManager.Instance.logSceneTransitions)
+                Debug.LogWarning($"[ModeManager] 저장된 던전 복귀 좌표가 필드 범위를 벗어남: {targetCell}");
+            pd.hasDungeonReturnPosition = false;
+            pd.dungeonEntrancePosition = Vector2Int.zero;
+            return;
+        }
+
+        var mover = FindObjectOfType<PlayerGridMover>();
+        if (mover != null)
+        {
+            if (mover.grid != fieldGrid)
+                mover.grid = fieldGrid;
+            mover.WarpToFieldCell(targetCell);
+        }
+        else
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                player.transform.position = fieldGrid.CellToWorld(targetCell);
+        }
+
+        pd.hasDungeonReturnPosition = false;
+        pd.dungeonEntrancePosition = Vector2Int.zero;
+        pd.hasPendingEntranceHint = false;
+
+        if (GameManager.Instance.logSceneTransitions)
+            Debug.Log($"[ModeManager] 던전 복귀 위치 적용: {targetCell}");
     }
 
     private static void BindScreenBlackBars(GridBoard board)

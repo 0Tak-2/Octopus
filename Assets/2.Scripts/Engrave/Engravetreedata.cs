@@ -5,26 +5,38 @@ using System.Linq;
 [CreateAssetMenu(fileName = "EngraveTree", menuName = "OCTO/Engrave/Tree Data")]
 public class EngraveTreeData : ScriptableObject
 {
-    [Header("ÀüÃ¼ ³ëµå (30°³)")]
+    [Header("ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ (30ï¿½ï¿½)")]
     public List<EngraveNodeData> allNodes = new List<EngraveNodeData>();
 
-    [Header("°í±Þ ÇØ±Ý Á¶°Ç")]
-    [Tooltip("ÇÑ ºÎ¹®¿¡¼­ ÀÌ ¼ö¸¸Å­ÀÇ ±âº» ³ëµå¿¡ 1Æ÷ÀÎÆ® ÀÌ»ó ÅõÀÚÇÏ¸é °í±Þ ³ëµå ÇØ±Ý")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½Ø±ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    [Tooltip("ï¿½ï¿½ ï¿½Î¹ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å­ï¿½ï¿½ ï¿½âº» ï¿½ï¿½å¿¡ 1ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ì»ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ø±ï¿½")]
     public int advancedUnlockThreshold = 5;
+
+    private IEnumerable<EngraveNodeData> DistinctNodes(IEnumerable<EngraveNodeData> src)
+    {
+        var seen = new HashSet<string>();
+        foreach (var n in src)
+        {
+            if (n == null) continue;
+            string key = n.GetStableNodeId();
+            if (!seen.Add(key)) continue;
+            yield return n;
+        }
+    }
 
     public List<EngraveNodeData> GetNodesByCategory(EngraveCategory category)
     {
-        return allNodes.Where(n => n.category == category).ToList();
+        return DistinctNodes(allNodes.Where(n => n.category == category)).ToList();
     }
 
     public List<EngraveNodeData> GetBasicNodes(EngraveCategory category)
     {
-        return allNodes.Where(n => n.category == category && n.tier == EngraveNodeTier.Basic).ToList();
+        return DistinctNodes(allNodes.Where(n => n.category == category && n.tier == EngraveNodeTier.Basic)).ToList();
     }
 
     public EngraveNodeData GetAdvancedNode(EngraveCategory category)
     {
-        return allNodes.FirstOrDefault(n => n.category == category && n.tier == EngraveNodeTier.Advanced);
+        return DistinctNodes(allNodes.Where(n => n.category == category && n.tier == EngraveNodeTier.Advanced)).FirstOrDefault();
     }
 
     public List<EngraveCategory> GetAllCategories()

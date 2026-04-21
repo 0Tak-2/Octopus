@@ -63,12 +63,7 @@ public class WatchTargetingController : MonoBehaviour
 
     private void Awake()
     {
-        if (playerMover == null) playerMover = GetComponent<PlayerGridMover>() ?? FindObjectOfType<PlayerGridMover>();
-        if (playerStats == null) playerStats = GetComponent<PlayerStats>() ?? FindObjectOfType<PlayerStats>();
-        if (grid == null) grid = FindObjectOfType<GridBoard>();
-        if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
-        if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
-        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
+        RefreshRuntimeRefs();
     }
     private void FollowWatchTarget()
     {
@@ -117,6 +112,8 @@ public class WatchTargetingController : MonoBehaviour
 
     private void Update()
     {
+        RefreshRuntimeRefs();
+
         // 집중전투 중이면 무시
         var fcm = FocusedCombatManager.Instance;
         if (fcm != null && fcm.IsInFocusedCombat) return;
@@ -283,7 +280,7 @@ public class WatchTargetingController : MonoBehaviour
 
     private EnemyInstance GetEnemyUnderMouse()
     {
-        if (Camera.main == null) return null;
+        if (Camera.main == null || grid == null) return null;
 
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector2Int mouseCell = grid.WorldToCell(mouseWorld);
@@ -429,6 +426,13 @@ public class WatchTargetingController : MonoBehaviour
     private void EnterFocusCombat()
     {
         if (_watchTarget == null) return;
+        RefreshRuntimeRefs();
+        if (grid == null)
+        {
+            Debug.LogError("[WatchTargeting] 활성 GridBoard를 찾지 못했습니다.");
+            CancelToNormal();
+            return;
+        }
 
         var fcm = FocusedCombatManager.Instance;
         if (fcm == null)
@@ -482,7 +486,8 @@ public class WatchTargetingController : MonoBehaviour
         _watchTurnCount = 0;
         _watchBroken = false;
 
-        playerMover.lockMovement = false;
+        if (playerMover != null)
+            playerMover.lockMovement = false;
 
         HideHighlight();
         HideWatchCounter();
@@ -498,6 +503,7 @@ public class WatchTargetingController : MonoBehaviour
     private void RefreshVisibleEnemies()
     {
         _visibleEnemies.Clear();
+        RefreshRuntimeRefs();
 
         var visionSys = FieldVisionSystem.Instance;
         if (visionSys == null || playerMover == null) return;
@@ -535,6 +541,35 @@ public class WatchTargetingController : MonoBehaviour
         }
 
         return closest;
+    }
+
+    /// <summary>
+    /// 필드↔던전 전환 시(씬 로드 없음)에도 현재 활성 Grid/참조를 유지.
+    /// </summary>
+    private void RefreshRuntimeRefs()
+    {
+        if (playerMover == null) playerMover = GetComponent<PlayerGridMover>() ?? FindObjectOfType<PlayerGridMover>();
+        if (playerStats == null) playerStats = GetComponent<PlayerStats>() ?? FindObjectOfType<PlayerStats>();
+        if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
+        if (turnCoordinator == null) turnCoordinator = FieldTurnCoordinator.Instance ?? FindObjectOfType<FieldTurnCoordinator>();
+
+        // 던전 모드면 DungeonController.gridBoard를 최우선으로 고정한다.
+        GridBoard activeGrid = null;
+        ModeManager mm = ModeManager.Instance;
+        if (mm != null && mm.CurrentMode == ModeManager.GameplayMode.Dungeon &&
+            mm.dungeonController != null && mm.dungeonController.gridBoard != null)
+        {
+            activeGrid = mm.dungeonController.gridBoard;
+        }
+        else if (playerMover != null && playerMover.grid != null)
+            activeGrid = playerMover.grid;
+        else if (grid != null)
+            activeGrid = grid;
+        else
+            activeGrid = FindObjectOfType<GridBoard>();
+
+        grid = activeGrid;
     }
 
     // ============================================================

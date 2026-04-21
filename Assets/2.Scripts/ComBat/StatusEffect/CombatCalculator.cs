@@ -50,7 +50,8 @@ public static class CombatCalculator
         int targetDEF = 0,
         float targetEVA = 0f,
         bool forceCrit = false,
-        float attackMultiplier = 1f)
+        float attackMultiplier = 1f,
+        float targetDamageMultiplier = 1f)
     {
         var result = new DamageResult();
         
@@ -78,6 +79,7 @@ public static class CombatCalculator
         
         // 5. 최종 피해 계산
         float rawDamage = (result.baseDamage + result.bonusDamage + result.imperfectBonus) * critMultiplier;
+        rawDamage *= Mathf.Max(0f, targetDamageMultiplier);
         int afterDef = Mathf.RoundToInt(rawDamage) - targetDEF;
         
         // 최소 1 피해
@@ -119,6 +121,7 @@ public static class CombatCalculator
         
         // 4. 방어력 계산
         int rawDamage = result.baseDamage + result.imperfectBonus;
+        rawDamage = Mathf.RoundToInt(rawDamage * (1f - Mathf.Clamp01(playerStats.EngraveDamageTakenReduction)));
         int afterDef = rawDamage - playerStats.DEF;
         
         // 최소 1 피해
