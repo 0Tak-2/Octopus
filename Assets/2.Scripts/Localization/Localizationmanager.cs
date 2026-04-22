@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ·ÎÄÃ¶óÀÌÁ¦ÀÌ¼Ç ¸Å´ÏÀú (½Ì±ÛÅæ)
-/// ScriptableObject Å×ÀÌºíÀ» ÂüÁ¶ÇÏ¿© Å° ±â¹Ý ¹ø¿ªÀ» Á¦°øÇÕ´Ï´Ù.
+/// ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¼ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ (ï¿½Ì±ï¿½ï¿½ï¿½)
+/// ScriptableObject ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ Å° ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
 /// </summary>
 public class LocalizationManager : MonoBehaviour
 {
     public static LocalizationManager Instance { get; private set; }
 
-    [Header("¾ð¾î Å×ÀÌºí (Inspector¿¡¼­ µå·¡±×)")]
+    [Header("ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ (Inspectorï¿½ï¿½ï¿½ï¿½ ï¿½å·¡ï¿½ï¿½)")]
     [SerializeField] private LocalizationTable koreanTable;
     [SerializeField] private LocalizationTable englishTable;
 
-    [Header("±âº» ¾ð¾î")]
+    [Header("ï¿½âº» ï¿½ï¿½ï¿½")]
     [SerializeField] private SystemLanguage defaultLanguage = SystemLanguage.English;
 
     public SystemLanguage CurrentLanguage { get; private set; }
@@ -22,8 +22,8 @@ public class LocalizationManager : MonoBehaviour
     private LocalizationTable activeTable;
 
     /// <summary>
-    /// ¾ð¾î º¯°æ ½Ã ¹ßÇàµÇ´Â ÀÌº¥Æ®.
-    /// ¸ðµç LocalizedText ÄÄÆ÷³ÍÆ®°¡ ÀÌ ÀÌº¥Æ®¸¦ ±¸µ¶ÇÕ´Ï´Ù.
+    /// ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½Ìºï¿½Æ®.
+    /// ï¿½ï¿½ï¿½ LocalizedText ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     /// </summary>
     public static event Action OnLanguageChanged;
 
@@ -38,6 +38,7 @@ public class LocalizationManager : MonoBehaviour
         }
 
         Instance = this;
+        if (transform.parent != null) transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
 
         if (koreanTable != null) koreanTable.BuildCache();
@@ -62,8 +63,8 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ¾ð¾î¸¦ º¯°æÇÕ´Ï´Ù.
-    /// PlayerPrefs¿¡ ÀúÀåµÇ¾î ´ÙÀ½ ½ÇÇà ½Ã¿¡µµ À¯ÁöµË´Ï´Ù.
+    /// ï¿½ï¿½î¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+    /// PlayerPrefsï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.
     /// </summary>
     public void SetLanguage(SystemLanguage language)
     {
@@ -77,7 +78,7 @@ public class LocalizationManager : MonoBehaviour
 
         if (activeTable == null)
         {
-            Debug.LogError($"[Localization] {language} Å×ÀÌºíÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError($"[Localization] {language} ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾Ò½ï¿½ï¿½Ï´ï¿½!");
             return;
         }
 
@@ -88,7 +89,7 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Å°¿¡ ÇØ´çÇÏ´Â ¹ø¿ª ÅØ½ºÆ®¸¦ ¹ÝÈ¯ÇÕ´Ï´Ù.
+    /// Å°ï¿½ï¿½ ï¿½Ø´ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.
     /// </summary>
     public string Get(string key)
     {
@@ -98,27 +99,27 @@ public class LocalizationManager : MonoBehaviour
         if (activeTable != null && activeTable.TryGetValue(key, out string value))
             return value;
 
-        Debug.LogWarning($"[Localization] Å°¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù: {key}");
+        Debug.LogWarning($"[Localization] Å°ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½: {key}");
         return $"[{key}]";
     }
 
     /// <summary>
-    /// Ãà¾àÇü Á¤Àû ¸Þ¼­µå.
-    /// »ç¿ë ¿¹: LocalizationManager.T("ITEM_NAME_CORAL")
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¼ï¿½ï¿½ï¿½.
+    /// ï¿½ï¿½ï¿½ ï¿½ï¿½: LocalizationManager.T("ITEM_NAME_CORAL")
     /// </summary>
     public static string T(string key)
     {
         if (Instance == null)
         {
-            Debug.LogError("[Localization] LocalizationManager ÀÎ½ºÅÏ½º°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogError("[Localization] LocalizationManager ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
             return $"[{key}]";
         }
         return Instance.Get(key);
     }
 
     /// <summary>
-    /// Æ÷¸Ë ¹®ÀÚ¿­ Áö¿ø.
-    /// »ç¿ë ¿¹: LocalizationManager.TF("SYS_DAMAGE", 25, "¸êÄ¡")
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½.
+    /// ï¿½ï¿½ï¿½ ï¿½ï¿½: LocalizationManager.TF("SYS_DAMAGE", 25, "ï¿½ï¿½Ä¡")
     /// </summary>
     public static string TF(string key, params object[] args)
     {
@@ -129,7 +130,7 @@ public class LocalizationManager : MonoBehaviour
         }
         catch (FormatException)
         {
-            Debug.LogWarning($"[Localization] Æ÷¸Ë ¿À·ù: {key}");
+            Debug.LogWarning($"[Localization] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {key}");
             return template;
         }
     }

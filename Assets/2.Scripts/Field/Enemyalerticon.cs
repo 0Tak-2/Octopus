@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Àû ÀÎ½Ä ´À³¦Ç¥ - °£´ÜÇÑ ¾Ö´Ï¸ÞÀÌ¼Ç
+/// ï¿½ï¿½ ï¿½Î½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¥ - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
 /// </summary>
 public class EnemyAlertIcon : MonoBehaviour
 {
@@ -14,6 +14,22 @@ public class EnemyAlertIcon : MonoBehaviour
     private Vector3 _startPos;
     private float _time;
 
+    private void Awake()
+    {
+        // ï¿½ï¿½ï¿½Å¿ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ç¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¾î¼­, ï¿½ï¿½ Update ï¿½ï¿½ï¿½ï¿½
+        // transform.localPosition ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½Í½ï¿½Å°ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß´ï¿½.
+        // (ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½Õºï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ú·ï¿½ï¿½ï¿½Æ®)
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ alertIconPrefab ï¿½ï¿½ ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ GameObject ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½ ï¿½Ñ´ï¿½.
+        if (GetComponent<EnemyInstance>() != null)
+        {
+            Debug.LogWarning(
+                $"[EnemyAlertIcon] '{name}' ï¿½ï¿½ ï¿½ß¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (EnemyInstance ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½). " +
+                "ï¿½ï¿½È°ï¿½ï¿½È­ï¿½Õ´Ï´ï¿½. ï¿½Ø´ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ¿ï¿½ï¿½ï¿½ EnemyAlertIcon ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½.",
+                this);
+            enabled = false;
+        }
+    }
+
     private void Start()
     {
         _startPos = transform.localPosition;
@@ -23,11 +39,11 @@ public class EnemyAlertIcon : MonoBehaviour
     {
         _time += Time.deltaTime;
 
-        // À§¾Æ·¡·Î Èçµé¸²
+        // ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½ï¿½é¸²
         float yOffset = Mathf.Sin(_time * bobSpeed) * bobHeight;
         transform.localPosition = _startPos + Vector3.up * yOffset;
 
-        // Å©±â ÆÞ½º
+        // Å©ï¿½ï¿½ ï¿½Þ½ï¿½
         float scale = 1f + Mathf.Sin(_time * scaleSpeed) * (maxScale - 1f) * 0.5f;
         transform.localScale = Vector3.one * scale;
     }

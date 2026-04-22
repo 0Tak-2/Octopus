@@ -117,12 +117,12 @@ public class DungeonEntranceInteract : MonoBehaviour
             return;
         }
 
-        // 얼음땡 스냅샷을 "가장 이른 시점"에 확정한다. 이후 페이드 아웃 / Save 루틴 /
-        // GridBoard 재바인딩 등에 의해 적 transform 이 덮어써져도 스냅샷(셀 기반) 은 불변.
-        if (ModeManager.Instance != null)
-            FieldFreezeController.EarlyCapture(ModeManager.Instance.fieldRoot, ModeManager.Instance.dungeonRoot);
-        else
-            FieldFreezeController.EarlyCapture(null, null);
+        // 얼음땡 스냅샷(+ SetActive(false)) 은 ModeManager.EnterDungeonCore 의
+        // Capture 가 페이드 아웃 완료 시점에 수행한다. 그 전까지는 적이 필드 위에
+        // 그대로 보여야 하므로 여기서는 EarlyCapture 를 호출하지 않는다.
+        // (과거에는 EnemyAlertIcon 버그로 인해 페이드 아웃 중에 적이 스폰으로
+        //  순간이동하는 걸 가리려고 EarlyCapture 를 여기서 불렀지만, 이제는 그 범인이
+        //  Enemyalerticon.cs 의 안전장치로 막혀 있어서 더 이상 필요 없다.)
 
         GridBoard gridBoard = FindActiveFieldGridBoard();
         if (gridBoard != null)

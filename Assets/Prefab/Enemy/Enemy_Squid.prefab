@@ -19,7 +19,6 @@ GameObject:
   - component: {fileID: 3952646563759194236}
   - component: {fileID: 550230188155159077}
   - component: {fileID: 4570938997504627133}
-  - component: {fileID: 8464193367741235684}
   - component: {fileID: -5437747409972477493}
   m_Layer: 0
   m_Name: Enemy_Squid
@@ -307,22 +306,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLogs: 0
---- !u!114 &8464193367741235684
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9105843625278447542}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 267ae93e3805b7e47b221a138db45a3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bobSpeed: 1
-  bobHeight: 0.15
-  scaleSpeed: 2
-  maxScale: 1
 --- !u!95 &-5437747409972477493
 Animator:
   serializedVersion: 5

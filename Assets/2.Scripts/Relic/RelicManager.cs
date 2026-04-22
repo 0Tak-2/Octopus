@@ -40,6 +40,7 @@ public class RelicManager : MonoBehaviour
             return;
         }
         Instance = this;
+        if (transform.parent != null) transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
         
         LoadRelics();

@@ -22,6 +22,7 @@ public class CraftingManager : MonoBehaviour
         Instance = this;
 
         // 씬 전환해도 유지
+        if (transform.parent != null) transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
     }
 
