@@ -8,6 +8,7 @@ public class PlayerGridMover : MonoBehaviour
     public GridBoard grid;
     public FieldTimeManager fieldTime;
     public PlayerCrouch crouch;
+    public PlayerStats playerStats;
     public RestController rest;
     public GridOccupancyRegistry occupancy;
     public FieldMultiEnemyAttack multiEnemyAttack;
@@ -15,10 +16,18 @@ public class PlayerGridMover : MonoBehaviour
 
     [Header("Move")]
     public float moveDuration = 0.12f;
+    [Tooltip("웅크린 이동 시 이동시간 배율 (1보다 크면 더 느려짐)")]
+    [Min(1f)] public float crouchMoveDurationMultiplier = 1.45f;
     [Tooltip("일어선 상태에서 한 칸 이동 시 소모 Time")]
     public int baseMoveTimeCost = 1;
     [Tooltip("웅크린 상태에서 한 칸 이동 시 소모 Time (기본 2)")]
     [Min(1)] public int moveTimeCostWhenCrouching = 2;
+
+    [Header("Hunger Cost")]
+    [Tooltip("기본 이동 1칸당 배고픔 소모량")]
+    [Min(0f)] public float baseMoveHungerCost = 1f;
+    [Tooltip("웅크린 이동 시 배고픔 배율")]
+    [Min(0f)] public float crouchMoveHungerMultiplier = 1.5f;
 
     [Header("Occupancy")]
     [Tooltip("점유 시스템이 있을 때, 점유된 셀로 이동을 막습니다.")]
@@ -75,12 +84,14 @@ public class PlayerGridMover : MonoBehaviour
     private readonly List<SpriteRenderer> _arrivedCellOccluders = new List<SpriteRenderer>();
     private readonly List<Color> _arrivedCellBaseColors = new List<Color>();
     private readonly List<Harvestable> _cellHarvestables = new List<Harvestable>();
+    private float _hungerRemainder;
 
     private void Awake()
     {
         if (grid == null) grid = FindObjectOfType<GridBoard>();
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (crouch == null) crouch = GetComponent<PlayerCrouch>() ?? FindObjectOfType<PlayerCrouch>();
+        if (playerStats == null) playerStats = GetComponent<PlayerStats>() ?? FindObjectOfType<PlayerStats>();
         if (rest == null) rest = FindObjectOfType<RestController>();
         if (occupancy == null) occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
         if (multiEnemyAttack == null) multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
@@ -145,6 +156,7 @@ public class PlayerGridMover : MonoBehaviour
         // 새 씬의 GridBoard 찾기
         grid = FindObjectOfType<GridBoard>();
         fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        playerStats = GetComponent<PlayerStats>() ?? FindObjectOfType<PlayerStats>();
         rest = FindObjectOfType<RestController>();
         occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
         multiEnemyAttack = FindObjectOfType<FieldMultiEnemyAttack>();
@@ -195,6 +207,9 @@ public class PlayerGridMover : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked)
+            return;
+
         if (rest != null && rest.IsResting)
             return;
 
@@ -256,6 +271,14 @@ public class PlayerGridMover : MonoBehaviour
         if (crouch != null && crouch.IsCrouching)
             return Mathf.Max(1, moveTimeCostWhenCrouching);
         return Mathf.Max(0, baseMoveTimeCost);
+    }
+
+    private float GetMoveDuration()
+    {
+        float duration = Mathf.Max(0.0001f, moveDuration);
+        if (crouch != null && crouch.IsCrouching)
+            duration *= Mathf.Max(1f, crouchMoveDurationMultiplier);
+        return duration;
     }
 
     /// <summary>HUD 등에 표시용</summary>
@@ -321,7 +344,7 @@ public class PlayerGridMover : MonoBehaviour
         Vector3 end = grid.CellToWorld(targetCell);
 
         float t = 0f;
-        float invDur = 1f / Mathf.Max(0.0001f, moveDuration);
+        float invDur = 1f / GetMoveDuration();
 
         while (t < 1f)
         {
@@ -338,6 +361,9 @@ public class PlayerGridMover : MonoBehaviour
         EndMoveVisibilityAssist();
 
         _isMoving = false;
+
+        // 이동 직후 즉시 배고픔 소모를 적용한다.
+        ApplyMoveHungerCost();
 
         // ✅ 이동 완료 후 턴 처리 (시간 진행 + 적 턴)
         if (turnCoordinator != null)
@@ -510,5 +536,23 @@ public class PlayerGridMover : MonoBehaviour
             FieldVisionSystem.Instance.ActivateTouchedCoralGlow(cell);
             break;
         }
+    }
+
+    private void ApplyMoveHungerCost()
+    {
+        if (playerStats == null)
+            return;
+
+        float mul = (crouch != null && crouch.IsCrouching) ? crouchMoveHungerMultiplier : 1f;
+        float amount = Mathf.Max(0f, baseMoveHungerCost) * Mathf.Max(0f, mul);
+        _hungerRemainder += amount;
+
+        int consume = Mathf.FloorToInt(_hungerRemainder);
+        if (consume <= 0)
+            return;
+
+        _hungerRemainder -= consume;
+        playerStats.hunger -= consume;
+        playerStats.ClampAll();
     }
 }

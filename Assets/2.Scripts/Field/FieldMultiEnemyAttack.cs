@@ -17,17 +17,24 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     [Header("Detection")]
     [Tooltip("이 거리 이내의 적들이 공격 시도")]
     public int detectionRange = 8;
+    [Tooltip("원거리 공격(attackRange>=2)에 LOS를 강제할지 여부. 기본값 OFF(기존 투사체 동작 유지)")]
+    public bool requireLineOfSightForRanged = false;
 
     [Header("Visual")]
     [Tooltip("각 적의 공격 사이 딜레이")]
     public float attackDelay = 0.3f;
     public float dashDuration = 0.15f;
+    [Tooltip("EnemyDefinition.projectilePrefab가 비어있을 때 사용할 임시 발사체 속도")]
+    public float fallbackProjectileSpeed = 9f;
+    public Color fallbackProjectileColor = new Color(0.95f, 0.75f, 0.25f, 1f);
+    public float fallbackProjectileScale = 0.22f;
 
     [Header("Debug")]
     public bool showDebugLogs = true;
 
     private bool _isProcessing = false;
     public bool IsResolvingEnemyTurn => _isProcessing;
+    private static Sprite _fallbackProjectileSprite;
 
     private void Awake()
     {
@@ -55,6 +62,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
 
     private IEnumerator ProcessAllEnemyAttacks()
     {
+        EnsureRuntimeReferences();
         _isProcessing = true;
 
         // ✅ 적 이동 완료 대기 (StepMove 코루틴 완료)
@@ -67,7 +75,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         List<EnemyInstance> nearbyEnemies = FindNearbyEnemies();
 
         if (showDebugLogs)
-            Debug.Log($"[MultiEnemyAttack] Found {nearbyEnemies.Count} enemies nearby");
+            Debug.Log($"[MultiEnemyAttack] Found {nearbyEnemies.Count} enemies nearby (grid={(gridBoard != null ? gridBoard.name : "NULL")}, detectionRange={detectionRange})");
 
         // 적이 없으면 바로 종료
         if (nearbyEnemies.Count == 0)
@@ -102,26 +110,84 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         if (player == null || gridBoard == null)
             return result;
 
-        Vector2Int playerCell = gridBoard.WorldToCell(player.position);
+        Vector2Int playerCell;
+        var occ = GridOccupancyRegistry.Instance;
+        if (occ != null && occ.TryGetCurrentCell(player, out var pOccCell))
+            playerCell = pOccCell;
+        else
+            playerCell = gridBoard.WorldToCell(player.position);
 
-        // 모든 적 찾기
-        EnemyInstance[] allEnemies = FindObjectsOfType<EnemyInstance>();
+        // 모든 적 찾기 (필드 루트 우선 — 던전/비활성 루트 혼입 방지)
+        EnemyInstance[] allEnemies;
+        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
+            allEnemies = ModeManager.Instance.fieldRoot.GetComponentsInChildren<EnemyInstance>(true);
+        else
+            allEnemies = FindObjectsOfType<EnemyInstance>(true);
 
         foreach (var enemy in allEnemies)
         {
             if (enemy.currentHP <= 0)
                 continue;
 
-            Vector2Int enemyCell = gridBoard.WorldToCell(enemy.transform.position);
+            Vector2Int enemyCell;
+            if (occ != null && occ.TryGetCurrentCell(enemy.transform, out var eOccCell))
+                enemyCell = eOccCell;
+            else
+                enemyCell = gridBoard.WorldToCell(enemy.transform.position);
             int distance = Chebyshev(playerCell, enemyCell);
+            int enemyAttackRange = (enemy != null && enemy.definition != null) ? Mathf.Max(1, enemy.definition.attackRange) : 1;
+            int effectiveDetection = Mathf.Max(detectionRange, enemyAttackRange);
 
-            if (distance <= detectionRange)
+            if (distance <= effectiveDetection)
             {
                 result.Add(enemy);
+            }
+            else if (showDebugLogs && enemy != null && enemy.definition != null)
+            {
+                Debug.Log($"[MultiEnemyAttack] Filter out {enemy.definition.displayName}: dist={distance}, detect={detectionRange}, enemyRange={enemyAttackRange}, effective={effectiveDetection}");
             }
         }
 
         return result;
+    }
+
+    private void EnsureRuntimeReferences()
+    {
+        if (player == null)
+            player = GameObject.FindGameObjectWithTag("Player")?.transform;
+
+        if (playerStats == null)
+            playerStats = FindObjectOfType<PlayerStats>();
+
+        if (occupancy == null)
+            occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
+
+        GridBoard resolved = null;
+        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
+            resolved = FieldMapGenerator.ResolveGameplayGrid(ModeManager.Instance.fieldRoot);
+
+        if (resolved == null)
+        {
+            var mover = player != null ? player.GetComponent<PlayerGridMover>() : null;
+            if (mover != null && mover.grid != null)
+                resolved = mover.grid;
+        }
+
+        if (resolved == null)
+        {
+            var boards = FindObjectsOfType<GridBoard>();
+            for (int i = 0; i < boards.Length; i++)
+            {
+                if (boards[i] != null && boards[i].gameObject.activeInHierarchy)
+                {
+                    resolved = boards[i];
+                    break;
+                }
+            }
+        }
+
+        if (resolved != null)
+            gridBoard = resolved;
     }
 
     /// <summary>
@@ -151,7 +217,11 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         // 공격 전 위치가 크게 어긋난 경우에만 보정 (연출 끊김 방지)
         SnapRootIfDrifted(enemy.transform, enemyCell);
 
-        Vector2Int playerCell = gridBoard.WorldToCell(player.position);
+        Vector2Int playerCell;
+        if (occ != null && occ.TryGetCurrentCell(player, out var pOccCell))
+            playerCell = pOccCell;
+        else
+            playerCell = gridBoard.WorldToCell(player.position);
 
         int distance = Chebyshev(enemyCell, playerCell);
         int attackRange = enemy.definition.attackRange;
@@ -164,14 +234,14 @@ public class FieldMultiEnemyAttack : MonoBehaviour
             yield break;
         }
 
-        // ✅ 원거리 공격은 시야 필요!
-        if (attackRange >= 2)
+        // 원거리 LOS는 옵션. (기본 OFF: 과거처럼 사거리만 맞으면 발사)
+        if (requireLineOfSightForRanged && attackRange >= 2)
         {
             bool hasLoS = FieldCombatUtils.HasLineOfSight(gridBoard, enemyCell, playerCell);
             if (!hasLoS)
             {
                 if (showDebugLogs)
-                    Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} no line of sight!");
+                    Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} no line of sight! (LOS required ON)");
                 yield break;
             }
         }
@@ -196,7 +266,7 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         }
         else
         {
-            // 원거리: 발사체 or 기본 효과
+            // 원거리: 발사체(프리팹 우선) -> 없으면 임시 발사체 -> 최후에 반짝임
             if (enemy.definition.projectilePrefab != null)
             {
                 // 발사체 발사
@@ -204,8 +274,10 @@ public class FieldMultiEnemyAttack : MonoBehaviour
             }
             else
             {
-                // 기본 반짝임 효과
-                yield return RangedAttackEffect(enemy.transform);
+                if (showDebugLogs)
+                    Debug.Log($"[MultiEnemyAttack] {enemy.definition.displayName} projectilePrefab is NULL. Using fallback projectile.");
+
+                yield return LaunchFallbackProjectile(enemyCell, playerCell);
             }
 
             // 데미지 적용
@@ -259,8 +331,78 @@ public class FieldMultiEnemyAttack : MonoBehaviour
 
         // 발사체가 도착할 때까지 대기
         float distance = Vector3.Distance(startPos, targetPos);
-        float travelTime = distance / projectileScript.speed;
+        float speed = Mathf.Max(0.01f, projectileScript.speed);
+        float travelTime = distance / speed;
         yield return new WaitForSeconds(travelTime);
+    }
+
+    private IEnumerator LaunchFallbackProjectile(Vector2Int fromCell, Vector2Int toCell)
+    {
+        if (gridBoard == null)
+            yield break;
+
+        Vector3 startPos = gridBoard.CellToWorld(fromCell);
+        // 플레이어 실좌표 우선 (셀 스냅 오차/점유 지연 대비)
+        Vector3 targetPos = player != null ? player.position : gridBoard.CellToWorld(toCell);
+
+        GameObject go = new GameObject("FallbackProjectile");
+        go.transform.position = startPos;
+        go.transform.localScale = Vector3.one * Mathf.Max(0.05f, fallbackProjectileScale);
+
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = GetFallbackProjectileSprite();
+        sr.color = fallbackProjectileColor;
+        sr.sortingOrder = 120;
+
+        float speed = Mathf.Max(0.01f, fallbackProjectileSpeed);
+        float distance = Vector3.Distance(startPos, targetPos);
+        float travelTime = Mathf.Max(0.05f, distance / speed);
+
+        if (showDebugLogs)
+            Debug.Log($"[MultiEnemyAttack] Fallback projectile: from={startPos} to={targetPos}, distance={distance:F2}, t={travelTime:F2}");
+
+        float t = 0f;
+        while (t < 1f && go != null)
+        {
+            t += Time.deltaTime / travelTime;
+            go.transform.position = Vector3.Lerp(startPos, targetPos, Mathf.Clamp01(t));
+            yield return null;
+        }
+
+        if (go != null)
+            Destroy(go);
+    }
+
+    private static Sprite GetFallbackProjectileSprite()
+    {
+        if (_fallbackProjectileSprite != null)
+            return _fallbackProjectileSprite;
+
+        const int size = 16;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Vector2 c = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+        float r = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), c);
+                float a = Mathf.Clamp01(1f - (d / r));
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        }
+        tex.Apply();
+
+        _fallbackProjectileSprite = Sprite.Create(
+            tex,
+            new Rect(0, 0, size, size),
+            new Vector2(0.5f, 0.5f),
+            size
+        );
+        return _fallbackProjectileSprite;
     }
 
     /// <summary>

@@ -26,6 +26,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
     [Tooltip("추적 중 플레이어와의 거리(체스보드·대각선 포함 Chebyshev)가 이 칸 수를 넘으면 어그로 해제. 시야/LoS와 무관하게 적용됩니다.")]
     [Min(1)]
     public int aggroDropDistance = 15;
+    [Tooltip("하드 리시 상한. 데이터가 더 크게 잡혀 있어도 이 값보다 멀어지면 무조건 추적 해제.")]
+    [Min(2)] public int hardLeashDistance = 9;
     [Tooltip("체크 시 EnemyDefinition의 탐지/어그로 거리로 위 값들을 덮어씁니다. 해제하면 인스펙터 값만 사용합니다.")]
     public bool useCustomDetection = false;
 
@@ -66,6 +68,7 @@ public class FieldEnemyWanderChase : MonoBehaviour
             aggroRange = Mathf.Max(1, _enemy.definition.fieldDetectionRange);
             requireLoS = _enemy.definition.fieldRequireLoS;
             aggroDropDistance = Mathf.Max(aggroRange + 1, _enemy.definition.aggroDropDistance);
+            aggroDropDistance = Mathf.Min(aggroDropDistance, Mathf.Max(aggroRange + 1, hardLeashDistance));
         }
 
         if (occupancy != null && gridBoard != null)
@@ -147,21 +150,37 @@ public class FieldEnemyWanderChase : MonoBehaviour
         Vector2Int pCell = gridBoard.WorldToCell(player.position);
         int distToPlayer = FieldCombatUtils.Chebyshev(myCell, pCell);
 
+        // 하드 리시: 시야/감지 결과와 무관하게 일정 거리 이상이면 반드시 추적 해제.
+        int effectiveLeash = Mathf.Max(aggroRange + 1, Mathf.Min(aggroDropDistance, hardLeashDistance));
+        if (isAggro && distToPlayer > effectiveLeash)
+        {
+            isAggro = false;
+            if (showDebugLogs)
+                Debug.Log($"[WanderChase] {_enemy.definition.displayName} leash break: dist={distToPlayer}, leash={effectiveLeash}");
+        }
+
         // ========== FieldVisionSystem detection ==========
+        // 규칙:
+        // 1) "첫 인식"은 aggroRange 안에서만 허용.
+        // 2) 일단 어그로가 걸린 뒤엔 거리(리시)로만 해제.
         var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
         bool canSee = false;
+        bool inAggroAcquireRange = distToPlayer <= aggroRange;
 
-        if (visionSys != null)
+        if (inAggroAcquireRange)
         {
-            // LoS + range + detection chance (cover/crouch)
-            canSee = visionSys.TryDetectPlayer(myCell, pCell);
-        }
-        else
-        {
-            // Fallback: old system
-            canSee = distToPlayer <= aggroRange;
-            if (canSee && requireLoS)
-                canSee = FieldCombatUtils.HasLineOfSight(gridBoard, myCell, pCell);
+            if (visionSys != null)
+            {
+                // LoS + range + detection chance (cover/crouch)
+                canSee = visionSys.TryDetectPlayer(myCell, pCell);
+            }
+            else
+            {
+                // Fallback: old system
+                canSee = true;
+                if (requireLoS)
+                    canSee = FieldCombatUtils.HasLineOfSight(gridBoard, myCell, pCell);
+            }
         }
 
         // Aggro system

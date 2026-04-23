@@ -112,6 +112,9 @@ public class WatchTargetingController : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked)
+            return;
+
         RefreshRuntimeRefs();
 
         // 집중전투 중이면 무시

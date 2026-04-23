@@ -219,6 +219,8 @@ public class FocusedCombatManager : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked) return;
+
         if (_isTransitioning) return;
         if (!State.isInCombat) return;
         if (!State.isPlayerTurn) return;
@@ -1376,6 +1378,7 @@ public class FocusedCombatManager : MonoBehaviour
     {
         if (_playerStats == null) return;
         _playerStats.hp = Mathf.Clamp(State.playerHP, 0, _playerStats.maxHP);
+        _playerStats.ClampAll();
     }
 
     private void RefreshUI()

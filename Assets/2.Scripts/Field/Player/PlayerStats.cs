@@ -89,6 +89,7 @@ public class PlayerStats : MonoBehaviour
     private FieldTimeManager _fieldTime;
     private int _nextDrainAtTime = 5;
     private EngraveAppliedStats _engrave;
+    private bool _deathNotified;
 
     private void Awake()
     {
@@ -132,6 +133,14 @@ public class PlayerStats : MonoBehaviour
         hp = Mathf.Clamp(hp, 0, maxHP);
         fatigue = Mathf.Clamp(fatigue, 0, maxFatigue);
         hunger = Mathf.Clamp(hunger, 0, maxHunger);
+
+        if (hp > 0)
+        {
+            _deathNotified = false;
+            return;
+        }
+
+        NotifyDeathIfNeeded();
     }
 
     /// <summary>
@@ -188,6 +197,28 @@ public class PlayerStats : MonoBehaviour
         
         Debug.Log($"[PlayerStats] Took {finalDamage} raw damage. HP: {hp}/{maxHP}");
         OnDamageTaken?.Invoke(finalDamage);
+    }
+
+    private void NotifyDeathIfNeeded()
+    {
+        if (_deathNotified)
+            return;
+
+        _deathNotified = true;
+        var dm = DeathManager.Instance ?? FindObjectOfType<DeathManager>();
+        if (dm == null)
+        {
+            Debug.LogWarning("[PlayerStats] HP가 0이 되었지만 DeathManager를 찾을 수 없습니다.");
+            return;
+        }
+
+        DeathManager.DeathContext context = DeathManager.DeathContext.Unknown;
+        if (ModeManager.Instance != null)
+            context = ModeManager.Instance.CurrentMode == ModeManager.GameplayMode.Dungeon
+                ? DeathManager.DeathContext.Dungeon
+                : DeathManager.DeathContext.Field;
+
+        dm.TryHandlePlayerDeath(context, context == DeathManager.DeathContext.Dungeon ? "DungeonDeath" : "FieldDeath");
     }
     
     /// <summary>

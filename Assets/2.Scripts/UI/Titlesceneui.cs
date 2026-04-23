@@ -39,6 +39,8 @@ public class TitleSceneUI : MonoBehaviour
 
     private void Start()
     {
+        DeathManager.ClearDeathInputLock();
+
         if (newGameButton != null)
             newGameButton.onClick.AddListener(OnNewGame);
 
@@ -54,7 +56,7 @@ public class TitleSceneUI : MonoBehaviour
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuit);
 
-        SetContinueEnabled(false);
+        SetContinueEnabled(RunSlotSaveService.HasAnySlot());
 
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
@@ -79,11 +81,19 @@ public class TitleSceneUI : MonoBehaviour
 
     private void OnNewGame()
     {
+        RunSlotSaveService.StartNewRunInSlot(1, deleteExisting: true);
         SceneManager.LoadScene(gameSceneName);
     }
 
     private void OnContinue()
     {
+        if (!RunSlotSaveService.PrepareContinueLatest())
+        {
+            SetContinueEnabled(false);
+            return;
+        }
+
+        SceneManager.LoadScene(gameSceneName);
     }
 
     private void OnSettings()

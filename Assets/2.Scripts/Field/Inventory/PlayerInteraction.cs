@@ -29,6 +29,9 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked)
+            return;
+
         if (turnCoordinator != null && turnCoordinator.IsBusy)
             return;
 

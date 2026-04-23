@@ -23597,8 +23597,14 @@ MonoBehaviour:
   relicManager: {fileID: 1658711789}
   playerStats: {fileID: 931578460}
   deathScreenUI: {fileID: 0}
+  useSimpleDeathOverlay: 1
+  simpleDeathFadeDuration: 0.45
+  simpleDeathOverlayAlpha: 0.92
+  simpleDeathText: YOU DIED
+  autoReturnToTitleOnDeath: 1
+  autoReturnDelaySeconds: 4
   characterSelectScene: CharacterSelect
-  mainMenuScene: MainMenu
+  mainMenuScene: TitleScene
   commonChance: 0.6
   rareChance: 0.25
   epicChance: 0.12
@@ -24503,7 +24509,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3759185558030317558, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.00015258789
+      value: -0.000030517578
       objectReference: {fileID: 0}
     - target: {fileID: 3759185558030317558, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -24515,7 +24521,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4384181668556372988, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.0000041276962
+      value: 0.0000038146973
       objectReference: {fileID: 0}
     - target: {fileID: 4426573653597341738, guid: 8571883b68b11d54e87ddc67f3e005c7, type: 3}
       propertyPath: m_AnchorMax.y

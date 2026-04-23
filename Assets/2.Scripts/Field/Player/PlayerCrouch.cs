@@ -30,6 +30,9 @@ public class PlayerCrouch : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked)
+            return;
+
         if (_rest != null && _rest.IsResting)
             return;
         if (_turnCoordinator != null && _turnCoordinator.IsBusy)

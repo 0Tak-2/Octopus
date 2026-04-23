@@ -36,7 +36,6 @@ public static class FieldFreezeController
 
     private static readonly List<FrozenEnemy> _snapshot = new List<FrozenEnemy>();
     private static bool _hasSnapshot;
-    private static bool _snapshotDetached;
     private static Transform _freezeAnchor;
 
     public static bool verboseLogs = true;
@@ -76,7 +75,6 @@ public static class FieldFreezeController
         }
 
         _snapshot.Clear();
-        _snapshotDetached = false;
 
         GridBoard grid = null;
         if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
@@ -135,7 +133,6 @@ public static class FieldFreezeController
         }
 
         _hasSnapshot = true;
-        _snapshotDetached = true;
         IsLocked = true;
 
         if (verboseLogs)
@@ -187,7 +184,6 @@ public static class FieldFreezeController
                 f.enemy.gameObject.SetActive(false);
         }
 
-        _snapshotDetached = true;
         IsLocked = true;
 
         if (verboseLogs)
@@ -260,7 +256,6 @@ public static class FieldFreezeController
 
         _snapshot.Clear();
         _hasSnapshot = false;
-        _snapshotDetached = false;
         IsLocked = false;
     }
 
@@ -268,7 +263,6 @@ public static class FieldFreezeController
     {
         _snapshot.Clear();
         _hasSnapshot = false;
-        _snapshotDetached = false;
         IsLocked = false;
     }
 

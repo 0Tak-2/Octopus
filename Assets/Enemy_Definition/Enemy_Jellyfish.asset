@@ -19,6 +19,8 @@ MonoBehaviour:
   moveRange: 2
   attackRange: 3
   attackDamage: 8
+  metaXpValue: 10
+  characterXpValue: 12
   aiType: 2
   useDashAttackMotion: 1
   fieldDetectionRange: 6
@@ -27,7 +29,7 @@ MonoBehaviour:
   ignoreLoSWhenAggro: 1
   wanderMoveChance: 0.3
   detectionAlertDuration: 1.5
-  projectilePrefab: {fileID: 0}
+  projectilePrefab: {fileID: 394236172151961479, guid: 358d1de3e44781d4ca3d0cf41c829e5c, type: 3}
   projectileRotates: 1
   baseEvasion: 0
   enableEliteAP: 0

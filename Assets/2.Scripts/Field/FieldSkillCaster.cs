@@ -116,6 +116,8 @@ public class FieldSkillCaster : MonoBehaviour
 
     private void Update()
     {
+        if (DeathManager.IsDeathInputLocked) return;
+
         if (gridBoard == null || fieldTimeManager == null || loadout == null) return;
         if (turnCoordinator != null && turnCoordinator.IsBusy) return;
 

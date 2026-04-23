@@ -80,6 +80,9 @@ public class GameManager : MonoBehaviour
 
         if (logSceneTransitions)
             Debug.Log("[GameManager] 초기화 완료 (DontDestroyOnLoad)");
+
+        // 타이틀의 "이어하기"에서 선택된 슬롯 데이터가 있으면 여기서 주입.
+        RunSlotSaveService.TryConsumePendingInto(this);
     }
 
     private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
@@ -450,6 +453,9 @@ public class GameManager : MonoBehaviour
         // 필드에 있을 때만 필드 적/맵 상태 저장 (던전 단일 씬에서는 이름만으로는 구분 안 됨)
         if (ShouldSaveFieldState())
             SaveFieldState();
+
+        // 기본 정책: 현재 활성 슬롯에 항상 최신 런 상태를 저장.
+        RunSlotSaveService.SaveActiveRun(this);
     }
 
     /// <summary>필드 모드일 때만 SaveFieldState 호출해야 함 (GridBoard가 필드 기준일 때)</summary>
