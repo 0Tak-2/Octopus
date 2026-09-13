@@ -3,22 +3,32 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum RunSessionIntent
+{
+    None,
+    NewCharacter,
+    ContinueSlot,
+}
+
 /// <summary>
 /// 런 세이브 슬롯(최대 10개) 파일 저장/로드 서비스.
-/// - 타이틀 "이어하기"는 최신 슬롯을 로드한다.
-/// - DeathManager는 활성 슬롯 파일을 삭제한다.
+/// 각 슬롯 = 유저가 이름을 지은 캐릭터 1명.
 /// </summary>
 public static class RunSlotSaveService
 {
     public const int MaxSlots = 10;
+    public const int MaxCharacterNameLength = 20;
     private const string ActiveSlotPrefKey = "RunSlot_Active";
 
     private static string _pendingLoadJson;
+    private static string _pendingNewCharacterName;
+    private static RunSessionIntent _sessionIntent = RunSessionIntent.None;
 
     [Serializable]
     private class RunSnapshot
     {
         public int slot;
+        public string characterName;
         public long savedUnixTime;
         public int currentChapter;
         public int currentMapIndex;
@@ -63,6 +73,22 @@ public static class RunSlotSaveService
         return false;
     }
 
+    public static bool HasEmptySlot()
+    {
+        for (int i = 1; i <= MaxSlots; i++)
+            if (!File.Exists(SlotPath(i)))
+                return true;
+        return false;
+    }
+
+    public static int GetFirstEmptySlot()
+    {
+        for (int i = 1; i <= MaxSlots; i++)
+            if (!File.Exists(SlotPath(i)))
+                return i;
+        return -1;
+    }
+
     public static int GetLatestSlot()
     {
         int bestSlot = -1;
@@ -80,6 +106,44 @@ public static class RunSlotSaveService
         return bestSlot;
     }
 
+    public static List<RunSlotSummary> GetAllSummaries()
+    {
+        var list = new List<RunSlotSummary>(MaxSlots);
+        for (int i = 1; i <= MaxSlots; i++)
+            list.Add(BuildSummary(i));
+        return list;
+    }
+
+    public static RunSlotSummary GetSummary(int slot)
+    {
+        slot = Mathf.Clamp(slot, 1, MaxSlots);
+        return BuildSummary(slot);
+    }
+
+    private static RunSlotSummary BuildSummary(int slot)
+    {
+        var summary = new RunSlotSummary { slot = slot, isEmpty = !File.Exists(SlotPath(slot)) };
+        if (summary.isEmpty || !TryReadSnapshot(slot, out var snap))
+            return summary;
+
+        summary.characterName = snap.characterName;
+        summary.savedUnixTime = snap.savedUnixTime;
+        summary.currentChapter = snap.currentChapter;
+        summary.currentMapIndex = snap.currentMapIndex;
+        return summary;
+    }
+
+    public static RunSessionIntent PeekSessionIntent() => _sessionIntent;
+
+    public static RunSessionIntent ConsumeSessionIntent()
+    {
+        var intent = _sessionIntent;
+        _sessionIntent = RunSessionIntent.None;
+        return intent;
+    }
+
+    public static string GetPendingNewCharacterName() => _pendingNewCharacterName ?? "";
+
     public static void SaveActiveRun(GameManager gm)
     {
         if (gm == null) return;
@@ -91,9 +155,12 @@ public static class RunSlotSaveService
         if (gm == null) return;
         slot = Mathf.Clamp(slot, 1, MaxSlots);
 
+        string characterName = ResolveCharacterName(slot, gm.runCharacterName);
+
         var snap = new RunSnapshot
         {
             slot = slot,
+            characterName = characterName,
             savedUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             currentChapter = gm.currentChapter,
             currentMapIndex = gm.currentMapIndex,
@@ -105,36 +172,88 @@ public static class RunSlotSaveService
             currentDungeonData = Clone(gm.currentDungeonData),
         };
 
+        gm.runCharacterName = characterName;
+        _pendingNewCharacterName = null;
+
         File.WriteAllText(SlotPath(slot), JsonUtility.ToJson(snap));
         SetActiveSlot(slot);
     }
+
+    /// <summary>새 캐릭터 생성 후 게임 씬 진입 준비.</summary>
+    public static bool PrepareNewCharacter(int slot, string characterName)
+    {
+        slot = Mathf.Clamp(slot, 1, MaxSlots);
+        if (File.Exists(SlotPath(slot)))
+            return false;
+
+        string sanitized = SanitizeCharacterName(characterName);
+        if (string.IsNullOrEmpty(sanitized))
+            return false;
+
+        SetActiveSlot(slot);
+        _pendingLoadJson = null;
+        _pendingNewCharacterName = sanitized;
+        _sessionIntent = RunSessionIntent.NewCharacter;
+        return true;
+    }
+
+    /// <summary>기존 캐릭터(슬롯) 이어하기 준비.</summary>
+    public static bool PrepareContinueSlot(int slot)
+    {
+        slot = Mathf.Clamp(slot, 1, MaxSlots);
+        if (!TryReadRawJson(slot, out _pendingLoadJson))
+            return false;
+
+        SetActiveSlot(slot);
+        _pendingNewCharacterName = null;
+        _sessionIntent = RunSessionIntent.ContinueSlot;
+        return true;
+    }
+
+    public static bool PrepareContinueLatest() => PrepareContinueSlot(GetLatestSlot());
 
     public static void StartNewRunInSlot(int slot, bool deleteExisting)
     {
         slot = Mathf.Clamp(slot, 1, MaxSlots);
         SetActiveSlot(slot);
         _pendingLoadJson = null;
+        _sessionIntent = RunSessionIntent.NewCharacter;
         if (deleteExisting)
             DeleteSlot(slot);
     }
 
-    public static bool PrepareContinueLatest()
+    public static void ApplySessionStart(GameManager gm)
     {
-        int slot = GetLatestSlot();
-        if (slot <= 0) return false;
-        if (!TryReadRawJson(slot, out _pendingLoadJson)) return false;
-        SetActiveSlot(slot);
-        return true;
+        if (gm == null) return;
+
+        var intent = ConsumeSessionIntent();
+        switch (intent)
+        {
+            case RunSessionIntent.ContinueSlot:
+                gm.ResetGame();
+                TryConsumePendingInto(gm);
+                break;
+            case RunSessionIntent.NewCharacter:
+                gm.ResetGame();
+                gm.runCharacterName = GetPendingNewCharacterName();
+                _pendingNewCharacterName = null;
+                SaveToSlot(GetActiveSlot(), gm);
+                break;
+        }
     }
 
     public static void TryConsumePendingInto(GameManager gm)
     {
         if (gm == null) return;
         if (string.IsNullOrEmpty(_pendingLoadJson)) return;
+
         var snap = JsonUtility.FromJson<RunSnapshot>(_pendingLoadJson);
         _pendingLoadJson = null;
         if (snap == null) return;
 
+        gm.runCharacterName = string.IsNullOrWhiteSpace(snap.characterName)
+            ? $"캐릭터 {snap.slot}"
+            : snap.characterName;
         gm.currentChapter = snap.currentChapter;
         gm.currentMapIndex = snap.currentMapIndex;
         gm.clearedDungeons = Clone(snap.clearedDungeons) ?? new List<string>();
@@ -145,10 +264,7 @@ public static class RunSlotSaveService
         gm.currentDungeonData = Clone(snap.currentDungeonData);
     }
 
-    public static void DeleteActiveSlot()
-    {
-        DeleteSlot(GetActiveSlot());
-    }
+    public static void DeleteActiveSlot() => DeleteSlot(GetActiveSlot());
 
     public static void DeleteSlot(int slot)
     {
@@ -156,6 +272,31 @@ public static class RunSlotSaveService
         string p = SlotPath(slot);
         if (File.Exists(p))
             File.Delete(p);
+    }
+
+    public static string SanitizeCharacterName(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "";
+
+        raw = raw.Trim().Replace("\n", "").Replace("\r", "");
+        if (raw.Length > MaxCharacterNameLength)
+            raw = raw.Substring(0, MaxCharacterNameLength);
+        return raw;
+    }
+
+    private static string ResolveCharacterName(int slot, string gmName)
+    {
+        if (!string.IsNullOrWhiteSpace(gmName))
+            return SanitizeCharacterName(gmName);
+
+        if (!string.IsNullOrWhiteSpace(_pendingNewCharacterName))
+            return _pendingNewCharacterName;
+
+        if (TryReadSnapshot(slot, out var existing) && !string.IsNullOrWhiteSpace(existing.characterName))
+            return existing.characterName;
+
+        return $"캐릭터 {slot}";
     }
 
     private static bool TryReadSnapshot(int slot, out RunSnapshot snap)

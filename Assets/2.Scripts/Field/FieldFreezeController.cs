@@ -201,7 +201,6 @@ public static class FieldFreezeController
 
         var occ = GridOccupancyRegistry.Instance;
         int matched = 0;
-        var applied = new List<(EnemyInstance e, Vector3 target)>();
 
         if (verboseLogs)
             LogFieldGridInfo("Apply");
@@ -242,17 +241,12 @@ public static class FieldFreezeController
                 occ.TryOccupy(enemy.transform, f.cell);
             }
 
-            applied.Add((enemy, targetWorld));
-
             if (verboseLogs)
                 Debug.Log($"[FieldFreeze]   Apply '{f.name}': before={before} -> cell={f.cell} world={targetWorld} parent={(f.originalParent != null ? f.originalParent.name : "<null>")}");
         }
 
         if (verboseLogs)
             Debug.Log($"[FieldFreeze] Apply: 매칭 {matched}/{_snapshot.Count}.");
-
-        var runner = FieldFreezeWatchdog.Ensure();
-        runner.StartWatch(applied, 4);
 
         _snapshot.Clear();
         _hasSnapshot = false;

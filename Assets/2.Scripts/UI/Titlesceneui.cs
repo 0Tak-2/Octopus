@@ -4,26 +4,22 @@ using UnityEngine.SceneManagement;
 
 public class TitleSceneUI : MonoBehaviour
 {
-    [Header("��ư")]
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button continueButton;
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button engraveButton;
     [SerializeField] private Button quitButton;
 
-    [Header("�̾��ϱ� ��Ȱ�� ǥ��")]
     [SerializeField] private CanvasGroup continueCanvasGroup;
 
-    [Header("���� ��ư (���� ���� Lv2 �� ���, ����)")]
     [SerializeField] private CanvasGroup engraveCanvasGroup;
 
-    [Header("���� Ʈ�� UI")]
     [SerializeField] private EngraveTreeUI engraveTreeUI;
 
-    [Header("���� �г� (���߿� ����)")]
     [SerializeField] private GameObject settingsPanel;
 
-    [Header("�� �̸�")]
+    [SerializeField] private RunSlotSelectUI runSlotSelectUI;
+
     [SerializeField] private string gameSceneName = "NewMapScene";
 
     private void OnEnable()
@@ -40,6 +36,8 @@ public class TitleSceneUI : MonoBehaviour
     private void Start()
     {
         DeathManager.ClearDeathInputLock();
+
+        EnsureRunSlotSelectUI();
 
         if (newGameButton != null)
             newGameButton.onClick.AddListener(OnNewGame);
@@ -64,6 +62,21 @@ public class TitleSceneUI : MonoBehaviour
         ApplyEngraveMenuLockState();
     }
 
+    private void EnsureRunSlotSelectUI()
+    {
+        if (runSlotSelectUI != null)
+            return;
+
+        var canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
+            return;
+
+        var go = new GameObject("RunSlotSelectUI");
+        go.transform.SetParent(canvas.transform, false);
+        runSlotSelectUI = go.AddComponent<RunSlotSelectUI>();
+        runSlotSelectUI.Configure(this, gameSceneName);
+    }
+
     private void ApplyEngraveMenuLockState()
     {
         bool unlocked = EngraveAccountUnlock.IsMenuUnlocked;
@@ -79,21 +92,30 @@ public class TitleSceneUI : MonoBehaviour
         }
     }
 
+    /// <summary>새 캐릭터: 빈 슬롯이 있으면 선택 UI, 없으면 목록에서 덮어쓰기/삭제.</summary>
     private void OnNewGame()
     {
-        RunSlotSaveService.StartNewRunInSlot(1, deleteExisting: true);
-        SceneManager.LoadScene(gameSceneName);
+        EnsureRunSlotSelectUI();
+        if (runSlotSelectUI == null)
+            return;
+
+        runSlotSelectUI.Open(focusLatestIfAny: false);
     }
 
+    /// <summary>캐릭터 선택 UI — 저장된 캐릭터 중 하나를 골라 이어하기.</summary>
     private void OnContinue()
     {
-        if (!RunSlotSaveService.PrepareContinueLatest())
+        if (!RunSlotSaveService.HasAnySlot())
         {
             SetContinueEnabled(false);
             return;
         }
 
-        SceneManager.LoadScene(gameSceneName);
+        EnsureRunSlotSelectUI();
+        if (runSlotSelectUI == null)
+            return;
+
+        runSlotSelectUI.Open(focusLatestIfAny: true);
     }
 
     private void OnSettings()

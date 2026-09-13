@@ -29,6 +29,9 @@ public class GameManager : MonoBehaviour
     [Header("Player Data")]
     public PlayerSaveData playerData = new PlayerSaveData();
 
+    [Tooltip("현재 런 캐릭터 이름 (슬롯 세이브와 동기화)")]
+    public string runCharacterName = "";
+
     // =========================================================
     // 인벤토리 데이터 (NEW!)
     // =========================================================
@@ -80,9 +83,6 @@ public class GameManager : MonoBehaviour
 
         if (logSceneTransitions)
             Debug.Log("[GameManager] 초기화 완료 (DontDestroyOnLoad)");
-
-        // 타이틀의 "이어하기"에서 선택된 슬롯 데이터가 있으면 여기서 주입.
-        RunSlotSaveService.TryConsumePendingInto(this);
     }
 
     private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
@@ -92,6 +92,12 @@ public class GameManager : MonoBehaviour
     {
         if (logSceneTransitions)
             Debug.Log($"[GameManager] 씬 로드 완료: {scene.name}");
+
+        if (IsGameplayScene(scene.name))
+        {
+            RunSlotSaveService.ApplySessionStart(this);
+            EnsureGameSessionMenu();
+        }
 
         // WorldProgressManager와 맵 인덱스 동기화 (필드 세이브 키 C*_M* 일관성)
         var wpm = WorldProgressManager.Instance;
@@ -105,11 +111,23 @@ public class GameManager : MonoBehaviour
         RestoreInventory();
 
         // 필드 씬이면 필드 상태 복원
-        if (scene.name == fieldSceneName || scene.name.Contains("Field") || scene.name.Contains("Map"))
+        if (IsGameplayScene(scene.name))
         {
             // 약간의 딜레이 후 복원 (씬 초기화 대기)
             StartCoroutine(RestoreFieldStateDelayed());
         }
+    }
+
+    private bool IsGameplayScene(string sceneName)
+    {
+        return sceneName == fieldSceneName || sceneName.Contains("Field") || sceneName.Contains("Map");
+    }
+
+    private static void EnsureGameSessionMenu()
+    {
+        if (FindObjectOfType<GameSessionMenu>() != null)
+            return;
+        new GameObject("GameSessionMenu").AddComponent<GameSessionMenu>();
     }
 
     private System.Collections.IEnumerator RestoreFieldStateDelayed()
@@ -682,6 +700,7 @@ public class GameManager : MonoBehaviour
         currentMapIndex = 0;
         clearedDungeons.Clear();
         playerData = new PlayerSaveData();
+        runCharacterName = "";
         inventoryData.Clear();
         fieldMapDataList.Clear();
         currentDungeonData = null;
