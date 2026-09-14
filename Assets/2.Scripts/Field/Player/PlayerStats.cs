@@ -60,6 +60,15 @@ public class PlayerStats : MonoBehaviour
     public float bonusCRIT = 0f;
     public float bonusCRIT_DMG = 0f;
     
+    // 유물은 장비와 별도 필드를 쓴다. EquipmentManager 가 bonus* 를 '대입'하기 때문에
+    // 같은 필드를 공유하면 장비를 갈아끼울 때마다 유물 효과가 날아간다.
+    [Header("Combat Stats - Relic Bonuses")]
+    public float relicATKPercent = 0f;
+    public int relicDEF = 0;
+    public float relicEVA = 0f;
+    public float relicCRIT = 0f;
+    public float relicCRIT_DMG = 0f;
+
     [Header("Combat Stats - Color Module Bonuses")]
     public float colorModuleATKPercent = 0f;      // 빨강 중첩 버프
     public float colorModuleEVAPercent = 0f;      // 파랑 중첩 버프
@@ -70,11 +79,11 @@ public class PlayerStats : MonoBehaviour
     // ============================================
     // 최종 스탯 계산 (읽기 전용)
     // ============================================
-    public int ATK => Mathf.Max(1, Mathf.RoundToInt((baseATK + bonusATK) * (1f + colorModuleATKPercent + _engrave.attackPercent)));
-    public int DEF => Mathf.Max(0, baseDEF + bonusDEF + _engrave.defenseFlat);
-    public float EVA => Mathf.Clamp01(baseEVA + bonusEVA + colorModuleEVAPercent - colorModuleEVAPenalty + _engrave.evasionBonus);
-    public float CRIT => Mathf.Clamp01(baseCRIT + bonusCRIT + _engrave.critChanceBonus);
-    public float CRIT_DMG => Mathf.Max(1f, baseCRIT_DMG + bonusCRIT_DMG + colorModuleCRIT_DMGPercent + _engrave.critDamagePercent);
+    public int ATK => Mathf.Max(1, Mathf.RoundToInt((baseATK + bonusATK) * (1f + colorModuleATKPercent + _engrave.attackPercent + relicATKPercent)));
+    public int DEF => Mathf.Max(0, baseDEF + bonusDEF + _engrave.defenseFlat + relicDEF);
+    public float EVA => Mathf.Clamp01(baseEVA + bonusEVA + colorModuleEVAPercent - colorModuleEVAPenalty + _engrave.evasionBonus + relicEVA);
+    public float CRIT => Mathf.Clamp01(baseCRIT + bonusCRIT + _engrave.critChanceBonus + relicCRIT);
+    public float CRIT_DMG => Mathf.Max(1f, baseCRIT_DMG + bonusCRIT_DMG + colorModuleCRIT_DMGPercent + _engrave.critDamagePercent + relicCRIT_DMG);
     
     /// <summary>
     /// 회복 효율 (검정 중첩 디버프 적용)
@@ -85,6 +94,16 @@ public class PlayerStats : MonoBehaviour
     public int drainIntervalTime = 5;
     public int fatigueDrainPerInterval = 1;
     public int hungerDrainPerInterval = 2;
+
+    [Header("Starvation / Exhaustion Penalty")]
+    [Tooltip("배고픔이 0일 때 드레인 주기마다 잃는 HP. 0이면 굶어도 아무 일이 없다.")]
+    [Min(0)] public int starvationDamagePerInterval = 3;
+
+    [Tooltip("피로가 0일 때 드레인 주기마다 잃는 HP.")]
+    [Min(0)] public int exhaustionDamagePerInterval = 2;
+
+    /// <summary>굶주림/탈진으로 HP가 깎일 때 발생. UI 경고용.</summary>
+    public event System.Action<int, bool, bool> OnSurvivalPenalty;
 
     private FieldTimeManager _fieldTime;
     private int _nextDrainAtTime = 5;
@@ -124,8 +143,34 @@ public class PlayerStats : MonoBehaviour
             hunger -= hungerDrain;
             ClampAll();
 
+            ApplySurvivalPenalty();
+
             _nextDrainAtTime += drainIntervalTime;
+
+            // 굶어 죽었으면 더 돌 이유가 없다.
+            if (hp <= 0) return;
         }
+    }
+
+    /// <summary>
+    /// 굶주림/탈진 상태면 HP를 깎는다.
+    /// 이게 없으면 배고픔이 0이 돼도 아무 일이 안 일어나 먹고 자는 행위에 의미가 없다.
+    /// </summary>
+    private void ApplySurvivalPenalty()
+    {
+        bool starving = IsStarving;
+        bool exhausted = IsExhausted;
+        if (!starving && !exhausted) return;
+
+        int damage = 0;
+        if (starving) damage += starvationDamagePerInterval;
+        if (exhausted) damage += exhaustionDamagePerInterval;
+        if (damage <= 0) return;
+
+        hp -= damage;
+        ClampAll();
+
+        OnSurvivalPenalty?.Invoke(damage, starving, exhausted);
     }
 
     public void ClampAll()

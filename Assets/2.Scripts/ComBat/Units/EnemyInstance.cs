@@ -8,6 +8,16 @@ public class EnemyInstance : MonoBehaviour
     [Header("Runtime")]
     public int currentHP;
 
+    [Header("Color Module Drop")]
+    [Tooltip("일반 적 처치 시 컬러 모듈 드랍 확률")]
+    [Range(0f, 1f)] public float colorModuleDropChance = 0.08f;
+
+    [Tooltip("엘리트 처치 시 확률")]
+    [Range(0f, 1f)] public float eliteColorModuleDropChance = 0.35f;
+
+    [Tooltip("보스 처치 시 확률")]
+    [Range(0f, 1f)] public float bossColorModuleDropChance = 1f;
+
     // 턴 행동 추적
     [HideInInspector] public bool hasActedThisTurn = false;
 
@@ -62,6 +72,27 @@ public class EnemyInstance : MonoBehaviour
         _defeatRewardsApplied = true;
         if (MetaProgression.Instance != null)
             MetaProgression.Instance.RegisterKill(definition);
+
+        TryDropColorModule();
+    }
+
+    /// <summary>
+    /// 컬러 모듈 드랍. 이 호출이 없으면 게임 내에서 모듈을 얻을 방법이 아예 없다.
+    /// 보스/엘리트일수록 확률이 높다.
+    /// </summary>
+    private void TryDropColorModule()
+    {
+        var dropper = ColorModuleDropper.Instance;
+        if (dropper == null) return;
+
+        float chance = colorModuleDropChance;
+        if (definition.aiType == EnemyAIType.AI4_Boss) chance = bossColorModuleDropChance;
+        else if (definition.aiType == EnemyAIType.AI3_Elite) chance = eliteColorModuleDropChance;
+
+        if (chance <= 0f) return;
+
+        // 세 색 중 하나가 같은 확률로 나오게 나눠 넘긴다.
+        dropper.TryDropModule(chance / 3f, chance / 3f, chance / 3f);
     }
 
     /// <summary>

@@ -23,8 +23,8 @@ MonoBehaviour:
   - {fileID: 9105843625278447542, guid: 859e8164987e3334fb76c35d1bf6d094, type: 3}
   eliteEnemyPrefab: {fileID: 0}
   eliteSpawnChance: 0.2
-  bossPrefab: {fileID: 0}
-  isBossDungeon: 0
+  bossPrefab: {fileID: 9105843625278447542, guid: f2113e12c2880d548b99a4860d80deff, type: 3}
+  isBossDungeon: 1
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 3
   scaleEnemiesPerFloor: 1

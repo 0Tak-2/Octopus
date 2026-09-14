@@ -26,10 +26,10 @@ public class RelicDefinition : ScriptableObject
     public string description;
     
     public Sprite icon;
-    // ���� ���� relicName, description �Ʒ��� �߰� ����
+    // ���� ���� relicName, description �Ʒ��� �߰� ����
     [Header("Localization Keys")]
-    public string nameKey;   // ��: "RELIC_NAME_CRACKED_SHELL"
-    public string descKey;   // ��: "RELIC_DESC_CRACKED_SHELL"
+    public string nameKey;   // ��: "RELIC_NAME_CRACKED_SHELL"
+    public string descKey;   // ��: "RELIC_DESC_CRACKED_SHELL"
 
     [Header("Rarity")]
     public RelicRarity rarity = RelicRarity.Common;
@@ -81,19 +81,45 @@ public class RelicDefinition : ScriptableObject
     [Tooltip("DEF bonus when HP above threshold")]
     public int conditionalDEFBonus = 0;
     
+    // ============================================
+    // 중첩 성장 곡선
+    // ============================================
+    // 유물은 "미미한 효과가 쌓여 결국 체감된다"가 설계 의도다.
+    // 그래서 중첩은 단계마다 수익이 체감하고, 최대 단계가 있다.
+    // 상한이 없으면 후반에 초반 챕터가 무의미해지고, 체감이 선형이면 초반에 아무것도 느껴지지 않는다.
+    //
+    // 증가폭:  1단계 +1.00, 2단계 +0.70, 3단계 +0.49, 4단계 +0.34, 5단계 +0.24
+    // 누적 배율: 1.00 → 1.70 → 2.19 → 2.53 → 2.77 (상한)
+
+    /// <summary>중첩 최대 단계. 이 이상 얻어도 효과는 더 오르지 않는다.</summary>
+    public const int MaxStackLevel = 5;
+
+    /// <summary>단계별 증가폭 감쇠율. 0.7 = 다음 단계는 직전 증가폭의 70%.</summary>
+    public const float StackFalloff = 0.7f;
+
     /// <summary>
-    /// Get scaled bonuses based on stack count
-    /// Stack multiplier: 1, 2, 4, 8, 16, 32...
+    /// Get scaled bonuses based on stack count.
+    /// 수익 체감 + 상한. 자세한 곡선은 위 주석 참고.
     /// </summary>
     public float GetStackMultiplier(int stackCount)
     {
         if (stackCount <= 0) return 0f;
-        if (stackCount == 1) return 1f;
-        
-        // 1, 2, 4, 8, 16, 32 progression
-        // Stack 1 = 1x, Stack 2 = 2x, Stack 3 = 4x, Stack 4 = 8x...
-        return Mathf.Pow(2, stackCount - 1);
+
+        int levels = Mathf.Min(stackCount, MaxStackLevel);
+
+        float total = 0f;
+        float increment = 1f;
+        for (int i = 0; i < levels; i++)
+        {
+            total += increment;
+            increment *= StackFalloff;
+        }
+
+        return total;
     }
+
+    /// <summary>중첩이 상한에 닿았는가. 이후 획득분은 다른 보상으로 돌려야 한다.</summary>
+    public static bool IsStackMaxed(int stackCount) => stackCount >= MaxStackLevel;
     
     /// <summary>
     /// Calculate total MaxHP bonus for given stack count

@@ -14642,6 +14642,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 840374265}
   m_CullTransparentMesh: 1
+--- !u!1 &854844539
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 854844541}
+  - component: {fileID: 854844540}
+  m_Layer: 0
+  m_Name: ColorModuleDropper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &854844540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854844539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ea86fa93461db44975359251e69afb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  redModulePool:
+  - {fileID: 11400000, guid: d4453b72d4f7eae46851412cb6687eb7, type: 2}
+  - {fileID: 11400000, guid: 87afbc8b662cab64b9824e19cd02d3c1, type: 2}
+  blueModulePool:
+  - {fileID: 11400000, guid: b1233e639db4d73428db3048cd32f873, type: 2}
+  - {fileID: 11400000, guid: 213e014ae0cfa5e41a3a66aa61119461, type: 2}
+  blackModulePool:
+  - {fileID: 11400000, guid: 4d203eb13aa1f694380d8693c88df773, type: 2}
+  - {fileID: 11400000, guid: 516ca7f7b83b5b8458622c6ec1b63b93, type: 2}
+--- !u!4 &854844541
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854844539}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &864100043
 GameObject:
   m_ObjectHideFlags: 0
@@ -16214,6 +16267,7 @@ MonoBehaviour:
   wallTilemap: {fileID: 535522049}
   mapRenderer: {fileID: 607480103}
   dungeonDefinition: {fileID: 11400000, guid: 6de11745e4028634abe748674b071250, type: 2}
+  bossClearChoiceDelay: 2
   gridWidth: 4
   gridHeight: 4
   minRooms: 5
@@ -16262,8 +16316,12 @@ MonoBehaviour:
   occupancy: {fileID: 710611694}
   hitEffectManager: {fileID: 1517654838}
   detectionRange: 1
+  requireLineOfSightForRanged: 0
   attackDelay: 0.2
   dashDuration: 0.15
+  fallbackProjectileSpeed: 9
+  fallbackProjectileColor: {r: 0.95, g: 0.75, b: 0.25, a: 1}
+  fallbackProjectileScale: 0.22
   showDebugLogs: 1
 --- !u!4 &1154835358
 Transform:
@@ -17970,6 +18028,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9b1129a7c6e5ea34fb6b4788364f31d3, type: 2}
   - {fileID: 11400000, guid: 86a38995b0e9d4042b791c2382d82a49, type: 2}
   enableRangePreview: 1
+  damageReferenceATK: 10
   cancelKey: 27
   cancelWithRightClick: 1
 --- !u!114 &1202764717
@@ -20441,6 +20500,7 @@ MonoBehaviour:
     entranceAlignT: 0.5
     currentDungeonId: 
     returnToMapIndex: 0
+  runCharacterName: 
   inventoryData: []
   fieldMapDataList: []
   currentDungeonData:
@@ -23601,8 +23661,11 @@ MonoBehaviour:
   simpleDeathFadeDuration: 0.45
   simpleDeathOverlayAlpha: 0.92
   simpleDeathText: YOU DIED
+  simpleVictoryText: SURVIVED
   autoReturnToTitleOnDeath: 1
   autoReturnDelaySeconds: 4
+  showRunEndStats: 1
+  successRewardBonus: 0.25
   characterSelectScene: CharacterSelect
   mainMenuScene: TitleScene
   commonChance: 0.6
@@ -25535,3 +25598,4 @@ SceneRoots:
   - {fileID: 542078135}
   - {fileID: 1992005317}
   - {fileID: 1093727553}
+  - {fileID: 854844541}

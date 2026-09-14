@@ -38,6 +38,10 @@ public static class RunSlotSaveService
         public List<FieldMapEntry> fieldMapDataList = new List<FieldMapEntry>();
         public List<DungeonDataEntry> allDungeonData = new List<DungeonDataEntry>();
         public DungeonSaveData currentDungeonData;
+        public RunStatistics runStats = new RunStatistics();
+        // 챕터 진행도. WorldProgressManager 는 PlayerPrefs(슬롯 공용)에만 들고 있어서
+        // 슬롯별로 남기지 않으면 이어하기 때 1챕터로 되돌아간다.
+        public int currentFieldIndex;
     }
 
     private static string SlotsDir
@@ -157,6 +161,9 @@ public static class RunSlotSaveService
 
         string characterName = ResolveCharacterName(slot, gm.runCharacterName);
 
+        // 저장 직전에 경과 시간을 적립해야 이어하기에서 플레이 타임이 이어진다.
+        gm.AccumulatePlayTime();
+
         var snap = new RunSnapshot
         {
             slot = slot,
@@ -170,6 +177,10 @@ public static class RunSlotSaveService
             fieldMapDataList = Clone(gm.fieldMapDataList) ?? new List<FieldMapEntry>(),
             allDungeonData = Clone(gm.allDungeonData) ?? new List<DungeonDataEntry>(),
             currentDungeonData = Clone(gm.currentDungeonData),
+            runStats = Clone(gm.runStats) ?? new RunStatistics(),
+            currentFieldIndex = WorldProgressManager.Instance != null
+                ? WorldProgressManager.Instance.CurrentFieldIndex
+                : 0,
         };
 
         gm.runCharacterName = characterName;
@@ -262,6 +273,12 @@ public static class RunSlotSaveService
         gm.fieldMapDataList = Clone(snap.fieldMapDataList) ?? new List<FieldMapEntry>();
         gm.allDungeonData = Clone(snap.allDungeonData) ?? new List<DungeonDataEntry>();
         gm.currentDungeonData = Clone(snap.currentDungeonData);
+        gm.runStats = Clone(snap.runStats) ?? new RunStatistics();
+        gm.ResetPlayTimeAnchor();
+
+        // ResetGame() 이 WorldProgressManager 를 0으로 밀어놓은 뒤라 여기서 되돌린다.
+        if (WorldProgressManager.Instance != null)
+            WorldProgressManager.Instance.RestoreFieldIndex(snap.currentFieldIndex);
     }
 
     public static void DeleteActiveSlot() => DeleteSlot(GetActiveSlot());

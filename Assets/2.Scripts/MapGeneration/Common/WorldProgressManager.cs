@@ -91,7 +91,17 @@ public class WorldProgressManager : MonoBehaviour
         currentFieldIndex = fieldIndex;
         currentDungeonID = "";
         currentDungeonFloor = 0;
-        
+
+        // 도달 챕터를 런 통계에 기록한다. 이게 없으면 아무리 깊이 가도
+        // DeathManager.DetermineRelicReward 의 진행도 보너스가 0이라 보상이 안 커진다.
+        var gm = GameManager.Instance;
+        if (gm != null && gm.runStats != null)
+        {
+            int chapter = fieldIndex + 1;
+            if (chapter > gm.runStats.highestFieldReached)
+                gm.runStats.highestFieldReached = chapter;
+        }
+
         SaveProgress();
         
         if (showDebugLogs)
@@ -118,6 +128,28 @@ public class WorldProgressManager : MonoBehaviour
             Debug.Log($"[WorldProgress] 던전 동기화: {dungeon.dungeonName}, 층={oneBasedFloor}");
     }
     
+    /// <summary>
+    /// 슬롯 세이브에서 챕터 진행도를 되돌린다. 씬 로드 없이 값만 맞춘다.
+    /// currentFieldIndex 는 PlayerPrefs(슬롯 공용)에 저장돼서, 이어하기 때
+    /// ResetGame() -> ResetProgress() 가 지워버리면 항상 1챕터로 돌아간다.
+    /// </summary>
+    public void RestoreFieldIndex(int fieldIndex)
+    {
+        if (allFields == null || allFields.Length == 0) return;
+
+        currentFieldIndex = Mathf.Clamp(fieldIndex, 0, allFields.Length - 1);
+        currentDungeonID = "";
+        currentDungeonFloor = 0;
+        SaveProgress();
+
+        if (showDebugLogs)
+            Debug.Log($"[WorldProgress] 슬롯에서 챕터 복원: {currentFieldIndex + 1}");
+    }
+
+    /// <summary>다음 챕터(필드)가 남아 있는가. 챕터 클리어 선택창의 '전진' 가능 여부.</summary>
+    public bool HasNextField =>
+        allFields != null && currentFieldIndex >= 0 && currentFieldIndex < allFields.Length - 1;
+
     /// <summary>
     /// Go to next field
     /// </summary>

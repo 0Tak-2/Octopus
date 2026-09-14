@@ -33,6 +33,35 @@ public class GameManager : MonoBehaviour
     public string runCharacterName = "";
 
     // =========================================================
+    // 런 통계
+    // =========================================================
+    // DeathManager 가 아니라 여기가 통계의 집이다.
+    // DeathManager 는 씬 스코프라 챕터를 넘어갈 때(씬 리로드) Start()->ResetRunStats() 로
+    // 처치 수·플레이 타임이 0이 됐다. 그러면 "깊이 갈수록 보상이 커진다"가 성립하지 않는다.
+    // GameManager 는 DontDestroyOnLoad 이고 슬롯 세이브의 소스이므로 여기 두면
+    // 챕터 이동과 이어하기 양쪽에서 통계가 유지된다.
+    [Header("Run Statistics")]
+    public RunStatistics runStats = new RunStatistics();
+
+    // 이번 씬 세션에서 플레이 타임을 재기 시작한 시각 (Time.time 기준)
+    private float _playTimeAnchor;
+
+    /// <summary>
+    /// 지금까지 흐른 시간을 통계에 적립하고 기준점을 다시 잡는다.
+    /// Time.time 은 앱 재시작 시 0으로 돌아가므로 경과분을 누적해 둬야 이어하기에서도 맞는다.
+    /// </summary>
+    public void AccumulatePlayTime()
+    {
+        float now = Time.time;
+        if (now > _playTimeAnchor)
+            runStats.totalPlayTime += now - _playTimeAnchor;
+        _playTimeAnchor = now;
+    }
+
+    /// <summary>씬이 새로 로드됐을 때 기준점만 갱신 (누적치는 유지).</summary>
+    public void ResetPlayTimeAnchor() => _playTimeAnchor = Time.time;
+
+    // =========================================================
     // 인벤토리 데이터 (NEW!)
     // =========================================================
     [Header("Inventory Data")]
@@ -701,6 +730,9 @@ public class GameManager : MonoBehaviour
         clearedDungeons.Clear();
         playerData = new PlayerSaveData();
         runCharacterName = "";
+        // 런이 새로 시작될 때만 통계를 지운다. (이어하기면 직후 스냅샷이 덮어쓴다)
+        runStats = new RunStatistics();
+        ResetPlayTimeAnchor();
         inventoryData.Clear();
         fieldMapDataList.Clear();
         currentDungeonData = null;

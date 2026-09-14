@@ -5,23 +5,31 @@ public class RestController : MonoBehaviour
     public enum RestState
     {
         Idle,
-        Confirm,   // "ÈŞ½ÄÀ» ÃëÇÏ½Ã°Ú½À´Ï±î? (R)"
-        Resting    // ÀÚµ¿ ÈŞ½Ä ÁøÇà Áß
+        Confirm,   // "ï¿½Ş½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï½Ã°Ú½ï¿½ï¿½Ï±ï¿½? (R)"
+        Resting    // ï¿½Úµï¿½ ï¿½Ş½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
     }
 
     [Header("Refs")]
     public FieldTimeManager fieldTime;
     public PlayerStats stats;
+    public FieldTurnCoordinator turnCoordinator;
+
+    [Header("Rest Risk")]
+    [Tooltip("íœ´ì‹ í‹±ì„ í„´ ì½”ë””ë„¤ì´í„°ë¡œ ë„˜ê²¨ ì ë„ í–‰ë™í•˜ê²Œ í•œë‹¤. ë„ë©´ ìëŠ” ë™ì•ˆ ë¬´ì ì´ ëœë‹¤.")]
+    public bool enemiesActWhileResting = true;
+
+    [Tooltip("íœ´ì‹ ì¤‘ í”¼í•´ë¥¼ ì…ìœ¼ë©´ ì¦‰ì‹œ ê¹¨ì–´ë‚œë‹¤.")]
+    public bool wakeOnDamage = true;
 
     [Header("Input")]
     public KeyCode restKey = KeyCode.R;
 
     [Header("Rest Rule")]
-    public int timePerTick = 1;           // ÈŞ½Ä 1Æ½ = Time +1
-    public int fatigueGainPerTick = 1;    // ÈŞ½Ä 1Æ½ = ÇÇ·Î +1 (¡æ Ã¼·Âµµ +1)
+    public int timePerTick = 1;           // ï¿½Ş½ï¿½ 1Æ½ = Time +1
+    public int fatigueGainPerTick = 1;    // ï¿½Ş½ï¿½ 1Æ½ = ï¿½Ç·ï¿½ +1 (ï¿½ï¿½ Ã¼ï¿½Âµï¿½ +1)
 
     [Header("Speed")]
-    public float ticksPerSecond = 12f;    // ÀÚµ¿À¸·Î ºü¸£°Ô ½Ã°£ º¸³»±â
+    public float ticksPerSecond = 12f;    // ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     public RestState State { get; private set; } = RestState.Idle;
 
@@ -31,6 +39,28 @@ public class RestController : MonoBehaviour
     {
         if (fieldTime == null) fieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
         if (stats == null) stats = GetComponent<PlayerStats>() ?? FindObjectOfType<PlayerStats>();
+        if (turnCoordinator == null) turnCoordinator = FindObjectOfType<FieldTurnCoordinator>();
+    }
+
+    private void OnEnable()
+    {
+        if (stats != null && wakeOnDamage)
+            stats.OnDamageTaken += HandleDamagedWhileResting;
+    }
+
+    private void OnDisable()
+    {
+        if (stats != null)
+            stats.OnDamageTaken -= HandleDamagedWhileResting;
+    }
+
+    /// <summary>ìëŠ” ë™ì•ˆ ë§ìœ¼ë©´ ê¹¬ë‹¤. ì•ˆì „í•œ ê³³ì„ ì°¾ëŠ” ê²ƒì´ í”Œë ˆì´ì–´ì˜ íŒë‹¨ì´ ë˜ë„ë¡.</summary>
+    private void HandleDamagedWhileResting(int damage)
+    {
+        if (State != RestState.Resting) return;
+
+        State = RestState.Idle;
+        _accum = 0f;
     }
 
     private void Update()
@@ -50,8 +80,8 @@ public class RestController : MonoBehaviour
     {
         if (stats == null || fieldTime == null) return;
 
-        // ±¾ÁÖ¸² 0ÀÌ¸é ÈŞ½ÄÇØµµ µÇ´ÂÁö ¿©ºÎ´Â ±âÈ¹¿¡ µû¶ó ´Ş¶ó¼­ Áö±İÀº ¸·Áö ¾ÊÀ½.
-        // ÇÊ¿äÇÏ¸é ¿©±â¼­ stats.hunger <= 0ÀÏ ¶§ Confirm ÁøÀÔ ±İÁö·Î ¹Ù²Ü ¼ö ÀÖÀ½.
+        // ï¿½ï¿½ï¿½Ö¸ï¿½ 0ï¿½Ì¸ï¿½ ï¿½Ş½ï¿½ï¿½Øµï¿½ ï¿½Ç´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î´ï¿½ ï¿½ï¿½È¹ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ş¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+        // ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½â¼­ stats.hunger <= 0ï¿½ï¿½ ï¿½ï¿½ Confirm ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 
         if (State == RestState.Idle)
         {
@@ -61,10 +91,10 @@ public class RestController : MonoBehaviour
 
         if (State == RestState.Confirm)
         {
-            // È®Á¤ ¡æ ÈŞ½Ä ½ÃÀÛ
+            // È®ï¿½ï¿½ ï¿½ï¿½ ï¿½Ş½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (stats.fatigue >= stats.maxFatigue)
             {
-                // ÀÌ¹Ì ÇÇ·Î°¡ ²Ë Â÷ ÀÖÀ¸¸é ¾Æ¹« ÀÏµµ ¾È ÇÔ(Confirm ÇØÁ¦)
+                // ï¿½Ì¹ï¿½ ï¿½Ç·Î°ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ¹ï¿½ ï¿½Ïµï¿½ ï¿½ï¿½ ï¿½ï¿½(Confirm ï¿½ï¿½ï¿½ï¿½)
                 State = RestState.Idle;
                 return;
             }
@@ -76,7 +106,7 @@ public class RestController : MonoBehaviour
 
         if (State == RestState.Resting)
         {
-            // ÈŞ½Ä Áß¿¡ RÀ» ´©¸£¸é Áï½Ã Áß´Ü(¼±ÅÃ)
+            // ï¿½Ş½ï¿½ ï¿½ß¿ï¿½ Rï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ß´ï¿½(ï¿½ï¿½ï¿½ï¿½)
             State = RestState.Idle;
             _accum = 0f;
             return;
@@ -91,7 +121,7 @@ public class RestController : MonoBehaviour
             return;
         }
 
-        // ÇÇ·Î°¡ ²Ë Â÷¸é Á¾·á
+        // ï¿½Ç·Î°ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (stats.fatigue >= stats.maxFatigue)
         {
             State = RestState.Idle;
@@ -99,18 +129,40 @@ public class RestController : MonoBehaviour
             return;
         }
 
+        // í„´ ì½”ë””ë„¤ì´í„°ê°€ ì  í„´ì„ ì²˜ë¦¬í•˜ëŠ” ë™ì•ˆì—ëŠ” ìƒˆ í‹±ì„ ë„£ì§€ ì•ŠëŠ”ë‹¤.
+        if (enemiesActWhileResting && turnCoordinator != null && turnCoordinator.IsBusy)
+            return;
+
         _accum += Time.deltaTime * ticksPerSecond;
         while (_accum >= 1f)
         {
             _accum -= 1f;
 
-            // 1) ½Ã°£ °æ°ú
+            // 1) ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½
+            if (enemiesActWhileResting && turnCoordinator != null)
+            {
+                // í„´ ì½”ë””ë„¤ì´í„°ë¥¼ ê±°ì³ì•¼ ì ë„ í•œ í„´ ì›€ì§ì¸ë‹¤.
+                // ì˜ˆì „ì²˜ëŸ¼ fieldTime.Advance ë§Œ í˜¸ì¶œí•˜ë©´ FieldMultiEnemyAttack.OnPlayerTurnEnd ê°€
+                // ëŒì§€ ì•Šì•„ì„œ, ìëŠ” ë™ì•ˆ í”Œë ˆì´ì–´ê°€ ì‚¬ì‹¤ìƒ ë¬´ì ì´ ëœë‹¤.
+                turnCoordinator.TryCommitPlayerAction(timePerTick, true);
+                stats.RestRecover(fatigueGainPerTick);
+
+                if (stats.fatigue >= stats.maxFatigue)
+                {
+                    State = RestState.Idle;
+                    _accum = 0f;
+                }
+
+                // ì  í„´ì´ ëë‚  ë•Œê¹Œì§€ ë‹¤ìŒ í‹±ì€ ë¯¸ë£¬ë‹¤.
+                return;
+            }
+
             fieldTime.Advance(timePerTick);
 
-            // 2) ÇÇ·Î È¸º¹(+1) ¡æ Ã¼·Âµµ µ¿ÀÏ·® È¸º¹
+            // 2) ï¿½Ç·ï¿½ È¸ï¿½ï¿½(+1) ï¿½ï¿½ Ã¼ï¿½Âµï¿½ ï¿½ï¿½ï¿½Ï·ï¿½ È¸ï¿½ï¿½
             stats.RestRecover(fatigueGainPerTick);
 
-            // 3) È¤½Ã ÇÑ ¹ø¿¡ max¿¡ µµ´ŞÇÏ¸é Áï½Ã Á¾·á
+            // 3) È¤ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ maxï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (stats.fatigue >= stats.maxFatigue)
             {
                 State = RestState.Idle;

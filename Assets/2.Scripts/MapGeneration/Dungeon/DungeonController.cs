@@ -18,6 +18,9 @@ public class DungeonController : MonoBehaviour
     [Header("Dungeon Settings")]
     public DungeonDefinition dungeonDefinition;
 
+    [Tooltip("보스를 잡은 뒤 챕터 클리어 선택창이 뜨기까지의 여유 시간(초)")]
+    [Range(0f, 6f)] public float bossClearChoiceDelay = 2f;
+
     [Header("Grid Generation Settings")]
     [Tooltip("격자 너비 (방 개수)")]
     [Range(3, 6)] public int gridWidth = 4;
@@ -103,20 +106,20 @@ public class DungeonController : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.playerData.currentDungeonId != dungeonId)
             GameManager.Instance.playerData.currentDungeonId = dungeonId;
 
-        // WorldProgressManager에서 현재 던전 자동 가져오기
-        if (dungeonDefinition == null && WorldProgressManager.Instance != null)
-        {
-            var currentDungeon = WorldProgressManager.Instance.GetCurrentDungeon();
-            if (currentDungeon != null)
-                dungeonDefinition = currentDungeon;
-        }
-
-        // GameManager ID로 찾기
+        // 지금 들어온 던전 ID로 먼저 찾는다. WorldProgressManager.currentDungeonID 는 뒤늦게 갱신될 수 있어
+        // GetCurrentDungeon() 을 먼저 쓰면 직전 던전 정의를 집어올 수 있다.
         if (dungeonDefinition == null && WorldProgressManager.Instance != null)
         {
             var dungeon = WorldProgressManager.Instance.GetDungeonByID(dungeonId);
             if (dungeon != null)
                 dungeonDefinition = dungeon;
+        }
+
+        if (dungeonDefinition == null && WorldProgressManager.Instance != null)
+        {
+            var currentDungeon = WorldProgressManager.Instance.GetCurrentDungeon();
+            if (currentDungeon != null)
+                dungeonDefinition = currentDungeon;
         }
 
         if (dungeonDefinition == null)
@@ -200,6 +203,12 @@ public class DungeonController : MonoBehaviour
         currentFloorData = null;
         bossWasSpawned = false;
         dungeonCleared = false;
+
+        // 다음에 다른 던전으로 들어갈 때 이전 던전 값을 물려받지 않도록 초기화한다.
+        // 특히 maxFloors/currentFloor 가 남아 있으면 새 던전이 곧바로 최종 층부터 시작한다.
+        dungeonDefinition = null;
+        currentFloor = 1;
+        maxFloors = 0;
     }
 
     /// <summary>
@@ -470,6 +479,7 @@ public class DungeonController : MonoBehaviour
     private void SpawnBossWithState(DungeonRoom room, List<EnemyStateSave> savedEnemies)
     {
         if (dungeonDefinition.bossPrefab == null) return;
+        if (!IsBossFloor()) return;
 
         string enemyId = $"Boss_Floor{currentFloor}";
         var savedState = savedEnemies?.Find(x => x.uniqueId == enemyId);
@@ -950,9 +960,23 @@ public class DungeonController : MonoBehaviour
         spawnedEnemies.Add(elite);
     }
 
+    /// <summary>
+    /// 보스는 보스 던전의 최종 층에서만 스폰된다.
+    /// DungeonDefinition.ShouldSpawnBoss는 0-based 전제라 1-based인 currentFloor와 맞지 않으므로 쓰지 않는다.
+    /// </summary>
+    private bool IsBossFloor()
+    {
+        if (dungeonDefinition == null) return false;
+        if (!dungeonDefinition.isBossDungeon) return false;
+        if (dungeonDefinition.bossPrefab == null) return false;
+        if (maxFloors <= 0) return false;
+        return currentFloor >= maxFloors;
+    }
+
     private void SpawnBoss(DungeonRoom room)
     {
         if (dungeonDefinition.bossPrefab == null) return;
+        if (!IsBossFloor()) return;
 
         Vector3 worldPos = gridBoard.CellToWorld(room.Center);
         bossInstance = Instantiate(dungeonDefinition.bossPrefab, worldPos, Quaternion.identity);
@@ -1088,7 +1112,85 @@ public class DungeonController : MonoBehaviour
         if (logGeneration)
             Debug.Log($"[DungeonController] 던전 클리어! {dungeonDefinition.dungeonName}");
 
+        // 보스 던전이면 런이 여기서 갈린다 — 더 깊이 갈지, 챙겨 나갈지.
+        // 로그라이크 RPG이므로 보스를 잡았다고 게임이 끝나지는 않는다.
+        if (dungeonDefinition != null && dungeonDefinition.isBossDungeon && bossWasSpawned)
+        {
+            Invoke(nameof(ShowChapterClearChoice), bossClearChoiceDelay);
+            return;
+        }
+
         Invoke(nameof(ReturnToField), 3f);
+    }
+
+    private void ShowChapterClearChoice()
+    {
+        // 선택창이 뜨기 전에 플레이어가 죽었다면 사망 연출이 우선이다.
+        if (DeathManager.Instance != null && DeathManager.Instance.RunEnded)
+            return;
+
+        DeathManager.LockInput();
+
+        var wpm = WorldProgressManager.Instance;
+        bool canAdvance = wpm != null && wpm.HasNextField;
+
+        DeathManager.Instance?.RecordDungeonCleared();
+
+        int chapter = (wpm != null ? wpm.CurrentFieldIndex : 0) + 1;
+        string bossName = dungeonDefinition != null ? dungeonDefinition.dungeonName : "";
+
+        ChapterClearUI.Show(
+            headline: $"{chapter}챕터 보스 클리어",
+            subline: canAdvance
+                ? $"{bossName}을(를) 제압했다. 더 내려갈수록 적은 강해지고 보상도 커진다."
+                : $"{bossName}을(를) 제압했다. 더 내려갈 곳이 없다.",
+            canAdvance: canAdvance,
+            advanceLabel: "더 깊이 간다   ·   다음 챕터로",
+            extractLabel: "빠져나간다   ·   지금까지 번 것을 확정한다",
+            onAdvance: AdvanceToNextChapter,
+            onExtract: ExtractAndEndRun);
+    }
+
+    /// <summary>전진: 던전 클리어를 등록하고 다음 챕터 필드로 넘어간다. 런은 계속된다.</summary>
+    private void AdvanceToNextChapter()
+    {
+        DeathManager.ClearDeathInputLock();
+
+        string dId = GameManager.Instance?.playerData.currentDungeonId ?? dungeonId;
+        var gm = GameManager.Instance;
+
+        if (gm != null)
+        {
+            gm.RegisterDungeonClearedOnCurrentField(dId);
+            // 다음 씬에서 던전에 있던 것으로 오해하지 않도록 비운다.
+            gm.playerData.currentDungeonId = "";
+            gm.SaveAllCurrentState();
+        }
+
+        Cleanup();
+
+        if (WorldProgressManager.Instance != null)
+            WorldProgressManager.Instance.GoToNextField();
+        else
+            Debug.LogError("[DungeonController] WorldProgressManager 가 없어 다음 챕터로 갈 수 없습니다.");
+    }
+
+    /// <summary>탈출: 런을 성공으로 끝낸다. 메타 경험치와 유물이 남는다.</summary>
+    private void ExtractAndEndRun()
+    {
+        string dId = GameManager.Instance?.playerData.currentDungeonId ?? dungeonId;
+        GameManager.Instance?.RegisterDungeonClearedOnCurrentField(dId);
+
+        if (DeathManager.Instance != null)
+        {
+            DeathManager.Instance.TryHandleRunSuccess($"Cleared {dId}");
+        }
+        else
+        {
+            Debug.LogError("[DungeonController] DeathManager 가 없어 런을 종료할 수 없습니다.");
+            DeathManager.ClearDeathInputLock();
+            ReturnToField();
+        }
     }
 
     public void ReturnToField()

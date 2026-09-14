@@ -7,8 +7,10 @@ using UnityEngine.UI;
 /// </summary>
 public class DeathManager : MonoBehaviour
 {
+    /// <summary>플레이어 입력 전면 차단 플래그. 사망 연출 외에 런 종료 선택창에서도 쓴다.</summary>
     public static bool IsDeathInputLocked { get; private set; }
     public static void ClearDeathInputLock() => IsDeathInputLocked = false;
+    public static void LockInput() => IsDeathInputLocked = true;
 
     public enum DeathContext
     {
@@ -30,10 +32,20 @@ public class DeathManager : MonoBehaviour
     [Range(0.05f, 2f)] public float simpleDeathFadeDuration = 0.45f;
     [Range(0f, 1f)] public float simpleDeathOverlayAlpha = 0.92f;
     public string simpleDeathText = "YOU DIED";
+    [Tooltip("탈출로 런을 성공적으로 끝냈을 때 표시할 문구. 이 오버레이는 레거시 내장 폰트라 한글이 깨지므로 영문으로 둔다.")]
+    public string simpleVictoryText = "SURVIVED";
     [Header("Death Flow")]
     [Tooltip("사망 후 자동으로 타이틀(메인 메뉴)로 복귀")]
     public bool autoReturnToTitleOnDeath = true;
     [Range(0.5f, 10f)] public float autoReturnDelaySeconds = 4f;
+
+    [Tooltip("런 종료 시 통계 화면을 띄운다. 켜면 자동 복귀 대신 플레이어가 버튼을 눌러 나간다. " +
+             "씬에 DeathScreenUI 가 없으면 런타임에 만들어 쓴다.")]
+    public bool showRunEndStats = true;
+
+    [Header("Run Success")]
+    [Tooltip("탈출 성공 시 유물 보상 확률에 더해지는 보너스. 죽는 것보다 살아 나오는 게 이득이어야 한다.")]
+    [Range(0f, 1f)] public float successRewardBonus = 0.25f;
     
     [Header("Scene Names")]
     public string characterSelectScene = "CharacterSelect";
@@ -48,17 +60,35 @@ public class DeathManager : MonoBehaviour
     [Header("Debug")]
     public bool showDebugLogs = true;
     
-    // Run statistics
-    private RunStatistics _currentRunStats = new RunStatistics();
+    // 통계의 실제 소유자는 GameManager 다. 이 매니저는 씬 스코프라 챕터를 넘어가면 새로 생기고,
+    // 자체 필드에 들고 있으면 그때마다 처치 수·플레이 타임이 0이 된다.
+    // GameManager 가 없을 때만(타이틀 등) 로컬 폴백을 쓴다.
+    private RunStatistics _fallbackRunStats = new RunStatistics();
+
+    private RunStatistics _currentRunStats
+    {
+        get
+        {
+            var gm = GameManager.Instance;
+            if (gm == null) return _fallbackRunStats;
+            if (gm.runStats == null) gm.runStats = new RunStatistics();
+            return gm.runStats;
+        }
+    }
     
     // Last death's reward
     private RelicDefinition _lastRewardedRelic;
-    private bool _deathProcessed;
+    // 죽음과 탈출이 공유하는 가드. 보스가 죽는 프레임에 플레이어도 죽으면 두 종료 연출이 겹친다.
+    private bool _runEnded;
     private CanvasGroup _simpleOverlayGroup;
     private Image _simpleOverlayImage;
     private Text _simpleOverlayText;
     private bool _isReturningToTitle;
+    private DeathScreenUI _statsScreen;
     
+    /// <summary>이미 런이 끝났는가(사망이든 탈출이든). 종료 연출이 겹치는 것을 막는 데 쓴다.</summary>
+    public bool RunEnded => _runEnded;
+
     public RunStatistics CurrentStats => _currentRunStats;
     public RelicDefinition LastRewardedRelic => _lastRewardedRelic;
     
@@ -85,7 +115,9 @@ public class DeathManager : MonoBehaviour
         
         if (deathScreenUI != null)
             deathScreenUI.SetActive(false);
-        
+
+        EnsureRunEndStatsScreen();
+
         // Start new run stats
         ResetRunStats();
     }
@@ -99,9 +131,9 @@ public class DeathManager : MonoBehaviour
     /// </summary>
     public void ResetRunStats()
     {
-        _currentRunStats = new RunStatistics();
-        _currentRunStats.runStartTime = Time.time;
-        _deathProcessed = false;
+        // 통계 자체는 여기서 지우지 않는다. 런 시작 신호는 GameManager.ResetGame() 이다.
+        // 예전엔 여기서 매번 새로 만들어서, 챕터를 넘어가면 통계가 통째로 날아갔다.
+        _runEnded = false;
         _isReturningToTitle = false;
         IsDeathInputLocked = false;
         HideSimpleDeathOverlay();
@@ -198,11 +230,11 @@ public class DeathManager : MonoBehaviour
     /// </summary>
     public bool TryHandlePlayerDeath(DeathContext context, string causeOfDeath = "Unknown")
     {
-        if (_deathProcessed)
+        if (_runEnded)
             return false;
 
-        _deathProcessed = true;
-        ProcessDeathInternal(context, causeOfDeath);
+        _runEnded = true;
+        EndRun(false, context, causeOfDeath);
         return true;
     }
 
@@ -211,39 +243,60 @@ public class DeathManager : MonoBehaviour
         TryHandlePlayerDeath(DeathContext.Unknown, causeOfDeath);
     }
 
-    private void ProcessDeathInternal(DeathContext context, string causeOfDeath = "Unknown")
+    /// <summary>
+    /// 챕터 보스를 잡고 탈출을 선택했을 때. 런이 성공으로 끝난다.
+    /// 죽음과 같은 종료 경로를 타되 보상이 더 좋고 문구가 다르다.
+    /// </summary>
+    public bool TryHandleRunSuccess(string reason = "Extracted")
+    {
+        if (_runEnded)
+            return false;
+
+        _runEnded = true;
+        EndRun(true, DeathContext.Dungeon, reason);
+        return true;
+    }
+
+    private void EndRun(bool success, DeathContext context, string cause)
     {
         IsDeathInputLocked = true;
 
         // Finalize stats
+        // totalPlayTime 은 씬을 넘나들며 누적된 값이다. 여기서 마지막 구간만 적립한다.
+        // (예전처럼 runEndTime - runStartTime 으로 덮어쓰면 마지막 챕터 시간만 남는다)
+        GameManager.Instance?.AccumulatePlayTime();
         _currentRunStats.runEndTime = Time.time;
-        _currentRunStats.totalPlayTime = _currentRunStats.runEndTime - _currentRunStats.runStartTime;
-        _currentRunStats.causeOfDeath = causeOfDeath;
-        
+        _currentRunStats.causeOfDeath = cause;
+        _currentRunStats.victory = success;
+
         if (showDebugLogs)
         {
-            Debug.Log($"[DeathManager] Player died! Context: {context}, Cause: {causeOfDeath}");
+            Debug.Log($"[DeathManager] 런 종료 ({(success ? "탈출 성공" : "사망")})! Context: {context}, Cause: {cause}");
             Debug.Log($"  - Kills: {_currentRunStats.totalKills}");
             Debug.Log($"  - Play time: {_currentRunStats.totalPlayTime:F1}s");
             Debug.Log($"  - Highest field: {_currentRunStats.highestFieldReached}");
         }
-        
+
         // Award relic
-        _lastRewardedRelic = DetermineRelicReward();
-        
+        _lastRewardedRelic = DetermineRelicReward(success);
+
         if (_lastRewardedRelic != null && relicManager != null)
         {
             relicManager.AddRelic(_lastRewardedRelic);
-            
+
             if (showDebugLogs)
                 Debug.Log($"[DeathManager] Awarded relic: {_lastRewardedRelic.relicName} ({_lastRewardedRelic.rarity})");
         }
-        
+
         // Fire event
         OnPlayerDeath?.Invoke(_currentRunStats, _lastRewardedRelic);
 
         if (useSimpleDeathOverlay)
-            StartCoroutine(ShowSimpleDeathOverlayRoutine());
+            StartCoroutine(ShowSimpleRunEndOverlayRoutine(success));
+
+        // 통계 화면을 쓰면 자동 복귀를 하지 않는다. 플레이어가 결과를 다 보고 버튼으로 나간다.
+        if (showRunEndStats && _statsScreen != null)
+            return;
 
         bool showDeathScreen = !autoReturnToTitleOnDeath;
         if (!showDeathScreen && deathScreenUI != null && deathScreenUI.activeSelf)
@@ -257,13 +310,53 @@ public class DeathManager : MonoBehaviour
             StartCoroutine(ReturnToTitleAfterDelayRoutine());
     }
 
-    private System.Collections.IEnumerator ShowSimpleDeathOverlayRoutine()
+    /// <summary>
+    /// 씬에 DeathScreenUI 가 없으면 런타임 생성. 통계 화면은 사망/생환이 공유한다.
+    /// EndRun 의 OnPlayerDeath 이벤트보다 먼저 구독돼 있어야 하므로 Start 에서 만든다.
+    /// </summary>
+    private void EnsureRunEndStatsScreen()
+    {
+        if (!showRunEndStats) return;
+        if (_statsScreen != null) return;
+
+        _statsScreen = FindObjectOfType<DeathScreenUI>(true);
+        if (_statsScreen == null)
+            _statsScreen = DeathScreenUI.CreateRuntime();
+
+        // 씬이 바뀌면 이 매니저는 새로 생기므로 화면을 다시 붙여준다.
+        _statsScreen.BindTo(this);
+    }
+
+    /// <summary>
+    /// 통계 화면의 버튼에서 호출. 런 데이터를 지우고 타이틀로 돌아간다.
+    /// (기존 OnContinueClicked 는 빌드에 없는 "CharacterSelect" 씬을 로드해 터졌다.)
+    /// </summary>
+    public void ReturnToTitleNow()
+    {
+        if (_isReturningToTitle) return;
+        _isReturningToTitle = true;
+
+        if (relicManager != null)
+            relicManager.ClearEquipped();
+
+        DeleteCurrentRunData();
+        HideSimpleDeathOverlay();
+        IsDeathInputLocked = false;
+        SceneManager.LoadScene(mainMenuScene);
+    }
+
+    private System.Collections.IEnumerator ShowSimpleRunEndOverlayRoutine(bool success)
     {
         EnsureSimpleDeathOverlay();
         if (_simpleOverlayGroup == null || _simpleOverlayImage == null || _simpleOverlayText == null)
             yield break;
 
-        _simpleOverlayText.text = string.IsNullOrEmpty(simpleDeathText) ? "YOU DIED" : simpleDeathText;
+        string fallback = success ? "SURVIVED" : "YOU DIED";
+        string configured = success ? simpleVictoryText : simpleDeathText;
+        _simpleOverlayText.text = string.IsNullOrEmpty(configured) ? fallback : configured;
+        _simpleOverlayText.color = success
+            ? new Color(0.95f, 0.82f, 0.25f, 1f)
+            : new Color(0.85f, 0.1f, 0.1f, 1f);
         _simpleOverlayGroup.alpha = 0f;
         _simpleOverlayText.enabled = false;
         _simpleOverlayGroup.gameObject.SetActive(true);
@@ -337,21 +430,25 @@ public class DeathManager : MonoBehaviour
     /// <summary>
     /// Determine relic reward based on performance
     /// </summary>
-    private RelicDefinition DetermineRelicReward()
+    private RelicDefinition DetermineRelicReward(bool success)
     {
         if (relicManager == null) return null;
-        
+
         // Adjust chances based on performance
         float bonusChance = 0f;
-        
+
         // Boss kills boost rare+ chance
         bonusChance += _currentRunStats.bossKills * 0.05f;
-        
+
         // Field progress boosts chance
         bonusChance += _currentRunStats.highestFieldReached * 0.02f;
-        
+
         // Dungeon clears boost chance
         bonusChance += _currentRunStats.dungeonsCleared * 0.01f;
+
+        // 살아서 나오는 쪽이 죽는 쪽보다 확실히 이득이어야 탈출 선택에 의미가 생긴다.
+        if (success)
+            bonusChance += successRewardBonus;
         
         float adjustedRare = Mathf.Min(rareChance + bonusChance * 0.5f, 0.5f);
         float adjustedEpic = Mathf.Min(epicChance + bonusChance * 0.3f, 0.3f);
@@ -370,17 +467,9 @@ public class DeathManager : MonoBehaviour
     /// </summary>
     public void OnContinueClicked()
     {
-        if (_isReturningToTitle) return;
-
-        // Clear equipped relics for new run
-        if (relicManager != null)
-            relicManager.ClearEquipped();
-
-        IsDeathInputLocked = false;
-        HideSimpleDeathOverlay();
-        
-        // Load character select
-        SceneManager.LoadScene(characterSelectScene);
+        // characterSelectScene("CharacterSelect")은 빌드 설정에 없는 씬이라 로드하면 터진다.
+        // 런이 끝난 뒤 갈 곳은 타이틀뿐이다.
+        ReturnToTitleNow();
     }
     
     /// <summary>
@@ -481,4 +570,8 @@ public class RunStatistics
     
     [Header("Death")]
     public string causeOfDeath = "";
+
+    [Header("Outcome")]
+    [Tooltip("탈출로 런을 성공적으로 끝냈으면 true, 죽었으면 false")]
+    public bool victory = false;
 }

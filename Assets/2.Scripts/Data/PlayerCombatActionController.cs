@@ -12,6 +12,12 @@ public class PlayerCombatActionController : MonoBehaviour
     [Header("Preview")]
     public bool enableRangePreview = true;
 
+    [Header("Damage")]
+    [Tooltip("공격 에셋의 damage 를 'ATK 배율'로 환산할 때 쓰는 기준 공격력. " +
+             "damage / 이 값 = 배율. 기본 ATK(10)와 같게 두면 성장 전 데미지가 기존과 동일하다. " +
+             "예: Slash damage 30 / 10 = 3배 → ATK 10일 때 30.")]
+    [Min(1f)] public float damageReferenceATK = 10f;
+
     [Header("Cancel Input")]
     public KeyCode cancelKey = KeyCode.Escape;
     public bool cancelWithRightClick = true;
@@ -137,6 +143,13 @@ public class PlayerCombatActionController : MonoBehaviour
         yield break;
     }
 
+    /// <summary>공격 에셋의 damage 를 ATK 배율로 환산한다.</summary>
+    private float GetAttackMultiplier()
+    {
+        if (_currentAttack == null) return 1f;
+        return _currentAttack.damage / Mathf.Max(1f, damageReferenceATK);
+    }
+
     private void ApplyDamageAtTarget(Vector2Int target)
     {
         Vector2Int[] offsets = CombatPatterns.GetOffsets(_currentAttack.pattern);
@@ -151,7 +164,9 @@ public class PlayerCombatActionController : MonoBehaviour
             if (combat.HasLivingEnemyAtCombatCell(hit))
             {
                 combat.TrySelectEnemyTargetForAction(hit);
-                combat.TryDamageEnemy(_currentAttack.damage);
+                // 고정 데미지가 아니라 전투 공식을 태운다.
+                // 이렇게 해야 ATK·치명타·장비·각인·유물·컬러 패시브가 일반 공격에도 적용된다.
+                combat.DamageEnemyWithFormula(attackMultiplier: GetAttackMultiplier());
             }
         }
     }

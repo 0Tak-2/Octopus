@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Manages permanent relic collection across runs
@@ -279,6 +280,72 @@ public class RelicManager : MonoBehaviour
     }
     
     // ============================================
+    // 플레이어 스탯 반영
+    // ============================================
+
+    /// <summary>
+    /// 장착 유물의 합산치를 PlayerStats 에 밀어넣는다.
+    /// 유물 전용 필드(relic*)를 쓴다 — 장비가 bonus* 를 대입해버리기 때문.
+    /// </summary>
+    public void ApplyToPlayerStats(PlayerStats stats)
+    {
+        if (stats == null) return;
+
+        stats.relicMaxHPBonus = GetTotalMaxHPBonus();
+        stats.relicATKPercent = GetTotalATKPercent();
+        stats.relicDEF = GetTotalDEFBonus();
+        stats.relicEVA = GetTotalEVABonus();
+        stats.relicCRIT = GetTotalCRITBonus();
+        stats.relicCRIT_DMG = GetTotalCRIT_DMGBonus();
+
+        stats.ClampAll();
+
+        if (showDebugLogs)
+            Debug.Log($"[RelicManager] 유물 적용: MaxHP+{stats.relicMaxHPBonus}, ATK+{stats.relicATKPercent:P0}, " +
+                      $"DEF+{stats.relicDEF}, EVA+{stats.relicEVA:P1}, CRIT+{stats.relicCRIT:P1}");
+    }
+
+    /// <summary>
+    /// 런 시작 시 보유 유물로 빈 슬롯을 자동으로 채운다.
+    /// 선택 UI가 생기기 전까지의 임시 동작 — 희귀도 높은 것, 많이 쌓인 것 우선.
+    /// </summary>
+    public void AutoEquipOwned()
+    {
+        var owned = GetAllOwnedRelics();
+        if (owned.Count == 0) return;
+
+        var candidates = new List<RelicDefinition>(owned.Keys);
+        candidates.Sort((a, b) =>
+        {
+            int byRarity = b.rarity.CompareTo(a.rarity);
+            if (byRarity != 0) return byRarity;
+            return GetOwnedCount(b.relicID).CompareTo(GetOwnedCount(a.relicID));
+        });
+
+        foreach (var relic in candidates)
+        {
+            if (_equippedRelics.Count >= maxEquippedRelics) break;
+            EquipRelic(relic);
+        }
+    }
+
+    private void OnEnable() => SceneManager.sceneLoaded += HandleSceneLoaded;
+    private void OnDisable() => SceneManager.sceneLoaded -= HandleSceneLoaded;
+
+    /// <summary>
+    /// RelicManager 는 씬을 넘어 살아남지만 PlayerStats 는 씬마다 새로 생긴다.
+    /// 챕터를 넘어갈 때마다 다시 붙여줘야 유물 효과가 유지된다.
+    /// </summary>
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        AutoEquipOwned();
+
+        var stats = FindObjectOfType<PlayerStats>();
+        if (stats != null)
+            ApplyToPlayerStats(stats);
+    }
+
+    // ============================================
     // Random Relic Generation (for death rewards)
     // ============================================
     
@@ -302,14 +369,26 @@ public class RelicManager : MonoBehaviour
         
         // Get relics of target rarity
         var candidates = allRelics.FindAll(r => r.rarity == targetRarity);
-        
+
         // Fallback to common if no relics of that rarity
         if (candidates.Count == 0)
             candidates = allRelics.FindAll(r => r.rarity == RelicRarity.Common);
-        
+
         if (candidates.Count == 0)
             return null;
-        
+
+        // 중첩이 상한에 닿은 유물은 더 줘도 효과가 오르지 않는다.
+        // 아직 성장 여지가 있는 쪽을 우선해서 보상이 헛돌지 않게 한다.
+        var upgradable = candidates.FindAll(r => !RelicDefinition.IsStackMaxed(GetOwnedCount(r.relicID)));
+
+        // 해당 등급이 전부 만렙이면 등급을 무시하고 아직 올릴 수 있는 것을 찾는다.
+        if (upgradable.Count == 0)
+            upgradable = allRelics.FindAll(r => r != null && !RelicDefinition.IsStackMaxed(GetOwnedCount(r.relicID)));
+
+        // 전부 만렙이면 어쩔 수 없이 기존 후보에서 고른다.
+        if (upgradable.Count > 0)
+            candidates = upgradable;
+
         return candidates[Random.Range(0, candidates.Count)];
     }
     
