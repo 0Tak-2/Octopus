@@ -133,6 +133,15 @@ public class Harvestable : MonoBehaviour
         if (FogOfWarRenderer.Instance != null)
             FogOfWarRenderer.Instance.ForceRefresh();
 
+        // 채집한 셀을 기록해 둔다. 이게 없으면 맵을 나갔다 들어올 때마다 자원이 되살아나
+        // 무한 파밍이 되고, 배고픔 같은 생존 압박이 무의미해진다.
+        // (던전에서는 필드 맵 키가 의미 없으므로 필드 모드일 때만 기록)
+        if (GameManager.Instance != null &&
+            (ModeManager.Instance == null || ModeManager.Instance.CurrentMode == ModeManager.GameplayMode.Field))
+        {
+            GameManager.Instance.MarkFieldObjectDestroyed(harvestedCell);
+        }
+
         // ??????? ????
         Destroy(gameObject);
     }

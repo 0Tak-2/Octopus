@@ -162,9 +162,23 @@ public class FieldMultiEnemyAttack : MonoBehaviour
         if (occupancy == null)
             occupancy = GridOccupancyRegistry.Instance ?? FindObjectOfType<GridOccupancyRegistry>();
 
+        // 던전에 있을 때 필드 그리드를 쓰면 적/플레이어 셀 좌표가 전혀 다른 격자로 계산돼
+        // detectionRange 판정이 항상 실패한다. 그래서 던전 몹이 플레이어를 인식하지 못했다.
         GridBoard resolved = null;
-        if (ModeManager.Instance != null && ModeManager.Instance.fieldRoot != null)
-            resolved = FieldMapGenerator.ResolveGameplayGrid(ModeManager.Instance.fieldRoot);
+        var mode = ModeManager.Instance;
+        if (mode != null)
+        {
+            GameObject root = mode.CurrentMode == ModeManager.GameplayMode.Dungeon
+                ? mode.dungeonRoot
+                : mode.fieldRoot;
+
+            if (root != null)
+                resolved = FieldMapGenerator.ResolveGameplayGrid(root);
+
+            // 던전 루트에 FieldMapGenerator 가 없으면 하위의 GridBoard 를 직접 찾는다.
+            if (resolved == null && root != null)
+                resolved = root.GetComponentInChildren<GridBoard>(true);
+        }
 
         if (resolved == null)
         {
@@ -296,13 +310,40 @@ public class FieldMultiEnemyAttack : MonoBehaviour
     /// </summary>
     private void ApplyDamage(int damage)
     {
-        if (playerStats != null)
-        {
-            playerStats.TakeDamage(damage);
+        if (playerStats == null) return;
 
+        // 집중전투와 같은 공식을 쓴다.
+        // 예전엔 PlayerStats.TakeDamage 로 방어력만 적용해서, 필드에서는 회피율이 0% 취급됐다.
+        // 그 결과 회피를 올려주는 장비·유물·파랑 모듈이 게임의 절반에서 아무 효과가 없었다.
+        // 필드에는 플레이어 상태이상 매니저가 없다(집중전투 전용). null 이면 불완전 추가타만 생략된다.
+        var playerStatus = playerStats.GetComponent<StatusEffectManager>();
+        var result = CombatCalculator.CalculateEnemyAttack(damage, playerStats, playerStatus);
+
+        if (result.isEvaded)
+        {
             if (showDebugLogs)
-                Debug.Log($"[MultiEnemyAttack] Player HP: {playerStats.hp}/{playerStats.maxHP}");
+                Debug.Log("[MultiEnemyAttack] 플레이어 회피!");
+
+            ShowEvadePopup();
+            return;
         }
+
+        playerStats.ApplyFinalDamage(result.finalDamage);
+
+        if (showDebugLogs)
+            Debug.Log($"[MultiEnemyAttack] Player HP: {playerStats.hp}/{playerStats.maxHP} " +
+                      $"(raw {damage} → {result.finalDamage}, DEF {playerStats.DEF}, EVA {playerStats.EVA:P0})");
+    }
+
+    /// <summary>
+    /// 회피했을 때 표시. 안 그러면 '왜 안 맞았지?' 가 된다.
+    /// HitEffectManager 에는 숫자 표시만 있어서 0 으로 띄운다. 전용 텍스트 연출은 추후 과제.
+    /// </summary>
+    private void ShowEvadePopup()
+    {
+        var hitEffect = HitEffectManager.Instance ?? FindObjectOfType<HitEffectManager>();
+        if (hitEffect != null && player != null)
+            hitEffect.ShowHitEffect(player, 0);
     }
 
     /// <summary>

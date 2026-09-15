@@ -63,6 +63,9 @@ public class FogOfWarRenderer : MonoBehaviour
     private GameObject _fogQuad;
     private SpriteRenderer _fogSR;
     private readonly HashSet<Vector2Int> _explored = new();
+
+    /// <summary>탐험한 칸 목록 (읽기 전용). 전체 지도(M)가 이 기록을 그대로 그린다.</summary>
+    public IReadOnlyCollection<Vector2Int> ExploredCells => _explored;
     private Vector2Int _lastPlayerCell = new(int.MinValue, int.MinValue);
     private bool _lastCrouchState;
     private bool _initialized;
@@ -220,6 +223,26 @@ public class FogOfWarRenderer : MonoBehaviour
     // ???? ????
     // ============================================================
 
+    /// <summary>격자 크기가 바뀌었을 때 안개 텍스처와 쿼드를 다시 만든다. 탐험 기록은 유지한다.</summary>
+    private void RebuildFogSurface()
+    {
+        if (_fogQuad != null)
+        {
+            Destroy(_fogQuad);
+            _fogQuad = null;
+            _fogSR = null;
+        }
+
+        if (_fogTex != null)
+        {
+            Destroy(_fogTex);
+            _fogTex = null;
+        }
+
+        CreateFogTexture();
+        CreateFogQuad();
+    }
+
     private void CreateFogTexture()
     {
         _texW = grid.width * textureScale;
@@ -340,6 +363,22 @@ public class FogOfWarRenderer : MonoBehaviour
     {
         var visionSys = FieldVisionSystem.Instance;
         if (visionSys == null) return;
+
+        // 안개 텍스처는 Start 시점의 격자 크기로 만들어진다.
+        // 그런데 필드 맵 생성이 그 뒤에 격자 크기를 바꾸고, 그때 아무도 안개를 다시 만들지 않는다.
+        // 그러면 아래 루프가 새 격자(예: 50x50)를 도는데 텍스처는 옛 크기(30x30)라
+        // 픽셀 인덱스가 배열 범위를 넘는다(IndexOutOfRangeException).
+        // 크기가 어긋나면 여기서 스스로 다시 만든다.
+        if (grid != null && (_texW != grid.width * textureScale || _texH != grid.height * textureScale))
+        {
+            if (showDebugLogs)
+                Debug.Log($"[FogOfWar] 격자 크기 변경 감지 — 안개 재생성 " +
+                          $"({_texW}x{_texH} → {grid.width * textureScale}x{grid.height * textureScale})");
+
+            RebuildFogSurface();
+        }
+
+        if (_fogTex == null) return;
 
         HashSet<Vector2Int> visible = visionSys.GetPlayerVisibleCells(playerCell);
 

@@ -16,8 +16,8 @@ MonoBehaviour:
   fieldName: "\uC595\uC740 \uBC14\uB2E4"
   description: Starting area
   fieldIndex: 1
-  width: 30
-  height: 30
+  width: 50
+  height: 50
   wallProbability: 0.46
   caIterations: 4
   borderThickness: 2
@@ -27,29 +27,22 @@ MonoBehaviour:
   - {fileID: 11400000, guid: afe834c51b79fd34790875bf3088afec, type: 2}
   normalEnemyPrefabs:
   - {fileID: 9105843625278447542, guid: 8ccfbc201905d744d99ebd5084231304, type: 3}
-  - {fileID: 9105843625278447542, guid: c3b1c0fad2b525f47aa9dd5af9881849, type: 3}
   - {fileID: 9105843625278447542, guid: 859e8164987e3334fb76c35d1bf6d094, type: 3}
-  - {fileID: 9105843625278447542, guid: 44b46e5649ec7e448801249b794b100d, type: 3}
-  - {fileID: 9105843625278447542, guid: f2113e12c2880d548b99a4860d80deff, type: 3}
-  - {fileID: 9105843625278447542, guid: 6c443994287b7874c932be326cd26e51, type: 3}
-  - {fileID: 9105843625278447542, guid: f4d291f7b007cff419dd26a14e926220, type: 3}
-  - {fileID: 9105843625278447542, guid: e794bc53b4f5035468d7db8f45a8b15c, type: 3}
-  normalEnemyCount: 8
+  normalEnemyCount: 6
   eliteEnemyPrefabs: []
   eliteEnemyCount: 0
   neutralEnemyPrefabs:
   - {fileID: 9105843625278447542, guid: eebb886367f316d48aeea46b7b50573d, type: 3}
   - {fileID: 9105843625278447542, guid: 9b8ae3499265f7940acfea512ac82138, type: 3}
-  neutralEnemyCount: 3
+  neutralEnemyCount: 2
   passiveEnemyPrefabs:
   - {fileID: 9105843625278447542, guid: c551e8a5d522427468dac83482a27a3b, type: 3}
-  - {fileID: 9105843625278447542, guid: e5fe301d16591914e88d31a45c0c9371, type: 3}
   passiveEnemyCount: 2
-  seaweedCount: 30
-  coralCount: 10
-  rockCount: 8
-  sandCount: 5
-  spongeCount: 3
+  seaweedCount: 54
+  coralCount: 18
+  rockCount: 14
+  sandCount: 9
+  spongeCount: 5
   hasNextFieldExit: 1
   nextField: {fileID: 11400000, guid: aef2ab60ae59ffd44a3487e43819538e, type: 2}
   previousField: {fileID: 0}

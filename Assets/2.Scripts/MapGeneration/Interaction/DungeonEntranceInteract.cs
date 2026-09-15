@@ -47,16 +47,51 @@ public class DungeonEntranceInteract : MonoBehaviour
             promptUI.SetActive(false);
 
         // 텍스트 설정
-        if (promptText != null)
-            promptText.text = promptMessage;
+        RefreshPromptText();
 
         // 이미 클리어한 던전인지 체크
         CheckIfCleared();
     }
 
+    /// <summary>
+    /// 입구 프리팹이 모든 던전에서 동일하고 프롬프트도 "던전 입장 (F)" 로 고정이라
+    /// 어느 던전인지 구분할 방법이 없었다. 던전 이름과 보스 여부를 띄운다.
+    /// </summary>
+    private void RefreshPromptText()
+    {
+        if (promptText == null) return;
+
+        var def = ResolveDefinition();
+        if (def == null)
+        {
+            promptText.text = promptMessage;
+            return;
+        }
+
+        string label = string.IsNullOrEmpty(def.dungeonName) ? "던전" : def.dungeonName;
+        if (def.isBossDungeon)
+            label += "  [보스]";
+
+        promptText.text = $"{label}  입장 ({interactKey})";
+    }
+
+    private DungeonDefinition ResolveDefinition()
+    {
+        if (string.IsNullOrEmpty(dungeonId)) return null;
+        var wpm = WorldProgressManager.Instance;
+        return wpm != null ? wpm.GetDungeonByID(dungeonId) : null;
+    }
+
     private void Update()
     {
-        if (player == null) return;
+        if (player == null)
+        {
+            // 입구가 플레이어보다 먼저 생성되면 Start 에서 못 찾는다. 계속 재시도한다.
+            var found = GameObject.FindGameObjectWithTag("Player");
+            if (found == null) return;
+            player = found.transform;
+        }
+
         if (alreadyCleared) return; // 클리어한 던전은 상호작용 불가
 
         // 거리 체크
@@ -70,8 +105,28 @@ public class DungeonEntranceInteract : MonoBehaviour
         // E키 입력
         if (playerInRange && Input.GetKeyDown(interactKey))
         {
+            // 입구 근처의 돌·산호·해초를 캐려고 눌렀는데 던전으로 끌려 들어가면 곤란하다.
+            // 주울/캘 것이 있으면 그쪽에 양보한다.
+            if (HasNearbyGatherable())
+            {
+                if (logInteraction)
+                    Debug.Log($"[DungeonEntrance] 같은 칸에 채집/드랍 아이템이 있어 입장을 양보함 ({dungeonId})");
+                return;
+            }
+
             OnPlayerInteract();
         }
+    }
+
+    private bool HasNearbyGatherable()
+    {
+        if (player == null) return false;
+
+        var interaction = player.GetComponent<PlayerInteraction>();
+        if (interaction == null)
+            interaction = FindObjectOfType<PlayerInteraction>();
+
+        return interaction != null && interaction.HasInteractableInRange();
     }
 
     /// <summary>

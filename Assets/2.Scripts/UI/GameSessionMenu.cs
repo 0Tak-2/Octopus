@@ -70,6 +70,11 @@ public class GameSessionMenu : MonoBehaviour
         Time.timeScale = 1f;
         _isOpen = false;
 
+        // 씬을 떠나기 전에 배경을 확실히 내린다. 이 오브젝트가 어떤 이유로든 살아남아도
+        // 다음 화면의 클릭을 삼키지 않도록.
+        if (_root != null)
+            _root.SetActive(false);
+
         var gm = GameManager.Instance;
         if (gm != null)
             gm.SaveAllCurrentState();
@@ -90,7 +95,9 @@ public class GameSessionMenu : MonoBehaviour
 
     private void BuildDefaultUI()
     {
-        var canvas = FindObjectOfType<Canvas>();
+        // DontDestroyOnLoad 캔버스를 잡으면 이 메뉴 배경이 씬을 넘어 고아로 살아남아
+        // 타이틀 화면의 클릭을 전부 삼킨다. 현재 씬의 캔버스만 쓴다.
+        var canvas = UICanvasUtil.FindCanvasInActiveScene();
         if (canvas == null)
         {
             var canvasGo = new GameObject("GameSessionMenuCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));

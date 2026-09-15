@@ -7842,13 +7842,17 @@ MonoBehaviour:
   grid: {fileID: 0}
   fieldTime: {fileID: 0}
   crouch: {fileID: 6847789210950096170}
+  playerStats: {fileID: 0}
   rest: {fileID: 3519355663358756076}
   occupancy: {fileID: 0}
   multiEnemyAttack: {fileID: 0}
   turnCoordinator: {fileID: 0}
   moveDuration: 0.3
+  crouchMoveDurationMultiplier: 1.45
   baseMoveTimeCost: 1
   moveTimeCostWhenCrouching: 2
+  baseMoveHungerCost: 1
+  crouchMoveHungerMultiplier: 1.5
   blockMoveIntoOccupiedCell: 1
   keepPlayerVisibleWhileMovingIntoObjectCell: 1
   frontObjectMoveAlpha: 0.55
@@ -7882,6 +7886,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fieldTime: {fileID: 0}
   stats: {fileID: 5094929905008937400}
+  turnCoordinator: {fileID: 0}
+  enemiesActWhileResting: 1
+  wakeOnDamage: 1
   restKey: 114
   timePerTick: 1
   fatigueGainPerTick: 1
@@ -7916,6 +7923,11 @@ MonoBehaviour:
   bonusEVA: 0
   bonusCRIT: 0
   bonusCRIT_DMG: 0
+  relicATKPercent: 0
+  relicDEF: 0
+  relicEVA: 0
+  relicCRIT: 0
+  relicCRIT_DMG: 0
   colorModuleATKPercent: 0
   colorModuleEVAPercent: 0
   colorModuleCRIT_DMGPercent: 0
@@ -7924,6 +7936,8 @@ MonoBehaviour:
   drainIntervalTime: 5
   fatigueDrainPerInterval: 1
   hungerDrainPerInterval: 2
+  starvationDamagePerInterval: 3
+  exhaustionDamagePerInterval: 2
 --- !u!114 &3266697413459978207
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7999,12 +8013,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   equippedDefinitions:
-  - {fileID: 11400000, guid: 87afbc8b662cab64b9824e19cd02d3c1, type: 2}
-  - {fileID: 11400000, guid: ac7d2de77d34d894eac3414a5bd4a187, type: 2}
-  - {fileID: 11400000, guid: 0f3c905e9d35ca346b5676771df54167, type: 2}
-  - {fileID: 11400000, guid: 516ca7f7b83b5b8458622c6ec1b63b93, type: 2}
-  - {fileID: 11400000, guid: 213e014ae0cfa5e41a3a66aa61119461, type: 2}
-  requireSafeZone: 1
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  requireSafeZone: 0
 --- !u!114 &8980160833585996231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8033,10 +8047,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   equippedItems:
-  - {fileID: 11400000, guid: 5cf96568a3d49014dba5c73a8864cc70, type: 2}
-  - {fileID: 11400000, guid: ffa5c3a19c67d4d4aac623cc8e8ee55f, type: 2}
-  - {fileID: 11400000, guid: 74561544e79669d4cb3b3121ccbd92eb, type: 2}
-  - {fileID: 11400000, guid: 10f5e54e80b8bf74f8de351fe2a298f7, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

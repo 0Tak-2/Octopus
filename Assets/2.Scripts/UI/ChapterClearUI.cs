@@ -37,10 +37,11 @@ public class ChapterClearUI : MonoBehaviour
     {
         if (Instance == null)
         {
+            // DontDestroyOnLoad 로 두지 않는다. 선택 후에는 어느 쪽이든 씬이 바뀌고,
+            // 살아남으면 다음 씬의 UI 빌더가 이 캔버스를 집어가 클릭을 삼키는 사고가 난다.
             var go = new GameObject("ChapterClearUI");
             Instance = go.AddComponent<ChapterClearUI>();
             Instance.Build();
-            DontDestroyOnLoad(go);
         }
 
         Instance.Display(headline, subline, canAdvance, advanceLabel, extractLabel, onAdvance, onExtract);
@@ -169,10 +170,11 @@ public class ChapterClearUI : MonoBehaviour
         if (UnityEngine.EventSystems.EventSystem.current != null)
             return;
 
+        // 씬 스코프로 둔다. 영구 EventSystem 을 만들면 다음 씬의 EventSystem 과 중복되어
+        // 둘 다 제대로 동작하지 않는다.
         var go = new GameObject("EventSystem");
         go.AddComponent<UnityEngine.EventSystems.EventSystem>();
         go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-        DontDestroyOnLoad(go);
     }
 
     private static RectTransform CreateChild(string name, Transform parent)

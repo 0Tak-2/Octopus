@@ -15,8 +15,102 @@ public class RelicManager : MonoBehaviour
     public List<RelicDefinition> allRelics = new List<RelicDefinition>();
     
     [Header("Equipped Relics")]
-    [Tooltip("Max relics that can be equipped per run")]
+    [Tooltip("레거시 필드. 실제 상한은 UnlockedSlots 를 쓴다.")]
     public int maxEquippedRelics = 5;
+
+    // ============================================
+    // 장착 슬롯 (계정 영구)
+    // ============================================
+    // 가진 유물을 전부 적용하면 빌드 정체성이 사라진다. 슬롯을 제한해 '고르게' 만든다.
+    // 슬롯은 계정 단위로 영구 해금되며, 뒤로 갈수록 해금 비용이 급격히 오른다.
+
+    [Header("Relic Slots (Tuning)")]
+    [Tooltip("시작 슬롯 수")]
+    [Min(1)] public int baseSlots = 3;
+
+    [Tooltip("최대 슬롯 수")]
+    [Min(1)] public int maxSlotCount = 9;
+
+    [Tooltip("슬롯 N번째를 열 때 드는 조각 수. 인덱스 0~2는 기본 제공이라 0. 뒤로 갈수록 가파르게.")]
+    public int[] slotShardCosts = { 0, 0, 0, 1, 2, 3, 5, 8, 13 };
+
+    [Header("Relic Stacking (Tuning)")]
+    [Tooltip("유물 중첩 최대 단계. 이 이상 얻어도 효과는 안 오른다.")]
+    [Min(1)] public int maxStackLevel = 5;
+
+    [Tooltip("단계별 증가폭 감쇠율. 0.7 = 다음 단계는 직전 증가폭의 70%.")]
+    [Range(0.1f, 1f)] public float stackFalloff = 0.7f;
+
+    // 정적 접근용 기본값 — 씬에 RelicManager 가 없을 때(에디터 프리뷰 등) 쓰인다.
+    public const int DefaultBaseSlots = 3;
+    public const int DefaultMaxSlots = 9;
+
+    public static int BaseSlots => Instance != null ? Mathf.Max(1, Instance.baseSlots) : DefaultBaseSlots;
+    public static int MaxSlots => Instance != null ? Mathf.Max(1, Instance.maxSlotCount) : DefaultMaxSlots;
+
+    private int[] SlotShardCost =>
+        (slotShardCosts != null && slotShardCosts.Length > 0)
+            ? slotShardCosts
+            : new[] { 0, 0, 0, 1, 2, 3, 5, 8, 13 };
+
+    private const string SAVE_KEY_SLOTS = "Relic_UnlockedSlots";
+    private const string SAVE_KEY_SHARDS = "Relic_Shards";
+
+    /// <summary>현재 열려 있는 장착 슬롯 수 (3~9).</summary>
+    public int UnlockedSlots =>
+        Mathf.Clamp(PlayerPrefs.GetInt(SAVE_KEY_SLOTS, BaseSlots), BaseSlots, MaxSlots);
+
+    /// <summary>슬롯 해금에 쓰는 조각. 보스 처치 등으로 얻는다.</summary>
+    public int Shards => Mathf.Max(0, PlayerPrefs.GetInt(SAVE_KEY_SHARDS, 0));
+
+    /// <summary>다음 슬롯을 열기 위해 필요한 조각 수. 이미 최대면 0.</summary>
+    public int NextSlotCost
+    {
+        get
+        {
+            int next = UnlockedSlots + 1;
+            if (next > MaxSlots) return 0;
+
+            // 인스펙터에서 배열 길이를 줄일 수 있으므로 범위를 벗어나면 마지막 값을 쓴다.
+            var costs = SlotShardCost;
+            int idx = Mathf.Clamp(next - 1, 0, costs.Length - 1);
+            return Mathf.Max(0, costs[idx]);
+        }
+    }
+
+    public bool CanUnlockNextSlot => UnlockedSlots < MaxSlots && Shards >= NextSlotCost;
+
+    public event System.Action OnSlotsChanged;
+
+    /// <summary>조각 획득. 보스 처치나 특별한 발견에서 호출한다.</summary>
+    public void AddShards(int amount)
+    {
+        if (amount <= 0) return;
+
+        PlayerPrefs.SetInt(SAVE_KEY_SHARDS, Shards + amount);
+        PlayerPrefs.Save();
+        OnSlotsChanged?.Invoke();
+
+        if (showDebugLogs)
+            Debug.Log($"[RelicManager] 유물 조각 +{amount} (보유 {Shards}, 다음 슬롯까지 {NextSlotCost})");
+    }
+
+    /// <summary>조각을 써서 슬롯을 하나 연다.</summary>
+    public bool TryUnlockNextSlot()
+    {
+        if (!CanUnlockNextSlot) return false;
+
+        int cost = NextSlotCost;
+        PlayerPrefs.SetInt(SAVE_KEY_SHARDS, Shards - cost);
+        PlayerPrefs.SetInt(SAVE_KEY_SLOTS, UnlockedSlots + 1);
+        PlayerPrefs.Save();
+        OnSlotsChanged?.Invoke();
+
+        if (showDebugLogs)
+            Debug.Log($"[RelicManager] 유물 슬롯 해금! 이제 {UnlockedSlots}칸 (조각 {cost} 소모)");
+
+        return true;
+    }
     
     [Header("Debug")]
     public bool showDebugLogs = true;
@@ -130,9 +224,9 @@ public class RelicManager : MonoBehaviour
     {
         if (relic == null) return false;
         if (!OwnsRelic(relic.relicID)) return false;
-        if (_equippedRelics.Count >= maxEquippedRelics) return false;
+        if (_equippedRelics.Count >= UnlockedSlots) return false;
         if (_equippedRelics.Contains(relic)) return false;
-        
+
         _equippedRelics.Add(relic);
         OnEquippedChanged?.Invoke();
         
@@ -305,28 +399,38 @@ public class RelicManager : MonoBehaviour
                       $"DEF+{stats.relicDEF}, EVA+{stats.relicEVA:P1}, CRIT+{stats.relicCRIT:P1}");
     }
 
-    /// <summary>
-    /// 런 시작 시 보유 유물로 빈 슬롯을 자동으로 채운다.
-    /// 선택 UI가 생기기 전까지의 임시 동작 — 희귀도 높은 것, 많이 쌓인 것 우선.
-    /// </summary>
-    public void AutoEquipOwned()
+    /// <summary>현재 장착 조합을 ID 목록으로. 캐릭터(런 슬롯) 세이브에 실린다.</summary>
+    public List<string> GetEquippedRelicIDs()
     {
-        var owned = GetAllOwnedRelics();
-        if (owned.Count == 0) return;
+        var ids = new List<string>();
+        foreach (var relic in _equippedRelics)
+            if (relic != null) ids.Add(relic.relicID);
+        return ids;
+    }
 
-        var candidates = new List<RelicDefinition>(owned.Keys);
-        candidates.Sort((a, b) =>
-        {
-            int byRarity = b.rarity.CompareTo(a.rarity);
-            if (byRarity != 0) return byRarity;
-            return GetOwnedCount(b.relicID).CompareTo(GetOwnedCount(a.relicID));
-        });
+    /// <summary>
+    /// ID 목록으로 장착 조합을 세팅한다. 슬롯이 줄었거나 유물을 잃었으면 알아서 잘린다.
+    /// 장착 조합은 캐릭터마다 다르므로 런 슬롯 세이브에서 들어온다.
+    /// </summary>
+    public void SetEquippedByIDs(List<string> ids)
+    {
+        _equippedRelics.Clear();
 
-        foreach (var relic in candidates)
+        if (ids != null)
         {
-            if (_equippedRelics.Count >= maxEquippedRelics) break;
-            EquipRelic(relic);
+            foreach (var id in ids)
+            {
+                if (string.IsNullOrWhiteSpace(id)) continue;
+                if (_equippedRelics.Count >= UnlockedSlots) break;
+                if (!OwnsRelic(id)) continue;
+
+                var relic = GetRelicByID(id);
+                if (relic != null && !_equippedRelics.Contains(relic))
+                    _equippedRelics.Add(relic);
+            }
         }
+
+        OnEquippedChanged?.Invoke();
     }
 
     private void OnEnable() => SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -338,8 +442,7 @@ public class RelicManager : MonoBehaviour
     /// </summary>
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        AutoEquipOwned();
-
+        // 장착 조합은 런 슬롯 세이브에서 들어온다(캐릭터마다 다름). 여기선 손대지 않는다.
         var stats = FindObjectOfType<PlayerStats>();
         if (stats != null)
             ApplyToPlayerStats(stats);

@@ -277,24 +277,29 @@ public class DungeonController : MonoBehaviour
         allFloors[floorNumber] = currentFloorData;
         currentFloor = floorNumber;
 
-        // 엘리트 방 지정
-        AssignEliteRoom();
+        // 배치 전용 난수 구간. 레이아웃(dungeon.layout)과 분리한다.
+        // 층마다 다른 스트림이어야 하므로 시드에 층 번호를 섞는다.
+        using (new RngScope(RngScope.Derive(seed, "dungeon.spawn.floor" + floorNumber)))
+        {
+            // 엘리트 방 지정
+            AssignEliteRoom();
 
-        // 맵 렌더링
-        RenderFloor(currentFloorData);
+            // 맵 렌더링
+            RenderFloor(currentFloorData);
 
-        // 플레이어 스폰 (이동 방향에 따라 스폰 위치 결정)
-        DungeonRoom spawnRoom = _cameFromBelow ? currentFloorData.startRoom : (currentFloorData.stairsRoom ?? currentFloorData.startRoom);
-        SpawnPlayer(spawnRoom);
+            // 플레이어 스폰 (이동 방향에 따라 스폰 위치 결정)
+            DungeonRoom spawnRoom = _cameFromBelow ? currentFloorData.startRoom : (currentFloorData.stairsRoom ?? currentFloorData.startRoom);
+            SpawnPlayer(spawnRoom);
 
-        // 적 스폰 (저장된 상태가 있으면 그걸로)
-        SpawnEnemiesWithSavedState();
+            // 적 스폰 (저장된 상태가 있으면 그걸로)
+            SpawnEnemiesWithSavedState();
 
-        // 계단/출구 생성
-        SpawnStairsAndExit();
+            // 계단/출구 생성
+            SpawnStairsAndExit();
 
-        // 아이템 마커 생성
-        SpawnItemMarkers();
+            // 아이템 마커 생성
+            SpawnItemMarkers();
+        }
 
         // ✅ GameManager에 현재 층 저장
         SaveCurrentFloorToGameManager();
@@ -1084,10 +1089,30 @@ public class DungeonController : MonoBehaviour
     {
         // 보스 던전에서만 자동 클리어 판정
         // 보스가 스폰된 적 있고(bossWasSpawned), 지금은 null이면 보스를 처치한 것
-        if (bossWasSpawned && bossInstance == null && !IsDungeonCleared())
+        if (IsBossDefeated() && !IsDungeonCleared())
         {
             OnDungeonCleared();
         }
+    }
+
+    /// <summary>
+    /// 보스가 죽었는가.
+    /// 예전엔 bossInstance == null 만 봤는데, 그건 오브젝트가 실제로 Destroy 될 때까지
+    /// 성립하지 않는다. 죽은 적을 SetActive(false) 로만 처리하거나 파괴가 미뤄지면
+    /// 판정이 한참 뒤(층 이동으로 CleanupFloor 가 돌 때)에야 걸린다.
+    /// 그래서 파괴·비활성·HP 0 을 모두 본다.
+    /// </summary>
+    private bool IsBossDefeated()
+    {
+        if (!bossWasSpawned) return false;
+        if (bossInstance == null) return true;
+        if (!bossInstance.activeInHierarchy) return true;
+
+        var inst = bossInstance.GetComponent<EnemyInstance>();
+        if (inst == null)
+            inst = bossInstance.GetComponentInChildren<EnemyInstance>(true);
+
+        return inst != null && inst.currentHP <= 0;
     }
 
     /// <summary>
@@ -1136,6 +1161,10 @@ public class DungeonController : MonoBehaviour
 
         DeathManager.Instance?.RecordDungeonCleared();
 
+        // 챕터 보스는 유물 슬롯 조각을 준다. 뒤쪽 슬롯일수록 비싸져서
+        // 9칸을 모두 여는 건 장기 목표가 된다.
+        RelicManager.Instance?.AddShards(1);
+
         int chapter = (wpm != null ? wpm.CurrentFieldIndex : 0) + 1;
         string bossName = dungeonDefinition != null ? dungeonDefinition.dungeonName : "";
 
@@ -1145,8 +1174,8 @@ public class DungeonController : MonoBehaviour
                 ? $"{bossName}을(를) 제압했다. 더 내려갈수록 적은 강해지고 보상도 커진다."
                 : $"{bossName}을(를) 제압했다. 더 내려갈 곳이 없다.",
             canAdvance: canAdvance,
-            advanceLabel: "더 깊이 간다   ·   다음 챕터로",
-            extractLabel: "빠져나간다   ·   지금까지 번 것을 확정한다",
+            advanceLabel: "더 깊이 간다   -   다음 챕터로",
+            extractLabel: "빠져나간다   -   지금까지 번 것을 확정한다",
             onAdvance: AdvanceToNextChapter,
             onExtract: ExtractAndEndRun);
     }

@@ -3,52 +3,63 @@ using UnityEngine;
 using System.Linq;
 
 /// <summary>
-/// °İÀÚ ±â¹İ ´øÀü »ı¼º±â
-/// ¹Ì·Î °°Àº ±¸Á¶, Á÷¼± º¹µµ, ¸íÈ®ÇÑ ·¹ÀÌ¾Æ¿ô
+/// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+/// ï¿½Ì·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½È®ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¾Æ¿ï¿½
 /// </summary>
 public class DungeonGridGenerator
 {
     /// <summary>
-    /// ´øÀü Ãş »ı¼º
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public static DungeonFloorData GenerateFloor(int floorNumber, int gridWidth, int gridHeight, int seed,
         int minRooms = 7, int maxRooms = 12, int minRoomSize = 5, int maxRoomSize = 8,
         int minCorridorLength = 3, int maxCorridorLength = 7, int corridorWidth = 1)
     {
-        Random.InitState(seed);
+        // ë ˆì´ì•„ì›ƒ ì „ìš© ë‚œìˆ˜ êµ¬ê°„. ì  ë°°ì¹˜ ìª½ ë‚œìˆ˜ì™€ ë¶„ë¦¬í•´ ì„œë¡œ í”ë“¤ì§€ ì•Šê²Œ í•œë‹¤.
+        using (new RngScope(seed, "dungeon.layout"))
+        {
+            return GenerateFloorInternal(floorNumber, gridWidth, gridHeight,
+                minRooms, maxRooms, minRoomSize, maxRoomSize,
+                minCorridorLength, maxCorridorLength, corridorWidth);
+        }
+    }
 
-        // ÀüÃ¼ ¸Ê Å©±â °è»ê (ÃÖ´ë ¹æ Å©±â + ÃÖ´ë º¹µµ ±æÀÌ ±âÁØ)
+    private static DungeonFloorData GenerateFloorInternal(int floorNumber, int gridWidth, int gridHeight,
+        int minRooms, int maxRooms, int minRoomSize, int maxRoomSize,
+        int minCorridorLength, int maxCorridorLength, int corridorWidth)
+    {
+        // ï¿½ï¿½Ã¼ ï¿½ï¿½ Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½Ö´ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½ + ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         int totalWidth = gridWidth * (maxRoomSize + maxCorridorLength) + maxCorridorLength;
         int totalHeight = gridHeight * (maxRoomSize + maxCorridorLength) + maxCorridorLength;
 
         DungeonFloorData floor = new DungeonFloorData(floorNumber, totalWidth, totalHeight);
 
-        // 1. °İÀÚ¿¡ ¹æ ¹èÄ¡ (¿¬°á º¸Àå)
+        // 1. ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         bool[,] grid = GenerateConnectedGrid(gridWidth, gridHeight, minRooms, maxRooms);
 
-        // 2. ¹æ »ı¼º (Å©±â ´Ù¾ç, ·£´ı º¹µµ ±æÀÌ)
+        // 2. ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (Å©ï¿½ï¿½ ï¿½Ù¾ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         List<GridCell> cells = CreateRoomsWithRandomSpacing(grid, floor, minRoomSize, maxRoomSize,
             minCorridorLength, maxCorridorLength);
 
-        // 3. º¹µµ·Î ¿¬°á
+        // 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         ConnectRooms(cells, floor, corridorWidth);
 
-        // 4. ¹æ Å¸ÀÔ ÁöÁ¤ (½ÃÀÛ ¹æ Áß¾Ó)
+        // 4. ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß¾ï¿½)
         AssignRoomTypes(floor, floorNumber, cells, gridWidth, gridHeight);
 
-        Debug.Log($"[GridDungeon] {floorNumber}Ãş »ı¼º: {floor.rooms.Count}°³ ¹æ");
+        Debug.Log($"[GridDungeon] {floorNumber}ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {floor.rooms.Count}ï¿½ï¿½ ï¿½ï¿½");
 
         return floor;
     }
 
     /// <summary>
-    /// ¿¬°áµÈ °İÀÚ »ı¼º (¸ğµç ¹æÀÌ ¿¬°áµÇµµ·Ï º¸Àå)
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     /// </summary>
     private static bool[,] GenerateConnectedGrid(int width, int height, int minRooms, int maxRooms)
     {
         bool[,] grid = new bool[width, height];
 
-        // ½ÃÀÛÁ¡ (Áß¾Ó)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ß¾ï¿½)
         int centerX = width / 2;
         int centerY = height / 2;
         grid[centerX, centerY] = true;
@@ -56,24 +67,24 @@ public class DungeonGridGenerator
         List<Vector2Int> rooms = new List<Vector2Int> { new Vector2Int(centerX, centerY) };
         List<Vector2Int> frontier = new List<Vector2Int>();
 
-        // Áß¾Ó¿¡¼­ ÀÎÁ¢ÇÑ Ä­µéÀ» frontier¿¡ Ãß°¡
+        // ï¿½ß¾Ó¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä­ï¿½ï¿½ï¿½ï¿½ frontierï¿½ï¿½ ï¿½ß°ï¿½
         AddFrontier(centerX, centerY, width, height, grid, frontier);
 
-        // ¸ñÇ¥ ¹æ °³¼ö
+        // ï¿½ï¿½Ç¥ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         int targetRooms = Random.Range(minRooms, maxRooms + 1);
 
-        // Prim's AlgorithmÀ¸·Î ¿¬°áµÈ ¹Ì·Î »ı¼º
+        // Prim's Algorithmï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì·ï¿½ ï¿½ï¿½ï¿½ï¿½
         while (frontier.Count > 0 && rooms.Count < targetRooms)
         {
-            // ·£´ı frontier ¼±ÅÃ
+            // ï¿½ï¿½ï¿½ï¿½ frontier ï¿½ï¿½ï¿½ï¿½
             int idx = Random.Range(0, frontier.Count);
             Vector2Int pos = frontier[idx];
             frontier.RemoveAt(idx);
 
-            // ÀÌ¹Ì ¹æÀÌ¸é ½ºÅµ
+            // ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½Åµ
             if (grid[pos.x, pos.y]) continue;
 
-            // ÀÎÁ¢ÇÑ ¹æÀÌ ÀÖ´ÂÁö È®ÀÎ
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             if (HasAdjacentRoom(pos.x, pos.y, grid))
             {
                 grid[pos.x, pos.y] = true;
@@ -82,7 +93,7 @@ public class DungeonGridGenerator
             }
         }
 
-        // ÃÖ¼Ò ¹æ °³¼ö º¸Àå
+        // ï¿½Ö¼ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         while (rooms.Count < minRooms)
         {
             int x = Random.Range(0, width);
@@ -98,7 +109,7 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// Frontier¿¡ ÀÎÁ¢ Ä­ Ãß°¡
+    /// Frontierï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä­ ï¿½ß°ï¿½
     /// </summary>
     private static void AddFrontier(int x, int y, int width, int height, bool[,] grid, List<Vector2Int> frontier)
     {
@@ -119,7 +130,7 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// ÀÎÁ¢ÇÑ ¹æÀÌ ÀÖ´ÂÁö È®ÀÎ
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
     /// </summary>
     private static bool HasAdjacentRoom(int x, int y, bool[,] grid)
     {
@@ -140,7 +151,7 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// °İÀÚ ±â¹İÀ¸·Î ¹æ »ı¼º (·£´ı °£°İ)
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     /// </summary>
     private static List<GridCell> CreateRoomsWithRandomSpacing(bool[,] grid, DungeonFloorData floor,
         int minRoomSize, int maxRoomSize, int minCorridorLength, int maxCorridorLength)
@@ -151,7 +162,7 @@ public class DungeonGridGenerator
         int gridWidth = grid.GetLength(0);
         int gridHeight = grid.GetLength(1);
 
-        // °¢ °İÀÚ À§Ä¡ÀÇ ´©Àû ¿ÀÇÁ¼Â °è»ê
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         int[] xOffsets = new int[gridWidth + 1];
         int[] yOffsets = new int[gridHeight + 1];
 
@@ -172,29 +183,29 @@ public class DungeonGridGenerator
             yOffsets[i] = yOffsets[i - 1] + roomHeight + corridorLen;
         }
 
-        // ¹æ »ı¼º
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         for (int gx = 0; gx < gridWidth; gx++)
         {
             for (int gy = 0; gy < gridHeight; gy++)
             {
                 if (!grid[gx, gy]) continue;
 
-                // ·£´ı ¹æ Å©±â
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½
                 int roomWidth = Random.Range(minRoomSize, maxRoomSize + 1);
                 int roomHeight = Random.Range(minRoomSize, maxRoomSize + 1);
 
-                // ¹æÀÇ ½ÇÁ¦ À§Ä¡ (´©Àû ¿ÀÇÁ¼Â ±â¹İ)
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
                 int startX = xOffsets[gx];
                 int startY = yOffsets[gy];
 
                 int centerX = startX + roomWidth / 2;
                 int centerY = startY + roomHeight / 2;
 
-                // ¹æ »ı¼º
+                // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 DungeonRoom room = new DungeonRoom(roomId++, centerX, centerY, roomWidth, roomHeight);
                 floor.rooms.Add(room);
 
-                // °İÀÚ ¼¿ Á¤º¸ ÀúÀå
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 GridCell cell = new GridCell
                 {
                     gridX = gx,
@@ -207,13 +218,13 @@ public class DungeonGridGenerator
                 };
                 cells.Add(cell);
 
-                // Å¸ÀÏ¸Ê¿¡ ¹æ ±×¸®±â
+                // Å¸ï¿½Ï¸Ê¿ï¿½ ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
                 for (int x = startX; x < startX + roomWidth; x++)
                 {
                     for (int y = startY; y < startY + roomHeight; y++)
                     {
                         if (x >= 0 && x < floor.width && y >= 0 && y < floor.height)
-                            floor.tiles[x, y] = 1; // ¹Ù´Ú
+                            floor.tiles[x, y] = 1; // ï¿½Ù´ï¿½
                     }
                 }
             }
@@ -223,7 +234,7 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// °İÀÚ ±â¹İÀ¸·Î ¹æ »ı¼º (°íÁ¤ °£°İ) - »ç¿ë ¾È ÇÔ
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) - ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½
     /// </summary>
     private static List<GridCell> CreateRooms(bool[,] grid, DungeonFloorData floor, int minRoomSize, int maxRoomSize, int corridorSpacing)
     {
@@ -239,22 +250,22 @@ public class DungeonGridGenerator
             {
                 if (!grid[gx, gy]) continue;
 
-                // ·£´ı ¹æ Å©±â
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½
                 int roomWidth = Random.Range(minRoomSize, maxRoomSize + 1);
                 int roomHeight = Random.Range(minRoomSize, maxRoomSize + 1);
 
-                // ¹æÀÇ ½ÇÁ¦ À§Ä¡ °è»ê
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½
                 int startX = corridorSpacing + gx * (maxRoomSize + corridorSpacing);
                 int startY = corridorSpacing + gy * (maxRoomSize + corridorSpacing);
 
                 int centerX = startX + roomWidth / 2;
                 int centerY = startY + roomHeight / 2;
 
-                // ¹æ »ı¼º
+                // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 DungeonRoom room = new DungeonRoom(roomId++, centerX, centerY, roomWidth, roomHeight);
                 floor.rooms.Add(room);
 
-                // °İÀÚ ¼¿ Á¤º¸ ÀúÀå
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                 GridCell cell = new GridCell
                 {
                     gridX = gx,
@@ -267,13 +278,13 @@ public class DungeonGridGenerator
                 };
                 cells.Add(cell);
 
-                // Å¸ÀÏ¸Ê¿¡ ¹æ ±×¸®±â
+                // Å¸ï¿½Ï¸Ê¿ï¿½ ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
                 for (int x = startX; x < startX + roomWidth; x++)
                 {
                     for (int y = startY; y < startY + roomHeight; y++)
                     {
                         if (x >= 0 && x < floor.width && y >= 0 && y < floor.height)
-                            floor.tiles[x, y] = 1; // ¹Ù´Ú
+                            floor.tiles[x, y] = 1; // ï¿½Ù´ï¿½
                     }
                 }
             }
@@ -283,21 +294,21 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// ÀÎÁ¢ÇÑ ¹æµéÀ» ÀÚ¿¬½º·¯¿î º¹µµ·Î ¿¬°á
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     private static void ConnectRooms(List<GridCell> cells, DungeonFloorData floor, int corridorWidth)
     {
-        // °İÀÚ ¸Ê »ı¼º (ºü¸¥ °Ë»ö¿ë)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½ï¿½ï¿½)
         Dictionary<Vector2Int, GridCell> cellMap = new Dictionary<Vector2Int, GridCell>();
         foreach (var cell in cells)
         {
             cellMap[new Vector2Int(cell.gridX, cell.gridY)] = cell;
         }
 
-        // °¢ ¹æ¿¡¼­ ÀÎÁ¢ÇÑ ¹æÀ¸·Î º¹µµ ¿¬°á
+        // ï¿½ï¿½ ï¿½æ¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         foreach (var cell in cells)
         {
-            // ¿À¸¥ÂÊ ¹æ
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
             Vector2Int rightPos = new Vector2Int(cell.gridX + 1, cell.gridY);
             if (cellMap.ContainsKey(rightPos))
             {
@@ -306,7 +317,7 @@ public class DungeonGridGenerator
                 cellMap[rightPos].room.connectedRooms.Add(cell.room);
             }
 
-            // ¾Æ·¡ÂÊ ¹æ
+            // ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½ï¿½
             Vector2Int downPos = new Vector2Int(cell.gridX, cell.gridY + 1);
             if (cellMap.ContainsKey(downPos))
             {
@@ -318,89 +329,89 @@ public class DungeonGridGenerator
     }
 
     /// <summary>
-    /// ÀÚ¿¬½º·¯¿î °¡·Î º¹µµ »ı¼º (·£´ı À§Ä¡ + ±¼°î)
+    /// ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ + ï¿½ï¿½ï¿½ï¿½)
     /// </summary>
     private static void CreateNaturalHorizontalCorridor(GridCell from, GridCell to, DungeonFloorData floor, int corridorWidth)
     {
-        // ¾ÈÀüÇÑ ¿¬°á ¹üÀ§ °è»ê (º¹µµ ³ĞÀÌ °í·Á)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         int safeMargin = Mathf.Max(1, corridorWidth);
 
-        // Ãâ¹ß ¹æÀÇ ·£´ı Ãâ±¸ (¿À¸¥ÂÊ º® ¾ÈÂÊ)
-        int fromX = from.startX + from.roomWidth - 1; // ¹æ ¸¶Áö¸· Å¸ÀÏ
+        // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½â±¸ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+        int fromX = from.startX + from.roomWidth - 1; // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½
         int fromY = from.startY + Random.Range(safeMargin, Mathf.Max(safeMargin + 1, from.roomHeight - safeMargin));
 
-        // µµÂø ¹æÀÇ ·£´ı ÀÔ±¸ (¿ŞÂÊ º®)
-        int toX = to.startX; // ¹æ Ã¹ Å¸ÀÏ
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô±ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
+        int toX = to.startX; // ï¿½ï¿½ Ã¹ Å¸ï¿½ï¿½
         int toY = to.startY + Random.Range(safeMargin, Mathf.Max(safeMargin + 1, to.roomHeight - safeMargin));
 
-        // 70% È®·ü·Î ²ªÀÓ, 30%´Â Á÷¼±
+        // 70% È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, 30%ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         bool addBend = Random.value < 0.7f;
 
         if (addBend && (toX - fromX) > 4)
         {
-            // LÀÚ º¹µµ (±¼°î)
+            // Lï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)
             int bendX = fromX + Random.Range(2, toX - fromX - 1);
 
-            // 1. °¡·Î¼± (Ãâ¹ß ¡æ ²ª´ÂÁ¡)
+            // 1. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
             DrawHorizontalLine(floor, fromX, bendX, fromY, corridorWidth);
 
-            // 2. ¼¼·Î¼± (²ª´ÂÁ¡ ¡æ µµÂø ³ôÀÌ)
+            // 2. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
             DrawVerticalLine(floor, bendX, fromY, toY, corridorWidth);
 
-            // 3. °¡·Î¼± (²ª´ÂÁ¡ ¡æ µµÂø)
+            // 3. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
             DrawHorizontalLine(floor, bendX, toX, toY, corridorWidth);
         }
         else
         {
-            // Á÷¼± º¹µµ
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             int midY = (fromY + toY) / 2;
             DrawHorizontalLine(floor, fromX, toX, midY, corridorWidth);
         }
     }
 
     /// <summary>
-    /// ÀÚ¿¬½º·¯¿î ¼¼·Î º¹µµ »ı¼º (·£´ı À§Ä¡ + ±¼°î)
+    /// ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ + ï¿½ï¿½ï¿½ï¿½)
     /// </summary>
     private static void CreateNaturalVerticalCorridor(GridCell from, GridCell to, DungeonFloorData floor, int corridorWidth)
     {
-        // ¾ÈÀüÇÑ ¿¬°á ¹üÀ§ °è»ê (º¹µµ ³ĞÀÌ °í·Á)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         int safeMargin = Mathf.Max(1, corridorWidth);
 
-        // Ãâ¹ß ¹æÀÇ ·£´ı Ãâ±¸ (¾Æ·¡ÂÊ º® ¾ÈÂÊ)
+        // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½â±¸ (ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         int fromX = from.startX + Random.Range(safeMargin, Mathf.Max(safeMargin + 1, from.roomWidth - safeMargin));
-        int fromY = from.startY + from.roomHeight - 1; // ¹æ ¸¶Áö¸· Å¸ÀÏ
+        int fromY = from.startY + from.roomHeight - 1; // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½
 
-        // µµÂø ¹æÀÇ ·£´ı ÀÔ±¸ (À§ÂÊ º®)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô±ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
         int toX = to.startX + Random.Range(safeMargin, Mathf.Max(safeMargin + 1, to.roomWidth - safeMargin));
-        int toY = to.startY; // ¹æ Ã¹ Å¸ÀÏ
+        int toY = to.startY; // ï¿½ï¿½ Ã¹ Å¸ï¿½ï¿½
 
-        // 70% È®·ü·Î ²ªÀÓ, 30%´Â Á÷¼±
+        // 70% È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, 30%ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         bool addBend = Random.value < 0.7f;
 
         if (addBend && (toY - fromY) > 4)
         {
-            // LÀÚ º¹µµ (±¼°î)
+            // Lï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)
             int bendY = fromY + Random.Range(2, toY - fromY - 1);
 
-            // 1. ¼¼·Î¼± (Ãâ¹ß ¡æ ²ª´ÂÁ¡)
+            // 1. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
             DrawVerticalLine(floor, fromX, fromY, bendY, corridorWidth);
 
-            // 2. °¡·Î¼± (²ª´ÂÁ¡ ¡æ µµÂø À§Ä¡)
+            // 2. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡)
             DrawHorizontalLine(floor, fromX, toX, bendY, corridorWidth);
 
-            // 3. ¼¼·Î¼± (²ª´ÂÁ¡ ¡æ µµÂø)
+            // 3. ï¿½ï¿½ï¿½Î¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
             DrawVerticalLine(floor, toX, bendY, toY, corridorWidth);
         }
         else
         {
-            // Á÷¼± º¹µµ
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             int midX = (fromX + toX) / 2;
             DrawVerticalLine(floor, midX, fromY, toY, corridorWidth);
         }
     }
 
     /// <summary>
-    /// °¡·Î¼± ±×¸®±â
+    /// ï¿½ï¿½ï¿½Î¼ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
     /// </summary>
     private static void DrawHorizontalLine(DungeonFloorData floor, int startX, int endX, int y, int width)
     {
@@ -413,13 +424,13 @@ public class DungeonGridGenerator
             {
                 int drawY = y + dy;
                 if (x >= 0 && x < floor.width && drawY >= 0 && drawY < floor.height)
-                    floor.tiles[x, drawY] = 2; // º¹µµ
+                    floor.tiles[x, drawY] = 2; // ï¿½ï¿½ï¿½ï¿½
             }
         }
     }
 
     /// <summary>
-    /// ¼¼·Î¼± ±×¸®±â
+    /// ï¿½ï¿½ï¿½Î¼ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
     /// </summary>
     private static void DrawVerticalLine(DungeonFloorData floor, int x, int startY, int endY, int width)
     {
@@ -432,19 +443,19 @@ public class DungeonGridGenerator
             {
                 int drawX = x + dx;
                 if (drawX >= 0 && drawX < floor.width && y >= 0 && y < floor.height)
-                    floor.tiles[drawX, y] = 2; // º¹µµ
+                    floor.tiles[drawX, y] = 2; // ï¿½ï¿½ï¿½ï¿½
             }
         }
     }
 
     /// <summary>
-    /// ¹æ Å¸ÀÔ ÁöÁ¤ (½ÃÀÛ ¹æÀº Áß¾Ó)
+    /// ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß¾ï¿½)
     /// </summary>
     private static void AssignRoomTypes(DungeonFloorData floor, int floorNumber, List<GridCell> cells, int gridWidth, int gridHeight)
     {
         if (floor.rooms.Count == 0) return;
 
-        // ½ÃÀÛ ¹æ (Áß¾Ó¿¡ °¡Àå °¡±î¿î ¹æ)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½ß¾Ó¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
         int centerX = gridWidth / 2;
         int centerY = gridHeight / 2;
 
@@ -455,7 +466,7 @@ public class DungeonGridGenerator
         floor.startRoom = centerCell.room;
         floor.startRoom.roomType = DungeonRoomType.Start;
 
-        // º¸½º ¹æ (½ÃÀÛ ¹æ¿¡¼­ °¡Àå ¸Õ ¹æ)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½æ¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½)
         GridCell bossCell = cells.OrderByDescending(c =>
             Mathf.Abs(c.gridX - centerCell.gridX) + Mathf.Abs(c.gridY - centerCell.gridY)
         ).First();
@@ -463,7 +474,7 @@ public class DungeonGridGenerator
         floor.bossRoom = bossCell.room;
         floor.bossRoom.roomType = DungeonRoomType.Boss;
 
-        // °è´Ü ¹æ (º¸½º ¹æ ±ÙÃ³)
+        // ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã³)
         if (floor.rooms.Count > 2)
         {
             GridCell stairsCell = cells
@@ -475,7 +486,7 @@ public class DungeonGridGenerator
             floor.stairsRoom.roomType = DungeonRoomType.Stairs;
         }
 
-        // Ãâ±¸ ¹æ (½ÃÀÛ ¹æ ±ÙÃ³)
+        // ï¿½â±¸ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã³)
         if (floor.rooms.Count > 1)
         {
             GridCell exitCell = cells
@@ -487,8 +498,8 @@ public class DungeonGridGenerator
             floor.exitRoom.roomType = DungeonRoomType.Exit;
         }
 
-        // ¿¤¸®Æ® ¹æ (·£´ı 1-2°³)
-        int eliteCount = Mathf.Min(2, (floor.rooms.Count - 4) / 2); // ¹æ °³¼öÀÇ Àı¹İ Á¤µµ
+        // ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ 1-2ï¿½ï¿½)
+        int eliteCount = Mathf.Min(2, (floor.rooms.Count - 4) / 2); // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         var eliteRooms = floor.rooms
             .Where(r => r.roomType == DungeonRoomType.Normal)
             .OrderBy(x => Random.value)
@@ -499,7 +510,7 @@ public class DungeonGridGenerator
             room.roomType = DungeonRoomType.Elite;
         }
 
-        // ¾ÆÀÌÅÛ ¹æ (·£´ı 1-2°³)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ 1-2ï¿½ï¿½)
         int itemCount = Mathf.Min(2, floor.rooms.Count - 4 - eliteCount);
         var availableRooms = floor.rooms
             .Where(r => r.roomType == DungeonRoomType.Normal)
@@ -514,12 +525,12 @@ public class DungeonGridGenerator
 }
 
 /// <summary>
-/// °İÀÚ ¼¿ Á¤º¸
+/// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 /// </summary>
 public class GridCell
 {
-    public int gridX, gridY;           // °İÀÚ ÁÂÇ¥
-    public int startX, startY;         // ½ÇÁ¦ Å¸ÀÏ ½ÃÀÛ À§Ä¡
-    public int roomWidth, roomHeight;  // ½ÇÁ¦ ¹æ Å©±â
-    public DungeonRoom room;           // ÀÌ ¼¿ÀÇ ¹æ
+    public int gridX, gridY;           // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥
+    public int startX, startY;         // ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡
+    public int roomWidth, roomHeight;  // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½
+    public DungeonRoom room;           // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 }

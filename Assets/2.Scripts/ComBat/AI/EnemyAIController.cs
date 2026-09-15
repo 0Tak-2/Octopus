@@ -30,44 +30,54 @@ public class EnemyAIController : MonoBehaviour
     [SerializeField] private int eliteAtkBuffTurnsLeft = 0;
 
     public int EliteAP => eliteAP;
-    public int EliteAPMax => 5;
+    public int EliteAPMax => ELITE_AP_MAX;
     public int EliteBuffTurnsLeft => eliteAtkBuffTurnsLeft;
     public bool EliteBuffActive => eliteAtkBuffTurnsLeft > 0;
 
     // ==========================
     // AI3 Constants (as described)
     // ==========================
-    private const int ELITE_AP_MAX = 5;
-    private const int ELITE_AP_REGEN = 1;
-    private const int ELITE_FREE_MOVES_PER_TURN = 1;
+    // 예전엔 전부 const 였다. 보스(AI4)는 EnemyDefinition 에서 수치를 읽는데
+    // 엘리트만 코드에 박혀 있어서, 같은 시스템인데 밸런싱 방법이 둘로 갈렸다.
+    // 이제 전부 EnemyDefinition 에서 읽는다. 값이 없으면 기존 상수가 기본값으로 쓰인다.
+    //
+    // 스킬 슬롯(skill1~4)이 연결돼 있으면 그쪽 apCost/range/damage 가 우선한다.
+    // 슬롯을 비워두면 아래 파라미터 값을 쓴다.
 
-    // Skills
-    // 1) melee normal: range1 AP1 dmg = base
-    private const int SK1_COST = 1;
-    private const int SK1_RANGE = 1;
+    private EnemyDefinition Def => _combat != null ? _combat.CurrentEnemyDef : null;
 
-    // 2) melee critical: range1 AP2 dmg = base * 2 (치명적)
-    private const int SK2_COST = 2;
-    private const int SK2_RANGE = 1;
-    private const int SK2_MULT = 2;
+    private static int CostOf(CombatAttackDefinition skill, int fallback)
+        => skill != null ? Mathf.Max(0, skill.apCost) : fallback;
 
-    // 3) mid range: range2 AP1 dmg = base (적당)
-    private const int SK3_COST = 1;
-    private const int SK3_RANGE = 2;
+    private static int RangeOf(CombatAttackDefinition skill, int fallback)
+        => skill != null ? Mathf.Max(1, skill.range) : fallback;
 
-    // 4) attack buff: AP2, 6 turns, x2 damage
-    private const int SK4_COST = 2;
-    private const int BUFF_TURNS = 6;
-    private const int BUFF_MULT = 2;
+    private int ELITE_AP_MAX => Def != null ? Mathf.Max(1, Def.eliteMaxAP) : 5;
+    private int ELITE_AP_REGEN => Def != null ? Mathf.Max(0, Def.eliteRegenPerTurn) : 1;
+    private int ELITE_FREE_MOVES_PER_TURN => Def != null ? Mathf.Max(0, Def.eliteFreeMovesPerTurn) : 1;
 
-    // Law: if AP < 3 -> never move toward player
-    private const int MOVE_TOWARD_AP_THRESHOLD = 3;
+    private int SK1_COST => CostOf(Def?.skill1_MeleeNormal, Def != null ? Def.eliteSkill1ApCost : 1);
+    private int SK1_RANGE => RangeOf(Def?.skill1_MeleeNormal, Def != null ? Def.eliteSkill1Range : 1);
+
+    private int SK2_COST => CostOf(Def?.skill2_MeleeCritical, Def != null ? Def.eliteSkill2ApCost : 2);
+    private int SK2_RANGE => RangeOf(Def?.skill2_MeleeCritical, Def != null ? Def.eliteSkill2Range : 1);
+    private float SK2_MULT => Def != null ? Mathf.Max(1f, Def.eliteSkill2DamageMultiplier) : 2f;
+
+    private int SK3_COST => CostOf(Def?.skill3_Range2, Def != null ? Def.eliteSkill3ApCost : 1);
+    private int SK3_RANGE => RangeOf(Def?.skill3_Range2, Def != null ? Def.eliteSkill3Range : 2);
+
+    private int SK4_COST => CostOf(Def?.skill4_AttackBuff, Def != null ? Def.eliteSkill4ApCost : 2);
+    private int BUFF_TURNS => Def != null ? Mathf.Max(1, Def.eliteBuffTurns) : 6;
+    private float BUFF_MULT => Def != null ? Mathf.Max(1f, Def.eliteBuffDamageMultiplier) : 2f;
+
+    /// <summary>AP가 이 값 미만이면 플레이어 쪽으로 접근하지 않는다.</summary>
+    private int MOVE_TOWARD_AP_THRESHOLD => Def != null ? Mathf.Max(0, Def.eliteMoveTowardApThreshold) : 3;
 
     public void Bind(FocusedCombatManager combat) => _combat = combat;
 
     public void ResetEliteState()
     {
-        eliteAP = 1;
+        eliteAP = Def != null ? Mathf.Clamp(Def.eliteStartAP, 0, ELITE_AP_MAX) : 1;
         eliteFreeMovesUsedThisTurn = 0;
         eliteAtkBuffTurnsLeft = 0;
     }
@@ -183,7 +193,7 @@ public class EnemyAIController : MonoBehaviour
                 if (eliteAP >= SK2_COST)
                 {
                     eliteAP -= SK2_COST;
-                    int dmg = GetBuffedBaseDamage() * SK2_MULT;
+                    int dmg = Mathf.RoundToInt(GetBuffedBaseDamage() * SK2_MULT);
                     yield return _combat.StartCoroutine(_combat.EnemyAttackRoutineOverride(dmg, _combat.GetEnemyUseDash()));
                 }
                 else if (eliteAP >= SK1_COST)
@@ -229,7 +239,7 @@ public class EnemyAIController : MonoBehaviour
     private int GetBuffedBaseDamage()
     {
         int baseDmg = Mathf.Max(0, _combat.GetEnemyAttackDamage());
-        if (EliteBuffActive) baseDmg *= BUFF_MULT;
+        if (EliteBuffActive) baseDmg = Mathf.RoundToInt(baseDmg * BUFF_MULT);
         return baseDmg;
     }
 

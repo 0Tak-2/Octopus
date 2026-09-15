@@ -1,255 +1,482 @@
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using System.Collections.Generic;
 
 /// <summary>
-/// Á¦ÀÛ UI °ü¸®
+/// ì œì‘ì°½. í™”ë©´ ì™¼ìª½ ì•„ë˜ì— ëœ¬ë‹¤.
+///
+/// ì˜ˆì „ êµ¬í˜„ì˜ ë¬¸ì œ:
+///   - ScrollRect ê°€ ì—†ì–´ì„œ íŒ¨ë„ ë°–ìœ¼ë¡œ ë„˜ì–´ê°„ ë ˆì‹œí”¼ëŠ” ë³´ì´ì§€ë„ ëˆŒë¦¬ì§€ë„ ì•Šì•˜ë‹¤.
+///     ë ˆì‹œí”¼ê°€ 24ê°œë¼ ëŒ€ë¶€ë¶„ ì˜ë ¸ë‹¤.
+///   - ì¹´í…Œê³ ë¦¬ ë²„íŠ¼ì´ 4ê°œ(ì „ì²´/ë„êµ¬/ê±´ì¶•/ì €ì¥)ë¿ì¸ë° RecipeCategory ëŠ” 10ì¢…ì´ë¼
+///     ë¬´ê¸°Â·ê°‘ì˜·Â·ì¥ì‹ êµ¬Â·ìŒì‹Â·íšŒë³µì€ 'ì „ì²´'ë¡œë§Œ ì ‘ê·¼ ê°€ëŠ¥í–ˆê³ , ê·¸ë§ˆì € ìŠ¤í¬ë¡¤ì´ ì—†ì–´ ëª» ëˆŒë €ë‹¤.
+///
+/// ê·¸ë˜ì„œ í”„ë¦¬íŒ¹ ì˜ì¡´ì„ ë²„ë¦¬ê³  ëŸ°íƒ€ì„ ìƒì„±ìœ¼ë¡œ ë‹¤ì‹œ ë§Œë“¤ì—ˆë‹¤.
+/// í´ë˜ìŠ¤ ì´ë¦„ê³¼ ê³µê°œ ë©”ì„œë“œëŠ” ê·¸ëŒ€ë¡œ ë‘ì–´ ê¸°ì¡´ í˜¸ì¶œë¶€(InventoryUI, InventoryManager,
+/// GameHUDManager)ë¥¼ ê±´ë“œë¦¬ì§€ ì•ŠëŠ”ë‹¤.
 /// </summary>
 public class CraftingUI : MonoBehaviour
 {
-    [Header("UI References")]
-    public GameObject craftingPanel; // Á¦ÀÛ UI ÆĞ³Î
-    public Transform recipeGridParent; // ·¹½ÃÇÇ ±×¸®µå ºÎ¸ğ
-    public GameObject recipeSlotPrefab; // ·¹½ÃÇÇ ½½·Ô ÇÁ¸®ÆÕ
-
-    [Header("Tooltip")]
-    public GameObject recipeTooltip; // ·¹½ÃÇÇ ÅøÆÁ
-    public TextMeshProUGUI tooltipText; // ÅøÆÁ ÅØ½ºÆ®
-
-    [Header("Category Buttons")]
+    [Header("Legacy (ë” ì´ìƒ ì“°ì§€ ì•ŠìŒ â€” ì¸ìŠ¤í™í„° ì—°ê²°ì´ ë‚¨ì•„ ìˆì–´ë„ ë¬´ì‹œëœë‹¤)")]
+    public GameObject craftingPanel;
+    public Transform recipeGridParent;
+    public GameObject recipeSlotPrefab;
+    public GameObject recipeTooltip;
+    public TextMeshProUGUI tooltipText;
     public Button btnAll;
     public Button btnTool;
     public Button btnBuilding;
     public Button btnStorage;
 
-    [Header("Button Colors")]
-    public Color selectedColor = new Color(0.3f, 0.5f, 0.7f);
-    public Color normalColor = new Color(0.2f, 0.2f, 0.3f);
+    [Header("Colors")]
+    public Color selectedColor = new Color(0.22f, 0.42f, 0.62f);
+    public Color normalColor = new Color(0.16f, 0.18f, 0.24f);
 
-    private RecipeCategory currentCategory = RecipeCategory.All;
-    private List<GameObject> recipeSlots = new List<GameObject>();
+    [Header("Layout")]
+    [Tooltip("íŒ¨ë„ í¬ê¸° (ì™¼ìª½ ì•„ë˜ ê¸°ì¤€)")]
+    public Vector2 panelSize = new Vector2(620f, 560f);
+    [Tooltip("í™”ë©´ ê°€ì¥ìë¦¬ì—ì„œ ë„ìš¸ ì—¬ë°±")]
+    public Vector2 panelMargin = new Vector2(24f, 24f);
 
-    private void Start()
+    // ì¹´í…Œê³ ë¦¬ íƒ­ â€” RecipeCategory ì „ì²´ë¥¼ ë…¸ì¶œí•œë‹¤.
+    private static readonly RecipeCategory[] Categories =
     {
-        if (craftingPanel != null)
+        RecipeCategory.All,
+        RecipeCategory.Tool,
+        RecipeCategory.Weapon,
+        RecipeCategory.Armor,
+        RecipeCategory.Accessory,
+        RecipeCategory.Food,
+        RecipeCategory.Medicine,
+        RecipeCategory.Material,
+        RecipeCategory.Building,
+        RecipeCategory.Storage,
+    };
+
+    private static string CategoryLabel(RecipeCategory c)
+    {
+        switch (c)
+        {
+            case RecipeCategory.All: return "ì „ì²´";
+            case RecipeCategory.Tool: return "ë„êµ¬";
+            case RecipeCategory.Weapon: return "ë¬´ê¸°";
+            case RecipeCategory.Armor: return "ê°‘ì˜·";
+            case RecipeCategory.Accessory: return "ì¥ì‹ êµ¬";
+            case RecipeCategory.Food: return "ìŒì‹";
+            case RecipeCategory.Medicine: return "íšŒë³µ";
+            case RecipeCategory.Material: return "ì¬ë£Œ";
+            case RecipeCategory.Building: return "ê±´ì¶•";
+            case RecipeCategory.Storage: return "ì €ì¥";
+            default: return c.ToString();
+        }
+    }
+
+    private GameObject _root;
+    private Transform _listContent;
+    private TMP_Text _headerText;
+    private readonly Dictionary<RecipeCategory, Button> _tabButtons = new Dictionary<RecipeCategory, Button>();
+    private RecipeCategory _currentCategory = RecipeCategory.All;
+
+    private void Awake()
+    {
+        HideLegacyPanel();
+        if (_root == null) Build();
+    }
+
+    /// <summary>
+    /// ì”¬ì— ë‚¨ì•„ ìˆëŠ” ì˜ˆì „ ì œì‘ì°½ ì˜¤ë¸Œì íŠ¸ë¥¼ ëˆë‹¤.
+    /// ì°¸ì¡°ë§Œ ì•ˆ ì“°ëŠ” ê²Œ ì•„ë‹ˆë¼ ì˜¤ë¸Œì íŠ¸ ìì²´ê°€ ì¼œì ¸ ìˆìœ¼ë©´ í™”ë©´ì— ê·¸ëŒ€ë¡œ ëœ¬ë‹¤.
+    /// </summary>
+    private void HideLegacyPanel()
+    {
+        if (craftingPanel != null && craftingPanel != _root)
             craftingPanel.SetActive(false);
 
-        // ÅøÆÁ ¼û±â±â
         if (recipeTooltip != null)
             recipeTooltip.SetActive(false);
 
-        // Ä«Å×°í¸® ¹öÆ° ¿¬°á
-        if (btnAll != null) btnAll.onClick.AddListener(() => SelectCategory(RecipeCategory.All));
-        if (btnTool != null) btnTool.onClick.AddListener(() => SelectCategory(RecipeCategory.Tool));
-        if (btnBuilding != null) btnBuilding.onClick.AddListener(() => SelectCategory(RecipeCategory.Building));
-        if (btnStorage != null) btnStorage.onClick.AddListener(() => SelectCategory(RecipeCategory.Storage));
-
-        // ÃÊ±â Ä«Å×°í¸® »ö»ó ¼³Á¤ (ÀüÃ¼ ¼±ÅÃ »óÅÂ)
-        UpdateCategoryButtons();
+        // ì˜› íŒ¨ë„ì´ ì¸ìŠ¤í™í„°ì— ì—°ê²°ë¼ ìˆì§€ ì•Šì•„ë„, ë ˆì‹œí”¼ ê·¸ë¦¬ë“œ ë¶€ëª¨ê°€ ì‚´ì•„ ìˆìœ¼ë©´ ê°™ì´ ëˆë‹¤.
+        if (recipeGridParent != null)
+        {
+            var go = recipeGridParent.gameObject;
+            if (go != _root) go.SetActive(false);
+        }
     }
 
-    /// <summary>
-    /// Á¦ÀÛ UI ¿­±â
-    /// </summary>
+    // ============================================
+    // ê³µê°œ API (ê¸°ì¡´ê³¼ ë™ì¼)
+    // ============================================
+
     public void OpenCrafting()
     {
-        Debug.Log("[CraftingUI] OpenCrafting called!");
+        if (_root == null) Build();
+        if (_root == null) return;
 
-        if (craftingPanel != null)
-        {
-            // ÀÌ¹Ì ¿­·ÁÀÖÀ¸¸é ¹«½Ã
-            if (craftingPanel.activeSelf)
-            {
-                Debug.Log("[CraftingUI] Already open, ignoring...");
-                return;
-            }
-
-            Debug.Log("[CraftingUI] Setting panel active...");
-            craftingPanel.SetActive(true);
-
-            // Coroutine »ç¿ë (Invoke´Â ºñÈ°¼ºÈ­µÈ ¿ÀºêÁ§Æ®¿¡¼­ ÀÛµ¿ ¾È ÇÔ)
-            StartCoroutine(RefreshAfterOpenCoroutine());
-        }
-        else
-        {
-            Debug.LogError("[CraftingUI] CraftingPanel is null!");
-        }
-    }
-
-    /// <summary>
-    /// ¿­±â ÈÄ °»½Å (Coroutine)
-    /// </summary>
-    private System.Collections.IEnumerator RefreshAfterOpenCoroutine()
-    {
-        yield return new WaitForSeconds(0.05f);
-        RefreshAfterOpen();
-    }
-
-    /// <summary>
-    /// ¿­±â ÈÄ °»½Å
-    /// </summary>
-    private void RefreshAfterOpen()
-    {
-        Debug.Log("[CraftingUI] RefreshAfterOpen called!");
-        if (craftingPanel != null && craftingPanel.activeSelf)
-        {
-            UpdateCategoryButtons();
-            RefreshRecipes();
-        }
-    }
-
-    /// <summary>
-    /// Á¦ÀÛ UI ´İ±â
-    /// </summary>
-    public void CloseCrafting()
-    {
-        if (craftingPanel != null)
-            craftingPanel.SetActive(false);
-    }
-
-    /// <summary>
-    /// Á¦ÀÛ UI°¡ ¿­·ÁÀÖ´ÂÁö È®ÀÎ
-    /// </summary>
-    public bool IsOpen()
-    {
-        return craftingPanel != null && craftingPanel.activeSelf;
-    }
-
-    /// <summary>
-    /// Ä«Å×°í¸® ¼±ÅÃ
-    /// </summary>
-    private void SelectCategory(RecipeCategory category)
-    {
-        currentCategory = category;
-        UpdateCategoryButtons();
+        _root.SetActive(true);
         RefreshRecipes();
     }
 
-    /// <summary>
-    /// Ä«Å×°í¸® ¹öÆ° »ö»ó ¾÷µ¥ÀÌÆ®
-    /// </summary>
-    private void UpdateCategoryButtons()
+    public void CloseCrafting()
     {
-        if (btnAll != null)
-            btnAll.GetComponent<Image>().color = (currentCategory == RecipeCategory.All) ? selectedColor : normalColor;
-        if (btnTool != null)
-            btnTool.GetComponent<Image>().color = (currentCategory == RecipeCategory.Tool) ? selectedColor : normalColor;
-        if (btnBuilding != null)
-            btnBuilding.GetComponent<Image>().color = (currentCategory == RecipeCategory.Building) ? selectedColor : normalColor;
-        if (btnStorage != null)
-            btnStorage.GetComponent<Image>().color = (currentCategory == RecipeCategory.Storage) ? selectedColor : normalColor;
+        if (_root != null)
+            _root.SetActive(false);
     }
 
-    /// <summary>
-    /// ·¹½ÃÇÇ ¸ñ·Ï °»½Å
-    /// </summary>
+    public bool IsOpen() => _root != null && _root.activeSelf;
+
     public void RefreshRecipes()
     {
-        // ±âÁ¸ ½½·Ô Á¦°Å
-        foreach (var slot in recipeSlots)
-        {
-            if (slot != null)
-                Destroy(slot);
-        }
-        recipeSlots.Clear();
+        if (_listContent == null) return;
 
-        if (CraftingManager.Instance == null)
+        for (int i = _listContent.childCount - 1; i >= 0; i--)
+            Destroy(_listContent.GetChild(i).gameObject);
+
+        var mgr = CraftingManager.Instance;
+        if (mgr == null)
         {
-            Debug.LogError("[CraftingUI] CraftingManager.Instance is null!");
+            CreateText(_listContent, "CraftingManager ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.", 18,
+                FontStyles.Italic, new Color(0.9f, 0.5f, 0.5f));
             return;
         }
 
-        // ·¹½ÃÇÇ °¡Á®¿À±â
-        var allRecipes = CraftingManager.Instance.GetRecipesByCategory(currentCategory);
-        var craftableRecipes = CraftingManager.Instance.GetCraftableRecipes(currentCategory);
+        var inventory = InventoryManager.Instance ?? FindObjectOfType<InventoryManager>();
+        var recipes = mgr.GetRecipesByCategory(_currentCategory);
 
-        // Á¦ÀÛ °¡´ÉÇÑ °Í ¸ÕÀú (¿ŞÂÊ À§)
-        foreach (var recipe in craftableRecipes)
+        // ì œì‘ ê°€ëŠ¥í•œ ê²ƒì„ ìœ„ë¡œ ì˜¬ë¦°ë‹¤.
+        recipes.Sort((a, b) =>
         {
-            CreateRecipeSlot(recipe, true);
+            bool ca = inventory != null && a.CanCraft(inventory);
+            bool cb = inventory != null && b.CanCraft(inventory);
+            if (ca != cb) return ca ? -1 : 1;
+            return 0;
+        });
+
+        int craftable = 0;
+        foreach (var r in recipes)
+        {
+            bool can = inventory != null && r.CanCraft(inventory);
+            if (can) craftable++;
+            CreateRecipeRow(r, can, inventory);
         }
 
-        // Á¦ÀÛ ºÒ°¡´ÉÇÑ °Í ³ªÁß¿¡
-        foreach (var recipe in allRecipes)
+        if (recipes.Count == 0)
         {
-            if (!craftableRecipes.Contains(recipe))
-            {
-                CreateRecipeSlot(recipe, false);
-            }
+            CreateText(_listContent, "ì´ ë¶„ë¥˜ì—ëŠ” ë ˆì‹œí”¼ê°€ ì—†ìŠµë‹ˆë‹¤.", 18,
+                FontStyles.Italic, new Color(0.6f, 0.65f, 0.72f));
         }
 
-        Debug.Log($"[CraftingUI] Displayed {allRecipes.Count} recipes ({craftableRecipes.Count} craftable)");
+        if (_headerText != null)
+            _headerText.text = $"ì œì‘   {craftable} / {recipes.Count}";
+
+        RefreshTabColors();
     }
 
-    /// <summary>
-    /// ·¹½ÃÇÇ ½½·Ô »ı¼º
-    /// </summary>
-    private void CreateRecipeSlot(CraftingRecipe recipe, bool canCraft)
-    {
-        if (recipeSlotPrefab == null || recipeGridParent == null)
-        {
-            Debug.LogError("[CraftingUI] Prefab or parent is null!");
-            return;
-        }
+    /// <summary>ë ˆê±°ì‹œ í˜¸í™˜ â€” íˆ´íŒì€ ê° í–‰ì— ì§ì ‘ í‘œì‹œí•˜ë¯€ë¡œ ë” ì´ìƒ ì“°ì§€ ì•ŠëŠ”ë‹¤.</summary>
+    public void ShowRecipeTooltip(string text) { }
+    public void HideRecipeTooltip() { }
 
-        GameObject slotObj = Instantiate(recipeSlotPrefab, recipeGridParent);
-        RecipeSlot slot = slotObj.GetComponent<RecipeSlot>();
-
-        if (slot != null)
-        {
-            slot.Setup(recipe, canCraft, this);
-            recipeSlots.Add(slotObj);
-        }
-    }
-
-    /// <summary>
-    /// ·¹½ÃÇÇ ÅøÆÁ Ç¥½Ã
-    /// </summary>
-    public void ShowRecipeTooltip(string text)
-    {
-        if (recipeTooltip != null && tooltipText != null)
-        {
-            tooltipText.text = text;
-            recipeTooltip.SetActive(true);
-
-            // ¸¶¿ì½º À§Ä¡¿¡ Ç¥½Ã
-            Vector3 mousePos = Input.mousePosition;
-            recipeTooltip.transform.position = mousePos + new Vector3(10f, -10f, 0f);
-        }
-    }
-
-    /// <summary>
-    /// ·¹½ÃÇÇ ÅøÆÁ ¼û±â±â
-    /// </summary>
-    public void HideRecipeTooltip()
-    {
-        if (recipeTooltip != null)
-        {
-            recipeTooltip.SetActive(false);
-        }
-    }
-
-    /// <summary>
-    /// ¾ÆÀÌÅÛ Á¦ÀÛ ½Ãµµ
-    /// </summary>
     public void TryCraft(CraftingRecipe recipe)
     {
-        if (CraftingManager.Instance.CraftItem(recipe))
-        {
-            Debug.Log($"[CraftingUI] Successfully crafted!");
-            RefreshRecipes(); // Á¦ÀÛ UI °»½Å
+        var mgr = CraftingManager.Instance;
+        if (mgr == null || recipe == null) return;
 
-            // ÀÎº¥Åä¸® UIµµ °»½Å
-            InventoryUI inventoryUI = FindObjectOfType<InventoryUI>();
-            if (inventoryUI != null)
+        if (mgr.CraftItem(recipe))
+            RefreshRecipes();
+    }
+
+    // ============================================
+    // ëª©ë¡ í•­ëª©
+    // ============================================
+
+    private void CreateRecipeRow(CraftingRecipe recipe, bool canCraft, InventoryManager inventory)
+    {
+        var rowColor = canCraft
+            ? new Color(0.11f, 0.2f, 0.16f, 0.95f)
+            : new Color(0.13f, 0.13f, 0.16f, 0.95f);
+
+        var row = CreatePanel($"Recipe_{recipe.resultItemID}", _listContent, rowColor);
+        row.AddComponent<SlotRowHover>();
+
+        var layout = row.AddComponent<HorizontalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 8, 8);
+        layout.spacing = 8;
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = true;
+
+        var rowLe = row.AddComponent<LayoutElement>();
+        rowLe.minHeight = 64;
+        rowLe.preferredHeight = 64;
+
+        // ê²°ê³¼ ì•„ì´í…œ ì•„ì´ì½˜
+        var resultData = ItemDatabase.Instance != null
+            ? ItemDatabase.Instance.GetItemData(recipe.resultItemID)
+            : null;
+
+        var iconRect = NewRect("Icon", row.transform);
+        var iconLe = iconRect.gameObject.AddComponent<LayoutElement>();
+        iconLe.minWidth = 44; iconLe.preferredWidth = 44; iconLe.flexibleWidth = 0;
+        var iconImg = iconRect.gameObject.AddComponent<Image>();
+        iconImg.preserveAspect = true;
+        if (resultData != null && resultData.icon != null)
+            iconImg.sprite = resultData.icon;
+        else
+            iconImg.color = new Color(1f, 1f, 1f, 0.12f);
+
+        // ì´ë¦„ + ì¬ë£Œ
+        var info = CreatePanel("Info", row.transform, Color.clear);
+        var infoLe = info.AddComponent<LayoutElement>();
+        infoLe.flexibleWidth = 1f;
+        var infoLayout = info.AddComponent<VerticalLayoutGroup>();
+        infoLayout.spacing = 2;
+        infoLayout.childAlignment = TextAnchor.MiddleLeft;
+        infoLayout.childForceExpandWidth = true;
+        infoLayout.childForceExpandHeight = false;
+
+        string resultName = resultData != null ? resultData.itemName : $"#{recipe.resultItemID}";
+        if (recipe.resultCount > 1) resultName += $" x{recipe.resultCount}";
+
+        var title = CreateText(info.transform, resultName, 19, FontStyles.Bold,
+            canCraft ? Color.white : new Color(0.62f, 0.64f, 0.68f));
+        title.alignment = TextAlignmentOptions.Left;
+
+        var mats = CreateText(info.transform, BuildIngredientText(recipe, inventory), 15,
+            FontStyles.Normal, new Color(0.74f, 0.79f, 0.85f));
+        mats.alignment = TextAlignmentOptions.TopLeft;
+
+        // ì œì‘ ë²„íŠ¼
+        var btn = CreateButton(row.transform, "ì œì‘",
+            canCraft ? new Color(0.16f, 0.4f, 0.26f) : new Color(0.25f, 0.25f, 0.28f), 78);
+        btn.interactable = canCraft;
+
+        var captured = recipe;
+        btn.onClick.AddListener(() => TryCraft(captured));
+    }
+
+    /// <summary>ì¬ë£Œë¥¼ 'ë³´ìœ /í•„ìš”' ë¡œ ë³´ì—¬ì¤€ë‹¤. ëª¨ìë€ ê±´ ë¹¨ê°›ê²Œ.</summary>
+    private static string BuildIngredientText(CraftingRecipe recipe, InventoryManager inventory)
+    {
+        if (recipe.ingredients == null || recipe.ingredients.Count == 0)
+            return "ì¬ë£Œ ì—†ìŒ";
+
+        var parts = new List<string>();
+        foreach (var ing in recipe.ingredients)
+        {
+            var data = ItemDatabase.Instance != null
+                ? ItemDatabase.Instance.GetItemData(ing.itemID)
+                : null;
+
+            string name = data != null ? data.itemName : $"#{ing.itemID}";
+            int have = inventory != null ? inventory.GetItemCount(ing.itemID) : 0;
+
+            string chunk = $"{name} {have}/{ing.count}";
+            if (have < ing.count)
+                chunk = $"<color=#E06C6C>{chunk}</color>";
+
+            parts.Add(chunk);
+        }
+
+        return string.Join("   ", parts);
+    }
+
+    // ============================================
+    // ëŸ°íƒ€ì„ UI ìƒì„±
+    // ============================================
+
+    private void Build()
+    {
+        var canvas = UICanvasUtil.FindCanvasInActiveScene();
+        if (canvas == null)
+        {
+            Debug.LogError("[CraftingUI] í˜„ì¬ ì”¬ì—ì„œ Canvasë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+            return;
+        }
+
+        // ì™¼ìª½ ì•„ë˜ ê³ ì • íŒ¨ë„. ì „ì²´ í™”ë©´ì„ ë®ì§€ ì•Šìœ¼ë¯€ë¡œ ë’¤ìª½ ì¡°ì‘ì„ ê°€ë¦¬ì§€ ì•ŠëŠ”ë‹¤.
+        _root = CreatePanel("CraftingPanel", canvas.transform, new Color(0.07f, 0.09f, 0.14f, 0.97f));
+        var rt = _root.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.zero;
+        rt.pivot = Vector2.zero;
+        rt.sizeDelta = panelSize;
+        rt.anchoredPosition = panelMargin;
+
+        var panelLayout = _root.AddComponent<VerticalLayoutGroup>();
+        panelLayout.padding = new RectOffset(12, 12, 12, 12);
+        panelLayout.spacing = 8;
+        panelLayout.childAlignment = TextAnchor.UpperCenter;
+        panelLayout.childForceExpandWidth = true;
+        panelLayout.childForceExpandHeight = false;
+
+        _headerText = CreateText(_root.transform, "ì œì‘", 22, FontStyles.Bold, Color.white);
+        _headerText.alignment = TextAlignmentOptions.Left;
+        var headerLe = _headerText.gameObject.AddComponent<LayoutElement>();
+        headerLe.minHeight = 28; headerLe.preferredHeight = 28;
+
+        BuildCategoryTabs();
+
+        // ìŠ¤í¬ë¡¤ ëª©ë¡ â€” ì˜ˆì „ì—” ì´ê²Œ ì—†ì–´ì„œ ë„˜ì¹œ ë ˆì‹œí”¼ë¥¼ ëˆ„ë¥¼ ìˆ˜ ì—†ì—ˆë‹¤.
+        var scrollGo = CreatePanel("Scroll", _root.transform, new Color(0.04f, 0.06f, 0.1f, 1f));
+        var scrollLe = scrollGo.AddComponent<LayoutElement>();
+        scrollLe.flexibleHeight = 1f;
+        scrollLe.minHeight = 300f;
+
+        var scroll = scrollGo.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 24f;
+
+        var viewport = CreatePanel("Viewport", scrollGo.transform, Color.clear);
+        Stretch(viewport.GetComponent<RectTransform>());
+        viewport.AddComponent<Mask>().showMaskGraphic = false;
+        // CreatePanel ì´ ì´ë¯¸ Image ë¥¼ ë¶™ì´ë¯€ë¡œ AddComponent í•˜ì§€ ë§ê³  ìƒ‰ë§Œ ë°”ê¾¼ë‹¤.
+        viewport.GetComponent<Image>().color = Color.white;
+
+        var content = CreatePanel("Content", viewport.transform, Color.clear);
+        var contentRt = content.GetComponent<RectTransform>();
+        contentRt.anchorMin = new Vector2(0f, 1f);
+        contentRt.anchorMax = new Vector2(1f, 1f);
+        contentRt.pivot = new Vector2(0.5f, 1f);
+        contentRt.anchoredPosition = Vector2.zero;
+        contentRt.sizeDelta = Vector2.zero;
+
+        var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+        contentLayout.spacing = 6;
+        contentLayout.padding = new RectOffset(6, 6, 6, 6);
+        contentLayout.childForceExpandWidth = true;
+        contentLayout.childForceExpandHeight = false;
+        content.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scroll.viewport = viewport.GetComponent<RectTransform>();
+        scroll.content = contentRt;
+        _listContent = content.transform;
+
+        var closeBtn = CreateButton(_root.transform, "ë‹«ê¸°", new Color(0.12f, 0.22f, 0.35f), 0);
+        closeBtn.onClick.AddListener(CloseCrafting);
+
+        EnsureEventSystem();
+        _root.SetActive(false);
+    }
+
+    private void BuildCategoryTabs()
+    {
+        // 10ì¢…ì´ë¼ í•œ ì¤„ì— ë‹¤ ë„£ìœ¼ë©´ ì¢ë‹¤. ë‘ ì¤„ë¡œ ë‚˜ëˆˆë‹¤.
+        int perRow = 5;
+        for (int start = 0; start < Categories.Length; start += perRow)
+        {
+            var rowGo = CreatePanel($"Tabs_{start}", _root.transform, Color.clear);
+            var rowLayout = rowGo.AddComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 4;
+            rowLayout.childForceExpandWidth = true;
+            rowLayout.childForceExpandHeight = true;
+
+            var rowLe = rowGo.AddComponent<LayoutElement>();
+            rowLe.minHeight = 34; rowLe.preferredHeight = 34;
+
+            for (int i = start; i < Mathf.Min(start + perRow, Categories.Length); i++)
             {
-                inventoryUI.RefreshUI();
+                var cat = Categories[i];
+                var b = CreateButton(rowGo.transform, CategoryLabel(cat), normalColor, 0, 30f, 15);
+                _tabButtons[cat] = b;
+                b.onClick.AddListener(() =>
+                {
+                    _currentCategory = cat;
+                    RefreshRecipes();
+                });
             }
         }
-        else
+    }
+
+    private void RefreshTabColors()
+    {
+        foreach (var kv in _tabButtons)
         {
-            Debug.LogWarning($"[CraftingUI] Failed to craft");
+            if (kv.Value == null) continue;
+            var img = kv.Value.GetComponent<Image>();
+            if (img != null)
+                img.color = kv.Key == _currentCategory ? selectedColor : normalColor;
         }
+    }
+
+    // ============================================
+    // ìƒì„± í—¬í¼
+    // ============================================
+
+    private static RectTransform NewRect(string name, Transform parent)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        return (RectTransform)go.transform;
+    }
+
+    private static GameObject CreatePanel(string name, Transform parent, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        go.transform.SetParent(parent, false);
+        go.GetComponent<Image>().color = color;
+        return go;
+    }
+
+    private static void Stretch(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+    }
+
+    private static TMP_Text CreateText(Transform parent, string text, float size, FontStyles style, Color color)
+    {
+        var go = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        var tmp = go.GetComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        tmp.fontSize = size;
+        tmp.fontStyle = style;
+        tmp.color = color;
+        tmp.raycastTarget = false;
+        tmp.enableWordWrapping = true;
+        tmp.richText = true;
+        return tmp;
+    }
+
+    private static Button CreateButton(Transform parent, string label, Color bg, float width,
+        float height = 38f, float fontSize = 17f)
+    {
+        var go = CreatePanel(label + "Button", parent, bg);
+
+        // ë†’ì´ë¥¼ ì•ˆ ì£¼ë©´ childForceExpandHeight=false ì¸ ì„¸ë¡œ ë ˆì´ì•„ì›ƒì—ì„œ ë†’ì´ê°€ 0ì´ ë˜ì–´
+        // ê¸€ìë§Œ ë³´ì´ê³  í´ë¦­ì€ ì•ˆ ë˜ëŠ” ë²„íŠ¼ì´ ëœë‹¤.
+        var le = go.AddComponent<LayoutElement>();
+        le.minHeight = height;
+        le.preferredHeight = height;
+        if (width > 0f)
+        {
+            le.minWidth = width;
+            le.preferredWidth = width;
+            le.flexibleWidth = 0f;
+        }
+
+        var btn = go.AddComponent<Button>();
+        var colors = btn.colors;
+        colors.highlightedColor = bg * 1.25f;
+        colors.pressedColor = bg * 0.85f;
+        btn.colors = colors;
+
+        var text = CreateText(go.transform, label, fontSize, FontStyles.Bold, Color.white);
+        text.alignment = TextAlignmentOptions.Center;
+        Stretch(text.rectTransform);
+
+        return btn;
+    }
+
+    private static void EnsureEventSystem()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current != null) return;
+
+        var go = new GameObject("EventSystem");
+        go.AddComponent<UnityEngine.EventSystems.EventSystem>();
+        go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
     }
 }

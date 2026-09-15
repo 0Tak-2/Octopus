@@ -42,6 +42,8 @@ public static class RunSlotSaveService
         // 챕터 진행도. WorldProgressManager 는 PlayerPrefs(슬롯 공용)에만 들고 있어서
         // 슬롯별로 남기지 않으면 이어하기 때 1챕터로 되돌아간다.
         public int currentFieldIndex;
+        // 장착 유물은 캐릭터마다 다르다. 보유 목록은 계정 공용이지만 '조합'은 이 캐릭터의 것.
+        public List<string> equippedRelicIDs = new List<string>();
     }
 
     private static string SlotsDir
@@ -171,16 +173,19 @@ public static class RunSlotSaveService
             savedUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             currentChapter = gm.currentChapter,
             currentMapIndex = gm.currentMapIndex,
-            clearedDungeons = Clone(gm.clearedDungeons) ?? new List<string>(),
+            clearedDungeons = CloneList(gm.clearedDungeons),
             playerData = Clone(gm.playerData) ?? new PlayerSaveData(),
-            inventoryData = Clone(gm.inventoryData) ?? new List<InventoryItemSave>(),
-            fieldMapDataList = Clone(gm.fieldMapDataList) ?? new List<FieldMapEntry>(),
-            allDungeonData = Clone(gm.allDungeonData) ?? new List<DungeonDataEntry>(),
+            inventoryData = CloneList(gm.inventoryData),
+            fieldMapDataList = CloneList(gm.fieldMapDataList),
+            allDungeonData = CloneList(gm.allDungeonData),
             currentDungeonData = Clone(gm.currentDungeonData),
             runStats = Clone(gm.runStats) ?? new RunStatistics(),
             currentFieldIndex = WorldProgressManager.Instance != null
                 ? WorldProgressManager.Instance.CurrentFieldIndex
                 : 0,
+            equippedRelicIDs = RelicManager.Instance != null
+                ? RelicManager.Instance.GetEquippedRelicIDs()
+                : new List<string>(),
         };
 
         gm.runCharacterName = characterName;
@@ -188,6 +193,41 @@ public static class RunSlotSaveService
 
         File.WriteAllText(SlotPath(slot), JsonUtility.ToJson(snap));
         SetActiveSlot(slot);
+    }
+
+    /// <summary>
+    /// 새 캐릭터 슬롯을 즉시 만든다. 게임 씬으로 들어가지 않는다.
+    /// 생성 직후엔 슬롯 목록으로 돌아가고, 플레이는 '시작'(이어하기 경로)으로 한다.
+    /// </summary>
+    public static bool CreateNewCharacterSlot(int slot, string characterName)
+    {
+        slot = Mathf.Clamp(slot, 1, MaxSlots);
+        if (File.Exists(SlotPath(slot)))
+            return false;
+
+        string sanitized = SanitizeCharacterName(characterName);
+        if (string.IsNullOrEmpty(sanitized))
+            return false;
+
+        var snap = new RunSnapshot
+        {
+            slot = slot,
+            characterName = sanitized,
+            savedUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            currentChapter = 1,
+            currentMapIndex = 0,
+            clearedDungeons = new List<string>(),
+            playerData = new PlayerSaveData(),
+            inventoryData = new List<InventoryItemSave>(),
+            fieldMapDataList = new List<FieldMapEntry>(),
+            allDungeonData = new List<DungeonDataEntry>(),
+            currentDungeonData = null,
+            runStats = new RunStatistics(),
+            currentFieldIndex = 0,
+        };
+
+        File.WriteAllText(SlotPath(slot), JsonUtility.ToJson(snap));
+        return true;
     }
 
     /// <summary>새 캐릭터 생성 후 게임 씬 진입 준비.</summary>
@@ -267,11 +307,11 @@ public static class RunSlotSaveService
             : snap.characterName;
         gm.currentChapter = snap.currentChapter;
         gm.currentMapIndex = snap.currentMapIndex;
-        gm.clearedDungeons = Clone(snap.clearedDungeons) ?? new List<string>();
+        gm.clearedDungeons = CloneList(snap.clearedDungeons);
         gm.playerData = Clone(snap.playerData) ?? new PlayerSaveData();
-        gm.inventoryData = Clone(snap.inventoryData) ?? new List<InventoryItemSave>();
-        gm.fieldMapDataList = Clone(snap.fieldMapDataList) ?? new List<FieldMapEntry>();
-        gm.allDungeonData = Clone(snap.allDungeonData) ?? new List<DungeonDataEntry>();
+        gm.inventoryData = CloneList(snap.inventoryData);
+        gm.fieldMapDataList = CloneList(snap.fieldMapDataList);
+        gm.allDungeonData = CloneList(snap.allDungeonData);
         gm.currentDungeonData = Clone(snap.currentDungeonData);
         gm.runStats = Clone(snap.runStats) ?? new RunStatistics();
         gm.ResetPlayTimeAnchor();
@@ -279,6 +319,33 @@ public static class RunSlotSaveService
         // ResetGame() 이 WorldProgressManager 를 0으로 밀어놓은 뒤라 여기서 되돌린다.
         if (WorldProgressManager.Instance != null)
             WorldProgressManager.Instance.RestoreFieldIndex(snap.currentFieldIndex);
+
+        // 이 캐릭터가 끼고 있던 유물 조합을 그대로 복원한다.
+        if (RelicManager.Instance != null)
+            RelicManager.Instance.SetEquippedByIDs(snap.equippedRelicIDs);
+    }
+
+    /// <summary>
+    /// 런에 들어가지 않고 특정 슬롯의 유물 조합만 읽는다. 타이틀에서 캐릭터별 장착을 편집할 때 쓴다.
+    /// </summary>
+    public static List<string> GetEquippedRelicIDs(int slot)
+    {
+        if (!TryReadSnapshot(slot, out var snap) || snap == null)
+            return new List<string>();
+
+        return snap.equippedRelicIDs ?? new List<string>();
+    }
+
+    /// <summary>특정 슬롯의 유물 조합만 바꿔 저장한다.</summary>
+    public static bool SetEquippedRelicIDs(int slot, List<string> ids)
+    {
+        slot = Mathf.Clamp(slot, 1, MaxSlots);
+        if (!TryReadSnapshot(slot, out var snap) || snap == null)
+            return false;
+
+        snap.equippedRelicIDs = ids ?? new List<string>();
+        File.WriteAllText(SlotPath(slot), JsonUtility.ToJson(snap));
+        return true;
     }
 
     public static void DeleteActiveSlot() => DeleteSlot(GetActiveSlot());
@@ -340,5 +407,33 @@ public static class RunSlotSaveService
         string json = JsonUtility.ToJson(source);
         if (string.IsNullOrEmpty(json)) return default;
         return JsonUtility.FromJson<T>(json);
+    }
+
+    /// <summary>
+    /// 리스트 전용 복제.
+    ///
+    /// JsonUtility.ToJson 은 최상위 List 를 직렬화하지 못하고 "{}" 를 돌려준다.
+    /// 그래서 Clone(list) 는 '조용히 빈 리스트'를 만들어냈고,
+    /// 인벤토리·필드 맵 시드·클리어한 던전·장착 유물이 저장될 때마다 통째로 사라졌다.
+    /// (단일 객체는 멀쩡했기 때문에 증상이 '맵만 바뀌는' 것처럼 보였다)
+    ///
+    /// 래퍼 객체로 감싸야 직렬화된다.
+    /// </summary>
+    [Serializable]
+    private class ListWrapper<T>
+    {
+        public List<T> items;
+    }
+
+    private static List<T> CloneList<T>(List<T> source)
+    {
+        if (source == null) return new List<T>();
+
+        var wrapper = new ListWrapper<T> { items = source };
+        string json = JsonUtility.ToJson(wrapper);
+        if (string.IsNullOrEmpty(json)) return new List<T>();
+
+        var restored = JsonUtility.FromJson<ListWrapper<T>>(json);
+        return restored?.items ?? new List<T>();
     }
 }

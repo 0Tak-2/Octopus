@@ -15,7 +15,8 @@ public class RunSlotSummary
         isEmpty ? "빈 슬롯" : (string.IsNullOrWhiteSpace(characterName) ? $"캐릭터 {slot}" : characterName);
 
     public string ProgressText =>
-        isEmpty ? "" : $"Ch.{currentChapter} · Map {currentMapIndex + 1}";
+        // '·'(U+00B7)는 Pretendard SDF 아틀라스에 없어서 □로 깨지고 경고를 매 프레임 쏟아낸다.
+        isEmpty ? "" : $"Ch.{currentChapter} - Map {currentMapIndex + 1}";
 
     public string SavedAtText
     {

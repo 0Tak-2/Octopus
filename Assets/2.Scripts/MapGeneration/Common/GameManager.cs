@@ -91,6 +91,16 @@ public class GameManager : MonoBehaviour
     [Header("Scene Names")]
     public string fieldSceneName = "NewMapScene";
 
+    [Header("Auto Save")]
+    [Tooltip("자동 저장 사용. 끄면 Esc 메뉴와 맵 이동 때만 저장된다.")]
+    public bool enableAutoSave = true;
+
+    [Tooltip("필드에서 이 턴 수만큼 지날 때마다 저장. 너무 작으면 디스크 쓰기가 잦아진다.")]
+    [Min(1)] public int autoSaveIntervalTurns = 10;
+
+    private int _turnsSinceAutoSave;
+    private FieldTimeManager _boundFieldTime;
+
     [Header("Debug")]
     public bool logSceneTransitions = true;
     public bool logDataOperations = true;
@@ -114,8 +124,89 @@ public class GameManager : MonoBehaviour
             Debug.Log("[GameManager] 초기화 완료 (DontDestroyOnLoad)");
     }
 
+    private void Start()
+    {
+        // OnSceneLoaded 는 '첫 씬'에서는 안 불릴 수 있다.
+        // (에디터에서 게임 씬을 열어둔 채 Play 를 누르면 OnEnable 구독보다 이벤트가 먼저 지나간다)
+        // 그래서 여기서도 한 번 보장한다. 둘 다 중복 생성은 막혀 있다.
+        if (IsGameplayScene(SceneManager.GetActiveScene().name))
+        {
+            EnsureGameSessionMenu();
+            EnsureWorldMap();
+        }
+    }
+
     private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
-    private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        UnbindAutoSave();
+    }
+
+    // =========================================================
+    // 자동 저장
+    // =========================================================
+    // 예전엔 Esc 메뉴와 맵 이동 때만 저장돼서, 그 사이에 게임이 꺼지면 진행이 통째로 날아갔다.
+
+    private void BindAutoSave()
+    {
+        UnbindAutoSave();
+        if (!enableAutoSave) return;
+
+        _boundFieldTime = FieldTimeManager.Instance ?? FindObjectOfType<FieldTimeManager>();
+        if (_boundFieldTime != null)
+            _boundFieldTime.OnTimeAdvanced += HandleTurnForAutoSave;
+
+        _turnsSinceAutoSave = 0;
+    }
+
+    private void UnbindAutoSave()
+    {
+        if (_boundFieldTime != null)
+            _boundFieldTime.OnTimeAdvanced -= HandleTurnForAutoSave;
+        _boundFieldTime = null;
+    }
+
+    private void HandleTurnForAutoSave(int delta, int newTotalTime)
+    {
+        if (!enableAutoSave) return;
+
+        _turnsSinceAutoSave += Mathf.Max(1, delta);
+        if (_turnsSinceAutoSave < autoSaveIntervalTurns) return;
+
+        _turnsSinceAutoSave = 0;
+        TryAutoSave("턴 경과");
+    }
+
+    /// <summary>
+    /// 자동 저장. 런이 끝난 뒤에는 절대 저장하지 않는다.
+    /// 사망 시 DeleteCurrentRunData 로 슬롯을 지우는데, 그 뒤에 저장이 돌면
+    /// 지워진 캐릭터가 되살아난다.
+    /// </summary>
+    public void TryAutoSave(string reason)
+    {
+        if (!enableAutoSave) return;
+
+        var dm = DeathManager.Instance;
+        if (dm != null && dm.RunEnded) return;
+
+        SaveAllCurrentState();
+
+        if (logDataOperations)
+            Debug.Log($"[GameManager] 자동 저장 ({reason})");
+    }
+
+    private void OnApplicationQuit()
+    {
+        TryAutoSave("게임 종료");
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        // 모바일·백그라운드 전환 대비. 에디터에서는 플레이 중단 시에도 불린다.
+        if (paused) TryAutoSave("일시정지");
+    }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -126,6 +217,7 @@ public class GameManager : MonoBehaviour
         {
             RunSlotSaveService.ApplySessionStart(this);
             EnsureGameSessionMenu();
+            EnsureWorldMap();
         }
 
         // WorldProgressManager와 맵 인덱스 동기화 (필드 세이브 키 C*_M* 일관성)
@@ -144,12 +236,28 @@ public class GameManager : MonoBehaviour
         {
             // 약간의 딜레이 후 복원 (씬 초기화 대기)
             StartCoroutine(RestoreFieldStateDelayed());
+
+            // FieldTimeManager 는 씬마다 새로 생기므로 매번 다시 붙인다.
+            BindAutoSave();
+        }
+        else
+        {
+            UnbindAutoSave();
         }
     }
 
     private bool IsGameplayScene(string sceneName)
     {
         return sceneName == fieldSceneName || sceneName.Contains("Field") || sceneName.Contains("Map");
+    }
+
+    /// <summary>전체 지도(M)를 씬에 붙인다. 씬 편집 없이 쓰도록 런타임 생성한다.</summary>
+    private static void EnsureWorldMap()
+    {
+        if (FindObjectOfType<WorldMapUI>() != null)
+            return;
+
+        new GameObject("WorldMapUI").AddComponent<WorldMapUI>();
     }
 
     private static void EnsureGameSessionMenu()
@@ -184,15 +292,84 @@ public class GameManager : MonoBehaviour
         playerData.hunger = stats.hunger;
         playerData.maxHunger = stats.maxHunger;
 
-        // 플레이어 위치 저장
+        // 플레이어 위치 저장 (필드에 있을 때만 — 던전 좌표를 필드 좌표로 저장하면 안 된다)
         GridBoard gridBoard = FindObjectOfType<GridBoard>();
-        if (gridBoard != null)
+        bool inField = ModeManager.Instance == null
+                       || ModeManager.Instance.CurrentMode == ModeManager.GameplayMode.Field;
+
+        if (gridBoard != null && inField)
         {
             playerData.lastFieldPosition = gridBoard.WorldToCell(stats.transform.position);
+            // 어느 맵의 좌표인지 함께 남긴다. 챕터가 바뀌면 이 좌표를 쓰면 안 된다.
+            playerData.lastFieldMapKey = GetCurrentMapKey();
         }
+
+        SaveGearState();
 
         if (logDataOperations)
             Debug.Log($"[GameManager] 플레이어 스탯 저장: HP={playerData.hp}, 위치={playerData.lastFieldPosition}");
+    }
+
+    /// <summary>
+    /// 장비·컬러모듈·도구 저장.
+    /// 여태 저장 구조에 없어서, 나갔다 들어오면 Player 프리팹 기본값으로 되돌아갔다.
+    /// </summary>
+    private void SaveGearState()
+    {
+        var equip = EquipmentManager.Instance;
+        if (equip != null)
+            playerData.equippedEquipmentNames = equip.GetEquippedNames();
+
+        var slots = ColorModuleSlots.Instance;
+        if (slots != null)
+            playerData.equippedColorModuleNames = slots.GetEquippedNames();
+
+        var modInv = ColorModuleInventory.Instance;
+        if (modInv != null)
+        {
+            playerData.ownedColorModuleNames = new List<string>();
+            foreach (var m in modInv.OwnedModules)
+                if (m?.definition != null)
+                    playerData.ownedColorModuleNames.Add(m.definition.name);
+        }
+
+        var tools = ToolManager.Instance;
+        if (tools != null)
+        {
+            playerData.equippedPickaxeID = tools.equippedPickaxeID;
+            playerData.equippedShovelID = tools.equippedShovelID;
+        }
+    }
+
+    /// <summary>장비·컬러모듈·도구 복원. RestorePlayerStats 에서 호출한다.</summary>
+    private void RestoreGearState()
+    {
+        // 보유 모듈을 먼저 채워야 장착 복원이 참조할 대상이 생긴다.
+        var modInv = ColorModuleInventory.Instance;
+        if (modInv != null && playerData.ownedColorModuleNames != null)
+        {
+            foreach (var name in playerData.ownedColorModuleNames)
+            {
+                var def = ColorModuleLookup.FindByName(name);
+                if (def != null && !modInv.HasModule(def))
+                    modInv.AddModule(def);
+            }
+        }
+
+        var equip = EquipmentManager.Instance;
+        if (equip != null)
+            equip.RestoreEquippedByNames(playerData.equippedEquipmentNames);
+
+        var slots = ColorModuleSlots.Instance;
+        if (slots != null)
+            slots.RestoreEquippedByNames(playerData.equippedColorModuleNames);
+
+        var tools = ToolManager.Instance;
+        if (tools != null)
+        {
+            if (playerData.equippedPickaxeID >= 0) tools.EquipPickaxe(playerData.equippedPickaxeID);
+            if (playerData.equippedShovelID >= 0) tools.EquipShovel(playerData.equippedShovelID);
+        }
     }
 
     public void RestorePlayerStats()
@@ -206,6 +383,10 @@ public class GameManager : MonoBehaviour
         stats.maxFatigue = playerData.maxFatigue;
         stats.hunger = playerData.hunger;
         stats.maxHunger = playerData.maxHunger;
+        stats.ClampAll();
+
+        // 장비가 붙어야 maxHP 보너스가 반영되므로 스탯 복원 뒤에 이어서 한다.
+        RestoreGearState();
         stats.ClampAll();
 
         if (logDataOperations)
@@ -355,13 +536,53 @@ public class GameManager : MonoBehaviour
         return newData;
     }
 
+    // =========================================================
+    // 채집물 영속화
+    // =========================================================
+    // FieldMapSaveData.destroyedObjects 는 선언만 돼 있고 읽고 쓰는 곳이 없었다.
+    // 그래서 맵을 나갔다 들어올 때마다 해초·산호·암석이 전부 되살아나 무한 파밍이 가능했고,
+    // 배고픔 같은 생존 압박이 의미를 잃었다.
+    //
+    // 맵은 시드로 결정론적으로 재생성되므로 '격자 셀'이 안정적인 식별자가 된다.
+
+    private static string CellKey(Vector2Int cell) => $"{cell.x},{cell.y}";
+
+    /// <summary>채집/파괴된 필드 오브젝트의 셀을 현재 맵에 기록한다.</summary>
+    public void MarkFieldObjectDestroyed(Vector2Int cell)
+    {
+        var mapData = GetOrCreateFieldMapData(GetCurrentMapKey());
+        if (mapData == null) return;
+
+        string key = CellKey(cell);
+        if (!mapData.destroyedObjects.Contains(key))
+            mapData.destroyedObjects.Add(key);
+    }
+
+    /// <summary>이 셀의 오브젝트가 이미 채집/파괴됐는가. 스폰할 때 걸러내는 용도.</summary>
+    public bool IsFieldObjectDestroyed(Vector2Int cell)
+    {
+        var entry = fieldMapDataList.Find(x => x.mapKey == GetCurrentMapKey());
+        return entry?.data != null && entry.data.destroyedObjects.Contains(CellKey(cell));
+    }
+
     public void SaveFieldState()
     {
         string mapKey = GetCurrentMapKey();
         var mapData = GetOrCreateFieldMapData(mapKey);
 
         // 적 상태 저장 (필드 루트만 — 던전 적 제외)
+        //
+        // 통째로 비우면 안 된다. 집중전투에서 죽은 적은 Destroy 되어 씬에서 사라지므로
+        // 아래 순회에 잡히지 않는다. 비우고 새로 쓰면 그 '죽었다'는 기록이 날아가고,
+        // 다음에 들어올 때 다시 살아난다.
+        // 살아있는(또는 비활성인) 적은 갱신하고, 사라진 적의 기록은 남긴다.
+        var previousByID = new Dictionary<string, EnemyStateSave>();
+        foreach (var s in mapData.enemies)
+            if (s != null && !string.IsNullOrEmpty(s.uniqueId))
+                previousByID[s.uniqueId] = s;
+
         mapData.enemies.Clear();
+        var writtenIDs = new HashSet<string>();
         GridBoard gridBoard = GetFieldGridBoardForState();
 
         foreach (var enemy in GetFieldEnemyInstances())
@@ -372,15 +593,34 @@ public class GameManager : MonoBehaviour
                 ? gridBoard.WorldToCell(enemy.transform.position)
                 : Vector2Int.zero;
 
+            // 스폰 순번을 키로 쓴다. 위치는 적이 배회하면서 바뀌므로 식별자가 될 수 없고,
+            // GetInstanceID 는 실행할 때마다 달라져 이어하기에서 매칭이 전부 실패한다.
+            string uniqueId = enemy.fieldSpawnIndex >= 0
+                ? $"FieldEnemy_{enemy.fieldSpawnIndex}"
+                : $"Enemy_{pos.x}_{pos.y}";
+
             int instId = enemy.gameObject.GetInstanceID();
             mapData.enemies.Add(new EnemyStateSave(
-                $"Enemy_{pos.x}_{pos.y}",
+                uniqueId,
                 enemy.definition.name,
                 pos,
                 enemy.currentHP,
                 enemy.currentHP <= 0 || !enemy.gameObject.activeSelf,
                 instId
             ));
+            writtenIDs.Add(uniqueId);
+        }
+
+        // 씬에서 사라진 적(= 집중전투에서 처치되어 Destroy 된 적)의 기록을 되살린다.
+        // 이게 없으면 잡은 적이 다음 입장 때 부활한다.
+        foreach (var kv in previousByID)
+        {
+            if (writtenIDs.Contains(kv.Key)) continue;
+
+            var old = kv.Value;
+            old.isDead = true;      // 사라졌다 = 처치됐다
+            old.currentHP = 0;
+            mapData.enemies.Add(old);
         }
 
         _lastFieldMapKey = mapKey;
@@ -416,15 +656,30 @@ public class GameManager : MonoBehaviour
         {
             if (enemy.definition == null) continue;
 
-            int oid = enemy.gameObject.GetInstanceID();
             EnemyStateSave saved = null;
-            if (!byInstanceId.TryGetValue(oid, out saved))
+
+            // 1순위: 스폰 순번. 세션을 넘어서도 유지되는 유일한 식별자다.
+            if (enemy.fieldSpawnIndex >= 0)
+            {
+                string spawnId = $"FieldEnemy_{enemy.fieldSpawnIndex}";
+                saved = mapData.enemies.Find(x => x.uniqueId == spawnId);
+            }
+
+            // 2순위: 같은 세션 안에서의 인스턴스 ID (던전 왕복 등)
+            if (saved == null)
+            {
+                int oid = enemy.gameObject.GetInstanceID();
+                byInstanceId.TryGetValue(oid, out saved);
+            }
+
+            // 3순위: 옛 세이브 호환 — 위치 기반 ID
+            if (saved == null)
             {
                 Vector2Int pos = gridBoard != null
                     ? gridBoard.WorldToCell(enemy.transform.position)
                     : Vector2Int.zero;
                 string enemyId = $"Enemy_{pos.x}_{pos.y}";
-                saved = mapData.enemies.Find(x => x.uniqueId == enemyId && x.unityInstanceId == 0);
+                saved = mapData.enemies.Find(x => x.uniqueId == enemyId);
             }
 
             if (saved == null)

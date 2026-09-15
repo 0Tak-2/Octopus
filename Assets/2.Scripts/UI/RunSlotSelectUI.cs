@@ -54,6 +54,18 @@ public class RunSlotSelectUI : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (!IsOpen) return;
+        if (!Input.GetKeyDown(KeyCode.Escape)) return;
+
+        // 이름 입력 중이면 그것만 닫고, 아니면 목록을 닫는다.
+        if (_nameDialog != null && _nameDialog.activeSelf)
+            HideNameDialog();
+        else
+            Close();
+    }
+
     public void Close()
     {
         if (_nameDialog != null)
@@ -77,11 +89,15 @@ public class RunSlotSelectUI : MonoBehaviour
     private void CreateSlotRow(RunSlotSummary summary)
     {
         var row = CreatePanel($"SlotRow_{summary.slot}", _listContent, new Color(0.08f, 0.16f, 0.28f, 0.95f));
+        row.AddComponent<SlotRowHover>();
         var layout = row.AddComponent<HorizontalLayoutGroup>();
         layout.padding = new RectOffset(12, 12, 8, 8);
         layout.spacing = 8;
         layout.childAlignment = TextAnchor.MiddleLeft;
-        layout.childForceExpandWidth = true;
+        // true 로 두면 남는 폭을 '자식 수'로 균등 분배한다. 빈 슬롯(자식 2개)과
+        // 저장된 슬롯(삭제 버튼까지 3개)의 분배가 달라져 버튼 위치가 행마다 어긋난다.
+        // 슬랙은 정보 영역이 전부 흡수하고 버튼은 고정 폭을 유지하게 한다.
+        layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = true;
 
         var le = row.AddComponent<LayoutElement>();
@@ -89,6 +105,8 @@ public class RunSlotSelectUI : MonoBehaviour
         le.preferredHeight = 56;
 
         var info = CreatePanel("Info", row.transform, Color.clear);
+        var infoLe = info.AddComponent<LayoutElement>();
+        infoLe.flexibleWidth = 1f;
         var infoLayout = info.AddComponent<VerticalLayoutGroup>();
         infoLayout.spacing = 2;
         infoLayout.childAlignment = TextAnchor.MiddleLeft;
@@ -102,7 +120,7 @@ public class RunSlotSelectUI : MonoBehaviour
 
         if (!summary.isEmpty)
         {
-            string sub = $"{summary.ProgressText}   ·   {summary.SavedAtText}";
+            string sub = $"{summary.ProgressText}   |   {summary.SavedAtText}";
             CreateText(info.transform, sub, 14, FontStyles.Normal, new Color(0.75f, 0.85f, 0.95f));
         }
         else
@@ -112,6 +130,16 @@ public class RunSlotSelectUI : MonoBehaviour
 
         if (!summary.isEmpty)
         {
+            int relicSlot = summary.slot;
+            string relicName = summary.DisplayName;
+            var relicBtn = CreateButton(row.transform, "유물", new Color(0.3f, 0.26f, 0.1f, 1f), 72);
+            relicBtn.onClick.AddListener(() =>
+            {
+                // 장착 조합은 캐릭터마다 다르므로 이 슬롯을 지정해서 연다.
+                var ui = RelicCollectionUI.Ensure();
+                if (ui != null) ui.OpenForSlot(relicSlot, relicName);
+            });
+
             var deleteBtn = CreateButton(row.transform, "삭제", new Color(0.45f, 0.12f, 0.12f, 1f), 72);
             int slot = summary.slot;
             deleteBtn.onClick.AddListener(() => ConfirmDelete(slot, summary.DisplayName));
@@ -133,8 +161,14 @@ public class RunSlotSelectUI : MonoBehaviour
         for (int i = 0; i < _listContent.childCount; i++)
         {
             var child = _listContent.GetChild(i);
-            if (child.name == $"SlotRow_{slot}" && child.TryGetComponent<Image>(out var img))
-                img.color = new Color(0.14f, 0.32f, 0.52f, 1f);
+            if (child.name != $"SlotRow_{slot}") continue;
+
+            // 호버 컴포넌트가 기본색을 들고 있으므로 그쪽에 알려야 마우스가 빠질 때 되돌아간다.
+            var selected = new Color(0.14f, 0.32f, 0.52f, 1f);
+            if (child.TryGetComponent<SlotRowHover>(out var hover))
+                hover.SetBaseColor(selected);
+            else if (child.TryGetComponent<Image>(out var img))
+                img.color = selected;
         }
     }
 
@@ -179,12 +213,16 @@ public class RunSlotSelectUI : MonoBehaviour
         if (string.IsNullOrEmpty(name))
             return;
 
-        if (!RunSlotSaveService.PrepareNewCharacter(_pendingNewSlot, name))
+        // 캐릭터를 만들면 슬롯 목록으로 돌아간다. 바로 게임에 들어가지 않는다.
+        // 플레이는 목록에서 '시작'을 눌러야 시작된다.
+        int createdSlot = _pendingNewSlot;
+        if (!RunSlotSaveService.CreateNewCharacterSlot(createdSlot, name))
             return;
 
         HideNameDialog();
-        Close();
-        SceneManager.LoadScene(gameSceneName);
+        RefreshList();
+        HighlightSlot(createdSlot);
+        titleSceneUI?.SetContinueEnabled(RunSlotSaveService.HasAnySlot());
     }
 
     private void StartContinue(int slot)
@@ -198,7 +236,9 @@ public class RunSlotSelectUI : MonoBehaviour
 
     private void BuildDefaultUI()
     {
-        var canvas = FindObjectOfType<Canvas>();
+        // 영구(DontDestroyOnLoad) 캔버스를 잡으면 그쪽 CanvasGroup 설정(alpha 0 등)을 물려받아
+        // 목록이 안 보이거나 클릭이 안 먹는다. 현재 씬의 캔버스만 쓴다.
+        var canvas = UICanvasUtil.FindCanvasInActiveScene();
         if (canvas == null)
         {
             Debug.LogError("[RunSlotSelectUI] Canvas를 찾을 수 없습니다.");
@@ -238,7 +278,11 @@ public class RunSlotSelectUI : MonoBehaviour
         var viewport = CreatePanel("Viewport", scrollGo.transform, Color.clear);
         Stretch(viewport.GetComponent<RectTransform>());
         viewport.AddComponent<Mask>().showMaskGraphic = false;
-        viewport.AddComponent<Image>().color = Color.white;
+        // CreatePanel 이 이미 Image 를 붙여서 만든다. 여기서 또 AddComponent<Image> 하면
+        // Unity 가 거부하고 null 을 반환해, .color 대입에서 NullReferenceException 이 난다.
+        // 그러면 아래의 슬롯 목록·닫기 버튼·이름 입력창이 통째로 생성되지 않는다.
+        // Mask 가 영역을 잡으려면 알파가 있어야 하므로 기존 Image 의 색만 바꾼다.
+        viewport.GetComponent<Image>().color = Color.white;
 
         var content = CreatePanel("Content", viewport.transform, Color.clear);
         var contentRt = content.GetComponent<RectTransform>();
@@ -338,14 +382,24 @@ public class RunSlotSelectUI : MonoBehaviour
         return tmp;
     }
 
+    private const float ButtonHeight = 40f;
+
     private Button CreateButton(Transform parent, string label, Color bg, float width)
     {
         var go = CreatePanel(label + "Button", parent, bg);
+
+        // 높이를 지정하지 않으면 childForceExpandHeight=false 인 VerticalLayoutGroup 안에서
+        // 높이가 0이 된다. TMP 는 rect 밖으로도 글자를 그리기 때문에
+        // '글자는 보이는데 클릭은 안 되는' 버튼이 만들어진다.
+        var le = go.AddComponent<LayoutElement>();
+        le.minHeight = ButtonHeight;
+        le.preferredHeight = ButtonHeight;
         if (width > 0f)
         {
-            var le = go.AddComponent<LayoutElement>();
             le.preferredWidth = width;
             le.minWidth = width;
+            // 남는 가로 공간은 정보 영역이 가져가고 버튼은 고정 폭을 유지한다.
+            le.flexibleWidth = 0f;
         }
 
         var btn = go.AddComponent<Button>();

@@ -91,11 +91,23 @@ public class RelicDefinition : ScriptableObject
     // 증가폭:  1단계 +1.00, 2단계 +0.70, 3단계 +0.49, 4단계 +0.34, 5단계 +0.24
     // 누적 배율: 1.00 → 1.70 → 2.19 → 2.53 → 2.77 (상한)
 
+    // 수치는 RelicManager(씬 컴포넌트)에서 조절한다. 유물마다 다를 값이 아니라
+    // 게임 전체의 성장 곡선이므로 한 곳에서 관리하는 게 맞다.
+    // RelicManager 가 없을 때(에디터 프리뷰 등)는 아래 기본값을 쓴다.
+    public const int DefaultMaxStackLevel = 5;
+    public const float DefaultStackFalloff = 0.7f;
+
     /// <summary>중첩 최대 단계. 이 이상 얻어도 효과는 더 오르지 않는다.</summary>
-    public const int MaxStackLevel = 5;
+    public static int MaxStackLevel =>
+        RelicManager.Instance != null
+            ? Mathf.Max(1, RelicManager.Instance.maxStackLevel)
+            : DefaultMaxStackLevel;
 
     /// <summary>단계별 증가폭 감쇠율. 0.7 = 다음 단계는 직전 증가폭의 70%.</summary>
-    public const float StackFalloff = 0.7f;
+    public static float StackFalloff =>
+        RelicManager.Instance != null
+            ? Mathf.Clamp(RelicManager.Instance.stackFalloff, 0.1f, 1f)
+            : DefaultStackFalloff;
 
     /// <summary>
     /// Get scaled bonuses based on stack count.

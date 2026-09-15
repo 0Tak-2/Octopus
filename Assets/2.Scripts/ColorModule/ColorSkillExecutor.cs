@@ -493,11 +493,8 @@ public class ColorSkillExecutor : MonoBehaviour
         if (playerStats != null)
             playerStats.Heal(amount);
 
-        // 전투 State는 PlayerStats.hp와 동일하게 (실시간 UI·전투 HUD 일치)
+        // PlayerStats 가 원본이고 전투 State 가 따라간다. 창구를 통해 맞춘다.
         if (combat != null && combat.IsInFocusedCombat && playerStats != null)
-        {
-            combat.State.playerHP = Mathf.Clamp(playerStats.hp, 0, playerStats.maxHP);
-            combat.RefreshUIExternal();
-        }
+            combat.PullPlayerHpFromStats();
     }
 }

@@ -19,6 +19,9 @@ public class PlayerSaveData
 
     [Header("Position")]
     public Vector2Int lastFieldPosition;      // 필드에서 마지막 위치
+
+    [Tooltip("lastFieldPosition 이 어느 맵의 좌표인지. 챕터를 넘어가면 이전 필드 좌표를 쓰면 안 되므로 같이 저장한다.")]
+    public string lastFieldMapKey = "";
     public Vector2Int dungeonEntrancePosition; // 던전 입구 위치 (나올 때 여기로)
     public bool hasDungeonReturnPosition;     // 던전 복귀 좌표 유효 플래그
 
@@ -27,6 +30,22 @@ public class PlayerSaveData
     public bool hasPendingEntranceHint;
     public EdgeSide enterNewFieldFromEdge;
     [Range(0f, 1f)] public float entranceAlignT = 0.5f;
+
+    // 장비·컬러모듈·도구는 여태 저장 구조에 아예 없었다.
+    // 그래서 나갔다 들어오면 Player 프리팹의 기본값으로 되돌아가, 제작해서 낀 장비가 사라졌다.
+    // 에셋 이름(ScriptableObject name)을 키로 쓰고 ItemDatabase 로 역조회한다.
+    [Header("Equipment / Modules / Tools")]
+    [Tooltip("착용 장비 8슬롯. 빈 슬롯은 빈 문자열.")]
+    public List<string> equippedEquipmentNames = new List<string>();
+
+    [Tooltip("장착한 컬러모듈 5슬롯. 빈 슬롯은 빈 문자열.")]
+    public List<string> equippedColorModuleNames = new List<string>();
+
+    [Tooltip("보유한 컬러모듈 목록.")]
+    public List<string> ownedColorModuleNames = new List<string>();
+
+    public int equippedPickaxeID = -1;
+    public int equippedShovelID = -1;
 
     [Header("Dungeon")]
     public string currentDungeonId;

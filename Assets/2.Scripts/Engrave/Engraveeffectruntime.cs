@@ -88,9 +88,27 @@ public class EngraveEffectRuntime : MonoBehaviour
         ApplyToAllPlayerStats();
     }
 
+    /// <summary>
+    /// 각인 시스템 비활성화 스위치.
+    ///
+    /// 유물과 각인이 둘 다 '죽어도 남는 영구 스탯 증가'라 역할이 겹쳤다.
+    /// 메타 성장을 유물 하나로 통합하기로 하고 각인을 걷어냈다.
+    ///
+    /// 스크립트와 노드 에셋은 아직 지우지 않았다. 참조가 101곳(PlayerStats 17,
+    /// FocusedCombatManager 19 등 전투 수식 포함)이라 한 번에 들어내면 위험해서,
+    /// 먼저 '효과 0'으로 만들어 게임에서 사라지게 한 뒤 나중에 파일을 정리한다.
+    /// </summary>
+    public const bool EngraveSystemEnabled = false;
+
     private EngraveAppliedStats BuildStatsFromInvestments()
     {
         var result = new EngraveAppliedStats();
+
+        // 비활성화: 모든 보너스가 0인 빈 결과를 돌려준다.
+        // 정적 헬퍼(GetStartApBonusInt 등)도 이 값을 읽으므로 여기 한 곳만 막으면 된다.
+        if (!EngraveSystemEnabled)
+            return result;
+
         var mgr = EngraveManager.Instance;
         if (mgr == null || mgr.TreeData == null)
             return result;

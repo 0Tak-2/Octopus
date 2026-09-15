@@ -134,19 +134,23 @@ public class FieldMapGenerator : MonoBehaviour
     [ContextMenu("Generate Map")]
     public void GenerateMap()
     {
-        // FieldDefinition이 있으면 그걸 사용, 없으면 기존 config 사용
-        if (fieldDefinition != null)
+        // 생성 경로는 FieldDefinition 하나로 통일한다.
+        //
+        // 예전엔 config 폴백 경로가 따로 있었는데, 그 경로는 SpawnResources() 를 호출하지 않아
+        // '자원이 하나도 없는 맵'을 조용히 만들어냈다. 두 경로가 따로 진화하면서
+        // 버그가 한쪽에서만 재현되는 원인이었다.
+        //
+        // fieldDefinition 이 없다는 건 진행도(WorldProgressManager)가 깨졌다는 뜻이므로
+        // 반쯤 망가진 맵을 만들지 말고 명시적으로 실패시킨다.
+        if (fieldDefinition == null)
         {
-            GenerateFromFieldDefinition();
+            Debug.LogError("[FieldMapGenerator] FieldDefinition 이 없습니다. " +
+                           "WorldProgressManager.allFields 와 현재 필드 인덱스를 확인하세요. " +
+                           "(config 폴백 경로는 자원이 생성되지 않아 제거했습니다)");
+            return;
         }
-        else if (config != null)
-        {
-            GenerateFromConfig();
-        }
-        else
-        {
-            Debug.LogError("[FieldMapGenerator] FieldDefinition도 Config도 없습니다!");
-        }
+
+        GenerateFromFieldDefinition();
     }
 
     // ============================================
@@ -175,47 +179,52 @@ public class FieldMapGenerator : MonoBehaviour
         // 1. 맵 데이터 생성 (FieldDefinition의 크기/설정 사용)
         currentMap = CellularAutomata.Generate(fieldDefinition, seed);
 
-        // 2. 맵 출구/입구 — 저장된 통로 우선, 입구 좌표가 있어야 플레이어 스폰(이전 맵에서 들어온 경우)이 맞음
-        ResolveMapConnections(currentMap);
-
-        // 3. 플레이어 스폰 위치
-        currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
-
-        // 4. 던전 입구 위치
-        FindDungeonEntrancePositions(currentMap);
-
-        // 5. 적 스폰 위치 (카테고리별)
-        FindEnemySpawnPositions(currentMap);
-
-        // 6. 렌더링
-        if (mapRenderer != null)
+        // 배치 전용 난수 구간. 지형(field.terrain)과 분리돼 있어서
+        // 지형 알고리즘을 손봐도 적·자원 배치가 그대로 재현된다.
+        using (new RngScope(seed, "field.spawn"))
         {
-            mapRenderer.RenderMap(currentMap);
+            // 2. 맵 출구/입구 — 저장된 통로 우선, 입구 좌표가 있어야 플레이어 스폰(이전 맵에서 들어온 경우)이 맞음
+            ResolveMapConnections(currentMap);
+
+            // 3. 플레이어 스폰 위치
+            currentMap.playerSpawnPos = FindPlayerSpawnPosition(currentMap);
+
+            // 4. 던전 입구 위치
+            FindDungeonEntrancePositions(currentMap);
+
+            // 5. 적 스폰 위치 (카테고리별)
+            FindEnemySpawnPositions(currentMap);
+
+            // 6. 렌더링
+            if (mapRenderer != null)
+            {
+                mapRenderer.RenderMap(currentMap);
+            }
+
+            // 7. 플레이어 배치
+            SpawnPlayer();
+
+            // 8. 던전 입구 생성
+            SpawnDungeonEntrances();
+
+            // 9. 적 생성 (카테고리별)
+            SpawnEnemiesFromDefinition();
+
+            // 10. 자원 생성
+            SpawnResources();
+
+            // 10-1. 시야 시스템에 엄폐물(산호/해초) 등록
+            var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
+            if (visionSys != null)
+            {
+                visionSys.RefreshCoverCells();
+                if (logGeneration)
+                    Debug.Log("[FieldMapGenerator] 시야 시스템 엄폐물 등록 완료");
+            }
+
+            // 11. 맵 출구/입구 생성
+            SpawnMapConnections();
         }
-
-        // 7. 플레이어 배치
-        SpawnPlayer();
-
-        // 8. 던전 입구 생성
-        SpawnDungeonEntrances();
-
-        // 9. 적 생성 (카테고리별)
-        SpawnEnemiesFromDefinition();
-
-        // 10. 자원 생성
-        SpawnResources();
-
-        // 10-1. 시야 시스템에 엄폐물(산호/해초) 등록
-        var visionSys = FieldVisionSystem.Instance ?? FieldVisionSystem.EnsureInstance();
-        if (visionSys != null)
-        {
-            visionSys.RefreshCoverCells();
-            if (logGeneration)
-                Debug.Log("[FieldMapGenerator] 시야 시스템 엄폐물 등록 완료");
-        }
-
-        // 11. 맵 출구/입구 생성
-        SpawnMapConnections();
 
         if (logGeneration)
         {
@@ -626,6 +635,12 @@ public class FieldMapGenerator : MonoBehaviour
             GameObject prefab = prefabs[Random.Range(0, prefabs.Length)];
             GameObject enemy = Instantiate(prefab, worldPos, Quaternion.identity);
             enemy.name = $"{category}_{prefab.name}_{pos.x}_{pos.y}";
+
+            // 스폰 순번을 심어 둔다. 세이브에서 '같은 적'을 찾는 키로 쓴다.
+            var inst = enemy.GetComponent<EnemyInstance>();
+            if (inst == null) inst = enemy.GetComponentInChildren<EnemyInstance>(true);
+            if (inst != null) inst.fieldSpawnIndex = spawnIdx;
+
             AttachSpawnToField(enemy);
 
             spawnedObjects.Add(enemy);
@@ -676,6 +691,14 @@ public class FieldMapGenerator : MonoBehaviour
             Vector2Int pos = FindRandomWalkablePosition(currentMap, currentMap.playerSpawnPos, 2f);
             if (pos == Vector2Int.zero) continue;
             if (usedResourceCells.Contains(pos)) continue;
+
+            // 이미 캐간 자리는 다시 채우지 않는다. 자리는 소비한 것으로 쳐서
+            // 같은 셀이 재추첨되며 무한 루프를 도는 것도 막는다.
+            if (GameManager.Instance != null && GameManager.Instance.IsFieldObjectDestroyed(pos))
+            {
+                usedResourceCells.Add(pos);
+                continue;
+            }
 
             GameObject prefab = GetRandomPrefab(prefabs);
             if (prefab == null) continue;
@@ -836,6 +859,27 @@ public class FieldMapGenerator : MonoBehaviour
                     GameManager.Instance.playerData.dungeonEntrancePosition = Vector2Int.zero;
                     GameManager.Instance.playerData.hasDungeonReturnPosition = false;
                     GameManager.Instance.playerData.hasPendingEntranceHint = false;
+                    return;
+                }
+            }
+
+            // 이어하기: 저장된 위치가 '이 맵'의 좌표일 때만 복원한다.
+            // 챕터를 넘어온 경우엔 이전 필드 좌표이므로 써선 안 되고,
+            // 새 필드로 들어온 경우엔 입구 힌트(hasPendingEntranceHint)가 우선이다.
+            if (GameManager.Instance != null && !GameManager.Instance.playerData.hasPendingEntranceHint)
+            {
+                var pd = GameManager.Instance.playerData;
+                Vector2Int saved = pd.lastFieldPosition;
+
+                bool sameMap = !string.IsNullOrEmpty(pd.lastFieldMapKey)
+                               && pd.lastFieldMapKey == GameManager.Instance.GetCurrentMapKey();
+
+                if (sameMap && gridBoard.InBounds(saved) && currentMap.IsWalkable(saved.x, saved.y))
+                {
+                    player.position = gridBoard.CellToWorld(saved);
+
+                    if (logGeneration)
+                        Debug.Log($"[FieldMapGenerator] 이어하기 — 마지막 위치로 복원: {saved}");
                     return;
                 }
             }

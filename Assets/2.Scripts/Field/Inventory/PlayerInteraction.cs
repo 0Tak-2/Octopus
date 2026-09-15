@@ -67,6 +67,15 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
+    /// 지금 E 를 누르면 주울/캘 것이 있는가.
+    /// 던전 입구처럼 같은 키를 쓰는 상호작용이 채집을 가로채지 않도록 확인용으로 쓴다.
+    /// </summary>
+    public bool HasInteractableInRange()
+    {
+        return FindNearestDroppedItem() != null || FindNearestHarvestable() != null;
+    }
+
+    /// <summary>
     /// ���� ����� ������ ������ ã��
     /// </summary>
     private DroppedItem FindNearestDroppedItem()

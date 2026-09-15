@@ -527,12 +527,12 @@ public class FocusedCombatManager : MonoBehaviour
         if (_pendingContext != null && _pendingContext.playerStats != null)
         {
             _effectivePlayerMaxHP = Mathf.Max(1, _pendingContext.playerStats.maxHP);
-            State.playerHP = Mathf.Clamp(_pendingContext.playerStats.hp, 0, _effectivePlayerMaxHP);
+            SetPlayerHP(_pendingContext.playerStats.hp);
         }
         else
         {
             _effectivePlayerMaxHP = Mathf.Max(1, playerMaxHP);
-            State.playerHP = _effectivePlayerMaxHP;
+            SetPlayerHP(_effectivePlayerMaxHP);
         }
 
         if (_pendingContext != null && _pendingContext.enemy != null)
@@ -546,6 +546,11 @@ public class FocusedCombatManager : MonoBehaviour
         {
             State.enemyHP = Mathf.Max(1, GetEnemyMaxHP());
         }
+
+        // 위 초기화와 _enemyStates 는 각각 다른 식으로 HP를 계산한다(클램프 하한이 다름).
+        // 목록이 진실이므로 활성 적 값을 목록에서 끌어와 둘을 일치시킨다.
+        if (_activeEnemyIndex >= 0 && _activeEnemyIndex < _enemyStates.Count)
+            State.enemyHP = _enemyStates[_activeEnemyIndex].hp;
 
         // ============ AP 초기화 (+ 각인 보정) ============
         int engraveStartAp = EngraveEffectRuntime.GetStartApBonusInt();
@@ -1186,7 +1191,7 @@ public class FocusedCombatManager : MonoBehaviour
                 dmg = Mathf.Max(0, Mathf.RoundToInt(dmg * 0.5f));
         }
 
-        State.enemyHP = Mathf.Max(0, State.enemyHP - dmg);
+        SetActiveEnemyHP(State.enemyHP - dmg);
         StartCoroutine(vfx.HitPulse(_enemyToken));
 
         RefreshUI();
@@ -1371,8 +1376,38 @@ public class FocusedCombatManager : MonoBehaviour
     public void RefreshMoveHighlightsExternal() => RefreshMoveHighlights();
 
     /// <summary>
-    /// 집중전투는 State.playerHP만 갱신하는 경우가 많아, 필드 UI(PlayerStatusBarUI)가 읽는 PlayerStats.hp와 어긋난다.
-    /// 피해/출혈 등 State를 바꾼 직후 호출한다.
+    /// 플레이어 HP를 바꾸는 유일한 경로.
+    ///
+    /// 예전엔 State.playerHP 를 여기저기서 직접 쓰고, 나중에 기억해서 PlayerStats.hp 로
+    /// 옮겨 적는 구조였다. 옮기는 걸 한 번만 빠뜨려도 필드 UI와 전투 HP가 어긋났다.
+    /// 이제 쓰기를 여기로 모아 '까먹어서 생기는 불일치'를 구조적으로 없앤다.
+    ///
+    /// 단, 사망 판정(ClampAll)은 여기서 하지 않는다. 사망 타이밍은 기존처럼
+    /// SyncPlayerStatsHpFromCombatState 호출 지점이 정하며, 연출 도중에 죽는 것을 막는다.
+    /// </summary>
+    /// <summary>
+    /// 외부에서 PlayerStats.hp 를 직접 바꾼 뒤(회복 등) 전투 State 를 맞출 때 쓴다.
+    /// 외부 코드가 State.playerHP 를 직접 건드리지 않게 하기 위한 창구.
+    /// </summary>
+    public void PullPlayerHpFromStats()
+    {
+        if (_playerStats == null) return;
+        State.playerHP = Mathf.Clamp(_playerStats.hp, 0, Mathf.Max(1, _effectivePlayerMaxHP));
+        RefreshUI();
+    }
+
+    private void SetPlayerHP(int value)
+    {
+        int clamped = Mathf.Clamp(value, 0, Mathf.Max(1, _effectivePlayerMaxHP));
+        State.playerHP = clamped;
+
+        if (_playerStats != null)
+            _playerStats.hp = Mathf.Clamp(clamped, 0, _playerStats.maxHP);
+    }
+
+    /// <summary>
+    /// HP 반영을 확정하고 사망 판정을 돌린다. 피해/출혈 등을 적용한 직후 호출한다.
+    /// (쓰기 자체는 SetPlayerHP 가 이미 동기화하므로, 여기서는 사망 체크가 주 목적이다)
     /// </summary>
     private void SyncPlayerStatsHpFromCombatState()
     {
@@ -1735,7 +1770,7 @@ public class FocusedCombatManager : MonoBehaviour
         }
         
         // 피해 적용
-        State.enemyHP = Mathf.Max(0, State.enemyHP - result.finalDamage);
+        SetActiveEnemyHP(State.enemyHP - result.finalDamage);
         StartCoroutine(vfx.HitPulse(_enemyToken));
         
         // 치명타 팝업
@@ -1820,7 +1855,7 @@ public class FocusedCombatManager : MonoBehaviour
             int bleedDmg = _enemyStatusEffects.OnTurnEnd();
             if (bleedDmg > 0)
             {
-                State.enemyHP = Mathf.Max(0, State.enemyHP - bleedDmg);
+                SetActiveEnemyHP(State.enemyHP - bleedDmg);
                 if (vfx != null) vfx.ShowPopup(_enemyToken, $"출혈 -{bleedDmg}");
                 RefreshUI();
                 
@@ -1831,6 +1866,33 @@ public class FocusedCombatManager : MonoBehaviour
     }
 
     // ===== 다중 적: 활성 적 스왑 =====
+
+    /// <summary>
+    /// 활성 적 HP를 바꾸는 유일한 경로.
+    ///
+    /// 적 HP는 세 곳에 산다: State.enemyHP(작업 사본), _enemyStates[i].hp(목록의 진실),
+    /// EnemyInstance.currentHP(필드 개체). 예전엔 State 만 고치고 전환·종료 시점에
+    /// 기억해서 옮겨 적는 구조라, 그 사이에 대상이 바뀌면 피해가 조용히 사라졌다.
+    /// 여기서 세 곳을 한 번에 맞춰 '까먹어서 생기는 유실'을 구조적으로 없앤다.
+    /// </summary>
+    private void SetActiveEnemyHP(int value)
+    {
+        int clamped = Mathf.Max(0, value);
+        State.enemyHP = clamped;
+
+        if (_activeEnemyIndex < 0 || _activeEnemyIndex >= _enemyStates.Count)
+            return;
+
+        var es = _enemyStates[_activeEnemyIndex];
+        es.hp = clamped;
+        if (clamped <= 0)
+            es.isDead = true;
+
+        // 필드 개체까지 즉시 반영한다. 전투 중 도주하거나 판정이 필요한 쪽(던전 보스 등)이
+        // EnemyInstance.currentHP 를 보기 때문에, 종료 시점까지 미루면 어긋난다.
+        if (es.fieldInstance != null)
+            es.fieldInstance.currentHP = clamped;
+    }
 
     /// <summary>현재 활성 적 상태를 _enemyStates에 저장</summary>
     private void SaveActiveEnemyState()
@@ -2023,7 +2085,7 @@ public class FocusedCombatManager : MonoBehaviour
             dmg -= absorbed;
         }
 
-        State.playerHP = Mathf.Max(0, State.playerHP - dmg);
+        SetPlayerHP(State.playerHP - dmg);
         return dmg;
     }
 

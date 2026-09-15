@@ -27,7 +27,7 @@ public class ColorModuleSlots : MonoBehaviour
     /// 안전 지역 체크용 (필드에서만 장착/해제 가능)
     /// </summary>
     [Header("안전 지역 체크")]
-    public bool requireSafeZone = true;
+    public bool requireSafeZone = false;
     private System.Func<bool> _isSafeZoneCheck;
     
     private void Awake()
@@ -75,6 +75,49 @@ public class ColorModuleSlots : MonoBehaviour
     /// <summary>
     /// 슬롯에 모듈 장착
     /// </summary>
+    // ============================================
+    // 세이브/로드
+    // ============================================
+
+    /// <summary>장착 모듈을 에셋 이름 목록으로. 빈 슬롯은 빈 문자열.</summary>
+    public System.Collections.Generic.List<string> GetEquippedNames()
+    {
+        var names = new System.Collections.Generic.List<string>(MAX_SLOTS);
+        for (int i = 0; i < MAX_SLOTS; i++)
+            names.Add(equippedDefinitions[i] != null ? equippedDefinitions[i].name : "");
+        return names;
+    }
+
+    /// <summary>
+    /// 이름 목록으로 장착 상태를 복원한다.
+    /// Equip() 은 안전지역 체크에 걸리므로 복원은 이 경로를 쓴다.
+    /// </summary>
+    public void RestoreEquippedByNames(System.Collections.Generic.List<string> names)
+    {
+        for (int i = 0; i < MAX_SLOTS; i++)
+        {
+            _equippedModules[i] = null;
+            equippedDefinitions[i] = null;
+        }
+
+        if (names != null)
+        {
+            for (int i = 0; i < MAX_SLOTS && i < names.Count; i++)
+            {
+                if (string.IsNullOrEmpty(names[i])) continue;
+
+                var def = ColorModuleLookup.FindByName(names[i]);
+                if (def == null) continue;
+
+                equippedDefinitions[i] = def;
+                _equippedModules[i] = new ColorModuleInstance(def);
+            }
+        }
+
+        OnSlotsChanged?.Invoke();
+        RecalculateColorBonuses();
+    }
+
     public bool Equip(int slotIndex, ColorModuleInstance module)
     {
         if (slotIndex < 0 || slotIndex >= MAX_SLOTS) return false;

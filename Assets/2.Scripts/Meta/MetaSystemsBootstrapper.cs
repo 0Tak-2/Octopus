@@ -25,8 +25,11 @@ public static class MetaSystemsBootstrapper
         var host = meta.gameObject;
         if (host.GetComponent<CharacterLevelProgression>() == null)
             host.AddComponent<CharacterLevelProgression>();
-        if (host.GetComponent<MetaXpDebugHUD>() == null)
-            host.AddComponent<MetaXpDebugHUD>();
+
+        // 메타 XP·각인 시스템을 걷어내면서 디버그 HUD 도 더 이상 붙이지 않는다.
+        // (화면 좌상단에 항상 떠 있던 [Meta XP]/[Engrave] 표시)
+        // EngraveEffectRuntime 은 PlayerStats 가 참조하므로 남겨두되,
+        // BuildStatsFromInvestments 가 전부 0을 돌려주어 효과는 없다.
         if (host.GetComponent<EngraveEffectRuntime>() == null)
             host.AddComponent<EngraveEffectRuntime>();
     }

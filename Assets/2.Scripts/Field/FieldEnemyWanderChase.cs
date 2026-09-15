@@ -27,7 +27,16 @@ public class FieldEnemyWanderChase : MonoBehaviour
     [Min(1)]
     public int aggroDropDistance = 15;
     [Tooltip("하드 리시 상한. 데이터가 더 크게 잡혀 있어도 이 값보다 멀어지면 무조건 추적 해제.")]
-    [Min(2)] public int hardLeashDistance = 9;
+    [Min(2)] public int hardLeashDistance = 11;
+
+    [Tooltip("플레이어를 이 턴 수만큼 못 보면 추적을 포기한다.\n" +
+             "필드에서는 적과 플레이어가 둘 다 턴당 1칸이라 거리가 잘 안 벌어진다.\n" +
+             "그래서 거리만으로는 어그로가 풀리지 않아, 시야를 잃은 시간으로 판단한다.\n" +
+             "엄폐물 뒤로 돌아가거나 웅크려서 따돌리는 플레이가 성립한다.")]
+    [Min(1)] public int loseTargetAfterTurnsUnseen = 5;
+
+    /// <summary>플레이어를 마지막으로 본 뒤 지난 턴 수.</summary>
+    private int _turnsSincePlayerSeen;
     [Tooltip("체크 시 EnemyDefinition의 탐지/어그로 거리로 위 값들을 덮어씁니다. 해제하면 인스펙터 값만 사용합니다.")]
     public bool useCustomDetection = false;
 
@@ -186,6 +195,8 @@ public class FieldEnemyWanderChase : MonoBehaviour
         // Aggro system
         if (canSee)
         {
+            _turnsSincePlayerSeen = 0;
+
             if (!isAggro)
             {
                 isAggro = true;
@@ -194,6 +205,20 @@ public class FieldEnemyWanderChase : MonoBehaviour
         }
         else if (isAggro)
         {
+            // 시야를 잃은 채로 일정 턴이 지나면 포기한다.
+            // 거리 조건만으로는 (둘 다 턴당 1칸이라) 영원히 안 풀린다.
+            _turnsSincePlayerSeen++;
+            if (_turnsSincePlayerSeen >= loseTargetAfterTurnsUnseen)
+            {
+                isAggro = false;
+                _turnsSincePlayerSeen = 0;
+
+                if (showDebugLogs)
+                    Debug.Log($"[WanderChase] {_enemy.definition.displayName} 시야 상실로 추적 포기 " +
+                              $"({loseTargetAfterTurnsUnseen}턴)");
+                return;
+            }
+
             // 리시(최대 추적 거리): 시야 반경이 넓으면 CanSeePlayer가 멀리서도 true가 되어
             // 예전 조건(!canStillSee && 거리)만으로는 어그로가 안 풀리는 경우가 있었음.
             if (distToPlayer > aggroDropDistance)

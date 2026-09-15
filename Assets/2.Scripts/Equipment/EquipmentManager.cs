@@ -200,6 +200,57 @@ public class EquipmentManager : MonoBehaviour
     /// <summary>
     /// 첫 번째 빈 슬롯에 자동 장착
     /// </summary>
+    // ============================================
+    // 세이브/로드
+    // ============================================
+
+    /// <summary>착용 장비를 에셋 이름 목록으로. 빈 슬롯은 빈 문자열.</summary>
+    public List<string> GetEquippedNames()
+    {
+        var names = new List<string>(MAX_SLOTS);
+        for (int i = 0; i < MAX_SLOTS; i++)
+            names.Add(equippedItems[i] != null ? equippedItems[i].name : "");
+        return names;
+    }
+
+    /// <summary>
+    /// 이름 목록으로 착용 상태를 복원한다.
+    /// 이름 → EquipmentDefinition 역조회는 ItemDatabase 를 쓴다(별도 마스터 목록이 없다).
+    /// </summary>
+    public void RestoreEquippedByNames(List<string> names)
+    {
+        for (int i = 0; i < MAX_SLOTS; i++)
+            equippedItems[i] = null;
+
+        if (names != null)
+        {
+            for (int i = 0; i < MAX_SLOTS && i < names.Count; i++)
+            {
+                if (string.IsNullOrEmpty(names[i])) continue;
+                equippedItems[i] = FindEquipmentByName(names[i]);
+            }
+        }
+
+        RecalculateStats();
+        OnEquipmentChanged?.Invoke();
+    }
+
+    private static EquipmentDefinition FindEquipmentByName(string assetName)
+    {
+        var db = ItemDatabase.Instance;
+        if (db == null || db.itemDataList == null) return null;
+
+        foreach (var data in db.itemDataList)
+        {
+            if (data != null && data.equipmentDefinition != null &&
+                data.equipmentDefinition.name == assetName)
+                return data.equipmentDefinition;
+        }
+
+        Debug.LogWarning($"[EquipmentManager] 장비를 찾을 수 없습니다: {assetName} (ItemDatabase 등록 확인)");
+        return null;
+    }
+
     public bool AutoEquip(EquipmentDefinition equipment)
     {
         int slot = FindEmptySlot();

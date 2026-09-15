@@ -45,9 +45,10 @@ public class DeathScreenUI : MonoBehaviour
     /// <summary>씬에 없을 때 DeathManager 가 부른다.</summary>
     public static DeathScreenUI CreateRuntime()
     {
+        // DontDestroyOnLoad 로 두지 않는다. 이 화면은 런이 끝난 씬에서만 필요하고,
+        // 살아남으면 다음 씬의 UI 빌더가 이 캔버스를 집어가 클릭을 삼키는 사고가 난다.
         var go = new GameObject("DeathScreenUI");
         var ui = go.AddComponent<DeathScreenUI>();
-        DontDestroyOnLoad(go);
         return ui;
     }
 
@@ -286,18 +287,24 @@ public class DeathScreenUI : MonoBehaviour
         // 하나라도 수동 연결돼 있으면 건드리지 않는다.
         if (titleText != null || continueButton != null) return;
 
-        var canvas = gameObject.AddComponent<Canvas>();
+        // 이미 붙어 있는 컴포넌트에 AddComponent 를 또 하면 Unity 가 거부하고 null 을 반환해
+        // 바로 다음 줄에서 NullReferenceException 이 난다. 씬에 수동 배치했을 때를 대비해 방어한다.
+        var canvas = gameObject.GetComponent<Canvas>();
+        if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         // 간이 사망 오버레이(30000)보다 위에 떠야 통계가 보인다.
         canvas.sortingOrder = 31000;
 
-        var scaler = gameObject.AddComponent<CanvasScaler>();
+        var scaler = gameObject.GetComponent<CanvasScaler>();
+        if (scaler == null) scaler = gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
 
-        gameObject.AddComponent<GraphicRaycaster>();
+        if (gameObject.GetComponent<GraphicRaycaster>() == null)
+            gameObject.AddComponent<GraphicRaycaster>();
 
-        _group = gameObject.AddComponent<CanvasGroup>();
+        _group = gameObject.GetComponent<CanvasGroup>();
+        if (_group == null) _group = gameObject.AddComponent<CanvasGroup>();
         _group.alpha = 0f;
         _group.blocksRaycasts = false;
         _group.interactable = false;
@@ -424,9 +431,10 @@ public class DeathScreenUI : MonoBehaviour
     {
         if (UnityEngine.EventSystems.EventSystem.current != null) return;
 
+        // 씬 스코프로 둔다. 영구 EventSystem 을 만들면 다음 씬의 EventSystem 과 중복되어
+        // 둘 다 제대로 동작하지 않는다.
         var go = new GameObject("EventSystem");
         go.AddComponent<UnityEngine.EventSystems.EventSystem>();
         go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-        DontDestroyOnLoad(go);
     }
 }

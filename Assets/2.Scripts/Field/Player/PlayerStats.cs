@@ -244,6 +244,25 @@ public class PlayerStats : MonoBehaviour
         OnDamageTaken?.Invoke(finalDamage);
     }
 
+    /// <summary>
+    /// CombatCalculator 가 회피·불완전·각인감소·방어력까지 전부 계산한 '최종' 피해를 그대로 적용한다.
+    /// TakeDamage/TakeDamageRaw 를 쓰면 방어력이나 각인 감소가 두 번 적용되므로 이 경로를 쓴다.
+    /// </summary>
+    public void ApplyFinalDamage(int finalDamage)
+    {
+        if (finalDamage <= 0)
+            return;
+
+        hp -= finalDamage;
+        ClampAll();
+
+        HitEffectManager hitEffect = HitEffectManager.Instance ?? FindObjectOfType<HitEffectManager>();
+        if (hitEffect != null)
+            hitEffect.ShowHitEffect(transform, finalDamage);
+
+        OnDamageTaken?.Invoke(finalDamage);
+    }
+
     private void NotifyDeathIfNeeded()
     {
         if (_deathNotified)

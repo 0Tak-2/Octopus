@@ -68,28 +68,11 @@ public class MetaProgression : MonoBehaviour
         if (def == null)
             return;
 
-        float p = GetProgressIndex();
-        float mult = EvaluateMultiplier(p);
-        int metaBase = def.metaXpValue > 0 ? def.metaXpValue : 10;
-        int charBase = def.characterXpValue > 0 ? def.characterXpValue : 12;
-        float gained = metaBase * mult * (1f + bonusXpMultiplier);
-        _unspentMetaXp += gained;
-
-        GrantEngravePointsFromOverflow();
-
-        if (CharacterLevelProgression.Instance != null)
-            CharacterLevelProgression.Instance.AddCharacterKillXp(charBase);
-
-        bool isBoss = def.aiType == EnemyAIType.AI4_Boss;
-        bool isElite = def.aiType == EnemyAIType.AI3_Elite;
-        if (DeathManager.Instance != null)
-            DeathManager.Instance.RecordKill(def.displayName, isBoss, isElite);
-
-        Save();
-        OnUnspentMetaXpChanged?.Invoke(_unspentMetaXp);
-
-        if (logEachKill)
-            Debug.Log($"[MetaProgression] Kill {def.displayName}: +{gained:F1} metaXP (P={p:F1}, f={mult:F2}), bank={_unspentMetaXp:F1}");
+        // 메타 XP·각인 시스템은 걷어냈다. 메타 성장은 유물 하나로 통합한다.
+        // 처치 기록(런 통계)은 EnemyInstance.TryRegisterDefeatRewards 가 직접 담당하므로
+        // 여기서는 아무것도 하지 않는다.
+        //
+        // 이 메서드는 호출부 호환을 위해 남겨둔다. 파일 정리는 나중에.
     }
 
     private void GrantEngravePointsFromOverflow()

@@ -21,6 +21,13 @@ public class EnemyInstance : MonoBehaviour
     // 턴 행동 추적
     [HideInInspector] public bool hasActedThisTurn = false;
 
+    /// <summary>
+    /// 필드 스폰 순번. 맵이 시드로 결정론적으로 재생성되므로 이 번호는 세션을 넘어 안정적이다.
+    /// 세이브/복원에서 '같은 개체'를 찾는 키로 쓴다.
+    /// (GetInstanceID 는 실행할 때마다 바뀌어서 이어하기에 쓸 수 없다)
+    /// </summary>
+    [HideInInspector] public int fieldSpawnIndex = -1;
+
     /// <summary>이 인스턴스에 대해 처치 보상(메타 XP 등)을 이미 지급했으면 true</summary>
     private bool _defeatRewardsApplied;
 
@@ -70,8 +77,15 @@ public class EnemyInstance : MonoBehaviour
             return;
 
         _defeatRewardsApplied = true;
-        if (MetaProgression.Instance != null)
-            MetaProgression.Instance.RegisterKill(definition);
+
+        // 런 통계에 처치를 기록한다. 유물 보상 등급 계산에 쓰이므로 반드시 남아야 한다.
+        // (예전엔 MetaProgression 을 거쳤는데, 메타 XP·각인 시스템을 걷어내면서 직접 호출로 바꿨다)
+        if (DeathManager.Instance != null)
+        {
+            bool isBoss = definition.aiType == EnemyAIType.AI4_Boss;
+            bool isElite = definition.aiType == EnemyAIType.AI3_Elite;
+            DeathManager.Instance.RecordKill(definition.displayName, isBoss, isElite);
+        }
 
         TryDropColorModule();
     }

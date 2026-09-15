@@ -15,8 +15,8 @@ MonoBehaviour:
   dungeonID: dungeon_f1_b
   dungeonName: "\uD574\uCD08 \uBBF8\uB85C"
   description: 
-  minFloors: 2
-  maxFloors: 2
+  minFloors: 3
+  maxFloors: 3
   floorWidth: 25
   floorHeight: 25
   normalEnemyPrefabs:

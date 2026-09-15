@@ -80,6 +80,38 @@ public class EnemyDefinition : ScriptableObject
     public CombatAttackDefinition skill4_AttackBuff;    // Buff AP2 (6T, x2)
 
     // =========================
+    // AI3 Elite Parameters (Inspector tuning)
+    // =========================
+    // 예전엔 이 값들이 EnemyAIController 에 const 로 박혀 있어서 밸런싱을 코드에서 해야 했다.
+    // 보스(AI4)는 에셋에서 읽는데 엘리트만 하드코딩이라 조정 방법이 둘로 갈렸다.
+    // 스킬 슬롯이 연결돼 있으면 그쪽 값(apCost/range/damage)이 우선한다.
+    [Header("AI3 Elite Parameters")]
+    [Tooltip("턴당 무료 이동 횟수")]
+    [Min(0)] public int eliteFreeMovesPerTurn = 1;
+
+    [Tooltip("AP가 이 값 미만이면 플레이어 쪽으로 접근하지 않는다 (공격 여력 없이 붙지 않음)")]
+    [Min(0)] public int eliteMoveTowardApThreshold = 3;
+
+    [Header("Elite Costs / Ranges")]
+    [Min(0)] public int eliteSkill1ApCost = 1;
+    [Min(1)] public int eliteSkill1Range = 1;
+
+    [Min(0)] public int eliteSkill2ApCost = 2;
+    [Min(1)] public int eliteSkill2Range = 1;
+    [Tooltip("근접 강타 데미지 배율")]
+    [Min(1f)] public float eliteSkill2DamageMultiplier = 2f;
+
+    [Min(0)] public int eliteSkill3ApCost = 1;
+    [Min(1)] public int eliteSkill3Range = 2;
+
+    [Header("Elite Buff")]
+    [Min(0)] public int eliteSkill4ApCost = 2;
+    [Tooltip("공격 버프 지속 턴")]
+    [Min(1)] public int eliteBuffTurns = 6;
+    [Tooltip("버프 중 데미지 배율")]
+    [Min(1f)] public float eliteBuffDamageMultiplier = 2f;
+
+    // =========================
     // AI4 Boss Skills (5 slots)
     // =========================
     [Header("AI4 Boss Skills (Slots)")]
